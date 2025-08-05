@@ -1,92 +1,55 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    container_name: smartstore-postgres
+  mongodb:
+    image: mongo:7.0
+    container_name: smartstore-mongodb
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: smartstore_ai
-      POSTGRES_USER: smartstore
-      POSTGRES_PASSWORD: smartstore_password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: smartstore
     ports:
-      - "5432:5432"
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     networks:
       - smartstore-network
-    restart: unless-stopped
 
-  # Redis for caching and queues
   redis:
-    image: redis:7-alpine
+    image: redis:7.2-alpine
     container_name: smartstore-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
       - smartstore-network
-    restart: unless-stopped
 
-  # Ollama for local AI models
-  ollama:
-    image: ollama/ollama:latest
-    container_name: smartstore-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    networks:
-      - smartstore-network
+  mongo-express:
+    image: mongo-express:1.0.0
+    container_name: smartstore-mongo-express
     restart: unless-stopped
-
-  # SmartStore AI Application
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: smartstore-app
     environment:
-      - DATABASE_URL=postgresql://smartstore:smartstore_password@postgres:5432/smartstore_ai
-      - REDIS_URL=redis://redis:6379
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - NODE_ENV=production
-      - NEXTAUTH_URL=http://localhost:3000
-      - NEXTAUTH_SECRET=your-nextauth-secret-key-here
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_URL: mongodb://admin:password@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: password
     ports:
-      - "3000:3000"
+      - "8081:8081"
     depends_on:
-      - postgres
-      - redis
-      - ollama
+      - mongodb
     networks:
       - smartstore-network
-    restart: unless-stopped
-    volumes:
-      - ./uploads:/app/uploads
-      - ./sessions:/app/sessions
-
-  # Nginx reverse proxy (optional)
-  nginx:
-    image: nginx:alpine
-    container_name: smartstore-nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/nginx/ssl
-    depends_on:
-      - app
-    networks:
-      - smartstore-network
-    restart: unless-stopped
 
 volumes:
-  postgres_data:
+  mongodb_data:
+    driver: local
   redis_data:
-  ollama_data:
+    driver: local
 
 networks:
   smartstore-network:

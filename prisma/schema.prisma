@@ -6,13 +6,13 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 // User Management
 model User {
-  id            String    @id @default(cuid())
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
   email         String    @unique
   name          String?
   password      String?
@@ -25,7 +25,7 @@ model User {
 
   // Relations
   organization    Organization? @relation(fields: [organizationId], references: [id])
-  organizationId  String?
+  organizationId  String?       @db.ObjectId
   sessions        Session[]
   accounts        Account[]
   activities      Activity[]
@@ -39,17 +39,17 @@ model User {
 }
 
 model Account {
-  id                String  @id @default(cuid())
-  userId            String
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -59,9 +59,9 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
   sessionToken String   @unique
-  userId       String
+  userId       String   @db.ObjectId
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -69,6 +69,7 @@ model Session {
 }
 
 model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
   identifier String
   token      String   @unique
   expires    DateTime
@@ -79,7 +80,7 @@ model VerificationToken {
 
 // Organization & Multi-tenancy
 model Organization {
-  id          String   @id @default(cuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   slug        String   @unique
   domain      String?
@@ -108,7 +109,7 @@ model Organization {
 
 // Customer CRM
 model Customer {
-  id          String   @id @default(cuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   phone       String?
   email       String?
   name        String?
@@ -116,14 +117,14 @@ model Customer {
   tags        String[]
   source      String?
   isActive    Boolean  @default(true)
-  totalSpent  Decimal  @default(0) @db.Decimal(10, 2)
+  totalSpent  Decimal  @default(0)
   points      Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
   organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId String
+  organizationId String       @db.ObjectId
   orders         Order[]
   chatMessages   ChatMessage[]
   activities     CustomerActivity[]
@@ -134,7 +135,7 @@ model Customer {
 }
 
 model CustomerActivity {
-  id         String           @id @default(cuid())
+  id         String           @id @default(auto()) @map("_id") @db.ObjectId
   type       ActivityType
   description String
   metadata   Json?
@@ -142,14 +143,14 @@ model CustomerActivity {
 
   // Relations
   customer   Customer @relation(fields: [customerId], references: [id])
-  customerId String
+  customerId String   @db.ObjectId
 
   @@map("customer_activities")
 }
 
 // Product Catalog
 model Category {
-  id          String   @id @default(cuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   slug        String
   description String?
@@ -161,10 +162,10 @@ model Category {
 
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String
+  organizationId String     @db.ObjectId
   products      Product[]
   parent        Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  parentId      String?
+  parentId      String?     @db.ObjectId
   children      Category[]  @relation("CategoryHierarchy")
 
   @@unique([organizationId, slug])
@@ -172,17 +173,17 @@ model Category {
 }
 
 model Product {
-  id          String   @id @default(cuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   slug        String
   description String?
   sku         String?
-  price       Decimal  @db.Decimal(10, 2)
-  comparePrice Decimal? @db.Decimal(10, 2)
-  cost        Decimal? @db.Decimal(10, 2)
+  price       Decimal
+  comparePrice Decimal?
+  cost        Decimal?
   stock       Int      @default(0)
   minStock    Int      @default(0)
-  weight      Decimal? @db.Decimal(8, 2)
+  weight      Decimal?
   dimensions  Json?
   images      String[]
   isActive    Boolean  @default(true)
@@ -193,13 +194,13 @@ model Product {
 
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String
+  organizationId String     @db.ObjectId
   category      Category? @relation(fields: [categoryId], references: [id])
-  categoryId    String?
+  categoryId    String?   @db.ObjectId
   createdBy     User     @relation("ProductCreatedBy", fields: [createdById], references: [id])
-  createdById   String
+  createdById   String   @db.ObjectId
   updatedBy     User?    @relation("ProductUpdatedBy", fields: [updatedById], references: [id])
-  updatedById   String?
+  updatedById   String?  @db.ObjectId
   variants      ProductVariant[]
   orderItems    OrderItem[]
   activities    ProductActivity[]
@@ -210,10 +211,10 @@ model Product {
 }
 
 model ProductVariant {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   sku       String?
-  price     Decimal? @db.Decimal(10, 2)
+  price     Decimal?
   stock     Int      @default(0)
   attributes Json?
   createdAt DateTime @default(now())
@@ -221,14 +222,14 @@ model ProductVariant {
 
   // Relations
   product   Product @relation(fields: [productId], references: [id])
-  productId String
+  productId String  @db.ObjectId
 
   @@unique([productId, name])
   @@map("product_variants")
 }
 
 model ProductActivity {
-  id         String        @id @default(cuid())
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
   type       ProductActivityType
   quantity   Int?
   description String
@@ -237,21 +238,21 @@ model ProductActivity {
 
   // Relations
   product    Product @relation(fields: [productId], references: [id])
-  productId  String
+  productId  String  @db.ObjectId
 
   @@map("product_activities")
 }
 
 // Order Management
 model Order {
-  id            String      @id @default(cuid())
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
   orderNumber   String      @unique
   status        OrderStatus @default(DRAFT)
-  total         Decimal     @db.Decimal(10, 2)
-  subtotal      Decimal     @db.Decimal(10, 2)
-  tax           Decimal     @default(0) @db.Decimal(10, 2)
-  shipping      Decimal     @default(0) @db.Decimal(10, 2)
-  discount      Decimal     @default(0) @db.Decimal(10, 2)
+  total         Decimal
+  subtotal      Decimal
+  tax           Decimal     @default(0)
+  shipping      Decimal     @default(0)
+  discount      Decimal     @default(0)
   currency      String      @default("USD")
   notes         String?
   metadata      Json?
@@ -260,13 +261,13 @@ model Order {
 
   // Relations
   organization  Organization @relation(fields: [organizationId], references: [id])
-  organizationId String
+  organizationId String      @db.ObjectId
   customer      Customer @relation(fields: [customerId], references: [id])
-  customerId    String
+  customerId    String      @db.ObjectId
   createdBy     User     @relation("OrderCreatedBy", fields: [createdById], references: [id])
-  createdById   String
+  createdById   String   @db.ObjectId
   updatedBy     User?    @relation("OrderUpdatedBy", fields: [updatedById], references: [id])
-  updatedById   String?
+  updatedById   String?  @db.ObjectId
   items         OrderItem[]
   payments      Payment[]
   shipments     Shipment[]
@@ -276,23 +277,23 @@ model Order {
 }
 
 model OrderItem {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   quantity  Int
-  price     Decimal  @db.Decimal(10, 2)
-  total     Decimal  @db.Decimal(10, 2)
+  price     Decimal
+  total     Decimal
   metadata  Json?
 
   // Relations
   order     Order   @relation(fields: [orderId], references: [id])
-  orderId   String
+  orderId   String  @db.ObjectId
   product   Product @relation(fields: [productId], references: [id])
-  productId String
+  productId String  @db.ObjectId
 
   @@map("order_items")
 }
 
 model OrderActivity {
-  id         String        @id @default(cuid())
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
   type       OrderActivityType
   description String
   metadata   Json?
@@ -300,15 +301,15 @@ model OrderActivity {
 
   // Relations
   order      Order @relation(fields: [orderId], references: [id])
-  orderId    String
+  orderId    String @db.ObjectId
 
   @@map("order_activities")
 }
 
 // Payment System
 model Payment {
-  id            String        @id @default(cuid())
-  amount        Decimal       @db.Decimal(10, 2)
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  amount        Decimal
   currency      String        @default("USD")
   method        PaymentMethod
   status        PaymentStatus @default(PENDING)
@@ -320,16 +321,16 @@ model Payment {
 
   // Relations
   organization  Organization @relation(fields: [organizationId], references: [id])
-  organizationId String
+  organizationId String      @db.ObjectId
   order         Order?       @relation(fields: [orderId], references: [id])
-  orderId       String?
+  orderId       String?      @db.ObjectId
 
   @@map("payments")
 }
 
 // Shipping & Delivery
 model Courier {
-  id          String   @id @default(cuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   code        String
   apiKey      String?
@@ -341,7 +342,7 @@ model Courier {
 
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String
+  organizationId String     @db.ObjectId
   shipments     Shipment[]
 
   @@unique([organizationId, code])
@@ -349,7 +350,7 @@ model Courier {
 }
 
 model Shipment {
-  id            String         @id @default(cuid())
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
   trackingNumber String?
   status        ShipmentStatus @default(PENDING)
   shippedAt     DateTime?
@@ -360,16 +361,16 @@ model Shipment {
 
   // Relations
   order         Order    @relation(fields: [orderId], references: [id])
-  orderId       String
+  orderId       String   @db.ObjectId
   courier       Courier? @relation(fields: [courierId], references: [id])
-  courierId     String?
+  courierId     String?  @db.ObjectId
 
   @@map("shipments")
 }
 
 // Warehouse Management
 model Warehouse {
-  id          String   @id @default(cuid())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   address     String?
   isActive    Boolean  @default(true)
@@ -379,14 +380,14 @@ model Warehouse {
 
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String
+  organizationId String     @db.ObjectId
 
   @@map("warehouses")
 }
 
 // Chat & Communication
 model ChatMessage {
-  id        String   @id @default(cuid())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   content   String
   type      MessageType @default(TEXT)
   direction MessageDirection
@@ -396,18 +397,18 @@ model ChatMessage {
 
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String
+  organizationId String     @db.ObjectId
   customer       Customer @relation(fields: [customerId], references: [id])
-  customerId     String
+  customerId     String   @db.ObjectId
   assignedTo     User?    @relation(fields: [assignedToId], references: [id])
-  assignedToId   String?
+  assignedToId   String?  @db.ObjectId
 
   @@map("chat_messages")
 }
 
 // Marketing & Campaigns
 model Campaign {
-  id          String        @id @default(cuid())
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   type        CampaignType
   status      CampaignStatus @default(DRAFT)
@@ -419,15 +420,15 @@ model Campaign {
 
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String
+  organizationId String     @db.ObjectId
 
   @@map("campaigns")
 }
 
 // Financial Management
 model Expense {
-  id          String   @id @default(cuid())
-  amount      Decimal  @db.Decimal(10, 2)
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  amount      Decimal
   description String
   category    String?
   date        DateTime
@@ -437,7 +438,7 @@ model Expense {
 
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String
+  organizationId String     @db.ObjectId
 
   @@map("expenses")
 }

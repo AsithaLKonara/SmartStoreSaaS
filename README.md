@@ -6,7 +6,7 @@ A comprehensive, production-ready SaaS platform that combines AI-powered automat
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.3-38B2AC?style=for-the-badge&logo=tailwind-css)
 ![Prisma](https://img.shields.io/badge/Prisma-5.0-2D3748?style=for-the-badge&logo=prisma)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?style=for-the-badge&logo=postgresql)
+![MongoDB](https://img.shields.io/badge/MongoDB-7.0-47A248?style=for-the-badge&logo=mongodb)
 
 ## 📋 Table of Contents
 
@@ -139,7 +139,7 @@ SmartStore AI is a cutting-edge e-commerce management platform that leverages ar
 ### Backend
 - **Next.js API Routes** - Server-side API endpoints
 - **Prisma ORM** - Database toolkit
-- **PostgreSQL** - Primary database
+- **MongoDB** - NoSQL database
 - **Redis** - Caching and session storage
 - **NextAuth.js** - Authentication solution
 
@@ -171,7 +171,7 @@ SmartStore AI is a cutting-edge e-commerce management platform that leverages ar
          ▼                       ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   PWA           │    │   Database      │    │   AI Services   │
-│   (Offline)     │    │   (PostgreSQL)  │    │   (OpenAI)      │
+│   (Offline)     │    │   (MongoDB)     │    │   (OpenAI)      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          │                       │                       │
@@ -202,7 +202,7 @@ The platform uses a multi-tenant architecture with the following core entities:
 ### Prerequisites
 
 - Node.js 18+ 
-- PostgreSQL 15+
+- MongoDB 7.0+
 - Redis 6+
 - Git
 
@@ -251,7 +251,7 @@ Create a `.env.local` file with the following variables:
 
 ### Database
 ```env
-DATABASE_URL="postgresql://username:password@localhost:5432/smartstore"
+DATABASE_URL="mongodb://localhost:27017/smartstore"
 ```
 
 ### Authentication
@@ -299,7 +299,7 @@ REDIS_URL="redis://localhost:6379"
 
 ### Using Docker (Recommended)
 
-1. **Start PostgreSQL and Redis**
+1. **Start MongoDB and Redis**
    ```bash
    docker-compose up -d
    ```
@@ -309,11 +309,16 @@ REDIS_URL="redis://localhost:6379"
    npx prisma db push
    ```
 
+3. **Access MongoDB Express** (optional)
+   Navigate to [http://localhost:8081](http://localhost:8081)
+   - Username: `admin`
+   - Password: `password`
+
 ### Manual Setup
 
-1. **Install PostgreSQL**
-   - Download from [postgresql.org](https://www.postgresql.org/download/)
-   - Create a database named `smartstore`
+1. **Install MongoDB**
+   - Download from [mongodb.com](https://www.mongodb.com/try/download/community)
+   - Start MongoDB service
 
 2. **Install Redis**
    - Download from [redis.io](https://redis.io/download)
@@ -321,7 +326,20 @@ REDIS_URL="redis://localhost:6379"
 
 3. **Update DATABASE_URL in .env.local**
    ```env
-   DATABASE_URL="postgresql://username:password@localhost:5432/smartstore"
+   DATABASE_URL="mongodb://localhost:27017/smartstore"
+   ```
+
+### MongoDB Atlas (Cloud)
+
+For production, you can use MongoDB Atlas:
+
+1. **Create a MongoDB Atlas account**
+   - Go to [mongodb.com/atlas](https://www.mongodb.com/atlas)
+   - Create a free cluster
+
+2. **Get your connection string**
+   ```env
+   DATABASE_URL="mongodb+srv://username:password@cluster.mongodb.net/smartstore?retryWrites=true&w=majority"
    ```
 
 ## 📚 API Documentation
@@ -414,7 +432,7 @@ REDIS_URL="redis://localhost:6379"
 
 Set the following environment variables in your production environment:
 
-- `DATABASE_URL` - Production PostgreSQL URL
+- `DATABASE_URL` - Production MongoDB URL
 - `NEXTAUTH_SECRET` - Strong secret key
 - `NEXTAUTH_URL` - Production domain
 - `REDIS_URL` - Production Redis URL
