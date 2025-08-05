@@ -110,6 +110,11 @@ model Organization {
   conversations CustomerConversation[]
   channelIntegrations ChannelIntegration[]
   socialPlatforms SocialPlatform[]
+  syncConflicts SyncConflict[]
+  whatsAppIntegrations WhatsAppIntegration[]
+  whatsAppMessages WhatsAppMessage[]
+  whatsAppCatalogs WhatsAppCatalog[]
+  wooCommerceIntegrations WooCommerceIntegration[]
 
   @@map("organizations")
 }
@@ -141,6 +146,7 @@ model Customer {
   subscriptions  Subscription[]
   invoices       Invoice[]
   socialProducts SocialProduct[]
+  whatsAppMessages WhatsAppMessage[]
 
   @@unique([organizationId, phone])
   @@unique([organizationId, email])
@@ -287,6 +293,7 @@ model Order {
   shipments     Shipment[]
   activities    OrderActivity[]
   paymentIntents PaymentIntent[]
+  whatsAppMessages WhatsAppMessage[]
 
   @@map("orders")
 }
@@ -795,7 +802,104 @@ model BulkOperation {
   createdAt        DateTime @default(now())
   completedAt      DateTime?
 
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  organizationId String     @db.ObjectId
+
   @@map("bulk_operations")
+}
+
+// Sync and Integration Models
+model SyncConflict {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  entityType  String
+  entityId    String
+  conflicts   Json
+  resolved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+  resolvedBy  String?  @db.ObjectId
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  organizationId String     @db.ObjectId
+
+  @@map("sync_conflicts")
+}
+
+model WhatsAppIntegration {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  phoneNumberId String   @unique
+  accessToken   String
+  webhookSecret String?
+  isActive      Boolean  @default(true)
+  settings      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  organizationId String     @db.ObjectId
+
+  @@map("whatsapp_integrations")
+}
+
+model WhatsAppMessage {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  from        String
+  to          String
+  type        String
+  content     String
+  timestamp   DateTime
+  status      String   @default("sent")
+  metadata    Json?
+  syncedAt    DateTime?
+  syncSource  String?
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  organizationId String     @db.ObjectId
+  customer      Customer?   @relation(fields: [customerId], references: [id])
+  customerId    String?     @db.ObjectId
+  order         Order?      @relation(fields: [orderId], references: [id])
+  orderId       String?     @db.ObjectId
+
+  @@map("whatsapp_messages")
+}
+
+model WhatsAppCatalog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  products    Json
+  isActive    Boolean  @default(true)
+  lastUpdated DateTime @default(now())
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  organizationId String     @db.ObjectId
+
+  @@unique([organizationId])
+  @@map("whatsapp_catalogs")
+}
+
+model WooCommerceIntegration {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  siteUrl       String
+  consumerKey   String
+  consumerSecret String
+  apiVersion    String   @default("wc/v3")
+  isActive      Boolean  @default(true)
+  settings      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  organizationId String     @db.ObjectId
+
+  @@unique([organizationId])
+  @@map("woocommerce_integrations")
 }
 
 // Enums
