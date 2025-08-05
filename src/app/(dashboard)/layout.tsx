@@ -19,27 +19,39 @@ import {
   LogOut,
   Bell,
   Search,
-  Database
+  Database,
+  HomeIcon,
+  CubeIcon,
+  ShoppingCartIcon,
+  UsersIcon,
+  TruckIcon,
+  BuildingOfficeIcon,
+  CurrencyDollarIcon,
+  MegaphoneIcon,
+  ChatBubbleLeftRightIcon,
+  ChartBarIcon,
+  CogIcon,
+  Cog6ToothIcon,
+  ArrowPathIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { ThemeProvider, ThemeToggle } from '@/components/theme/ThemeProvider';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
-  { name: 'Chat Center', href: '/chat', icon: MessageSquare },
-  { name: 'Orders', href: '/orders', icon: ShoppingCart },
-  { name: 'Products', href: '/products', icon: Package },
-  { name: 'Customers', href: '/customers', icon: Users },
-  { name: 'Couriers', href: '/couriers', icon: Truck },
-  { name: 'Warehouse', href: '/warehouse', icon: Package },
-  { name: 'Campaigns', href: '/campaigns', icon: MessageSquare },
-  { name: 'Expenses', href: '/expenses', icon: CreditCard },
-  { name: 'Reports', href: '/reports', icon: BarChart3 },
-  { name: 'Bulk Operations', href: '/bulk-operations', icon: Database },
-  { name: 'Payments', href: '/payments', icon: CreditCard },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+  { name: 'Products', href: '/products', icon: CubeIcon },
+  { name: 'Orders', href: '/orders', icon: ShoppingCartIcon },
+  { name: 'Customers', href: '/customers', icon: UsersIcon },
+  { name: 'Couriers', href: '/couriers', icon: TruckIcon },
+  { name: 'Warehouses', href: '/warehouses', icon: BuildingOfficeIcon },
+  { name: 'Expenses', href: '/expenses', icon: CurrencyDollarIcon },
+  { name: 'Campaigns', href: '/campaigns', icon: MegaphoneIcon },
+  { name: 'Chat', href: '/chat', icon: ChatBubbleLeftRightIcon },
+  { name: 'Reports', href: '/reports', icon: ChartBarIcon },
+  { name: 'Integrations', href: '/integrations', icon: CogIcon },
+  { name: 'Sync', href: '/sync', icon: ArrowPathIcon },
+  { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
 
 export default function DashboardLayout({
