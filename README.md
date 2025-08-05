@@ -1,92 +1,217 @@
-# SmartStore AI 🚀
+# 🚀 SmartStore AI - AI-Powered Multi-Channel Commerce Platform
 
-An AI-powered multi-channel commerce automation platform for social sellers, chat-first businesses, and omnichannel retailers.
+A comprehensive, production-ready SaaS platform that combines AI-powered automation with multi-channel commerce management. Built with Next.js 14, TypeScript, and modern web technologies.
 
-## 🌟 Features
+![SmartStore AI](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.3-38B2AC?style=for-the-badge&logo=tailwind-css)
+![Prisma](https://img.shields.io/badge/Prisma-5.0-2D3748?style=for-the-badge&logo=prisma)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?style=for-the-badge&logo=postgresql)
 
-### 🤖 AI-Powered Chatbot
-- Natural language product discovery
-- Automated order processing
-- FAQ and order status responses
-- Local LLM integration (Ollama)
-- Chat confidence scoring
+## 📋 Table of Contents
 
-### 💬 Multi-Channel Integration
-- WhatsApp Business API
-- Facebook Messenger & Instagram DM
-- Website chatbot widget
-- Unified inbox with smart filters
-- Message templates and quick replies
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Getting Started](#getting-started)
+- [Environment Setup](#environment-setup)
+- [Database Setup](#database-setup)
+- [API Documentation](#api-documentation)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
 
-### 📦 Order Management
-- Multi-channel order dashboard
-- Automated status transitions
-- Batch pick & pack optimization
-- Return & exchange processing
-- Print-ready packing lists
+## 🎯 Overview
 
-### 🚚 Courier & Delivery
-- API integration with major couriers
-- Real-time delivery tracking
-- Customer rescheduling via chatbot
-- Delivery analytics and performance
+SmartStore AI is a cutting-edge e-commerce management platform that leverages artificial intelligence to automate and optimize business operations. The platform provides comprehensive tools for managing products, orders, customers, inventory, and multi-channel sales across various platforms.
 
-### 💳 Payment System
-- COD and online payments
-- Multiple gateway support (Stripe, PayPal, PayHere)
-- Auto payment reconciliation
-- Payment reminders via WhatsApp/Email
+### Key Highlights
 
-### 👥 Customer CRM
-- Auto-generated customer profiles
-- Smart segmentation
-- Loyalty points system
-- Activity timeline
-- Purchase history tracking
+- 🤖 **AI-Powered Automation**: Intelligent chatbots, predictive analytics, and automated workflows
+- 📱 **Multi-Channel Integration**: Unified management across web, mobile, social media, and marketplaces
+- 🏪 **Complete E-commerce Suite**: From product management to order fulfillment
+- 📊 **Advanced Analytics**: Real-time insights and business intelligence
+- 🔄 **Workflow Automation**: Streamlined business processes
+- 🛡️ **Enterprise Security**: Multi-tenant architecture with role-based access control
 
-### 📊 Analytics & Reports
-- Sales analytics dashboard
-- Inventory aging reports
-- Courier performance metrics
-- Customer lifetime value
-- Profit & loss tracking
+## ✨ Features
 
-## 🏗️ Architecture
+### Core Modules
 
-### Tech Stack
-- **Frontend**: Next.js 14, React 18, TypeScript
-- **Styling**: Tailwind CSS, Headless UI
-- **Backend**: Next.js API Routes, Prisma ORM
-- **Database**: PostgreSQL
-- **Authentication**: NextAuth.js
-- **AI**: OpenAI API, Ollama (Local LLM)
-- **Payments**: Stripe, PayPal, PayHere
-- **File Storage**: Cloudinary
-- **Caching**: Redis
-- **Deployment**: Vercel/Railway
+#### 🛍️ **Product Management**
+- Product catalog with categories and variants
+- Inventory tracking and stock management
+- Bulk import/export operations
+- Product analytics and performance metrics
+
+#### 📦 **Order Management**
+- Order processing and fulfillment
+- Real-time order tracking
+- Automated order status updates
+- Multi-channel order aggregation
+
+#### 👥 **Customer Management**
+- Customer profiles and segmentation
+- Purchase history and preferences
+- Customer lifetime value analysis
+- Automated customer engagement
+
+#### 🚚 **Courier & Delivery**
+- Real-time courier tracking
+- Delivery route optimization
+- Performance analytics
+- Automated delivery assignments
+
+#### 🏭 **Warehouse Management**
+- Multi-location inventory management
+- Stock movement tracking
+- Warehouse performance analytics
+- Automated reorder notifications
+
+#### 💰 **Expense Management**
+- Expense categorization and tracking
+- Approval workflows
+- Financial reporting
+- Budget management
+
+#### 📊 **Advanced Reporting**
+- Custom report generation
+- Multiple export formats (PDF, Excel, CSV)
+- Scheduled reporting
+- Business intelligence dashboards
+
+#### 🔄 **Bulk Operations**
+- Data import/export tools
+- Batch processing capabilities
+- Progress tracking
+- Error handling and validation
+
+#### 📢 **Campaign Management**
+- Multi-channel marketing campaigns
+- Email, SMS, WhatsApp integration
+- Campaign templates
+- Performance analytics
+
+### AI-Powered Features
+
+#### 🤖 **AI Chatbot**
+- Product discovery and recommendations
+- Order status inquiries
+- Customer support automation
+- Sentiment analysis
+- Urgent issue detection
+
+#### 📈 **Predictive Analytics**
+- Sales forecasting
+- Customer churn prediction
+- Inventory optimization
+- Demand planning
+- Seasonal trend analysis
+
+#### 🔄 **Automated Workflows**
+- Order processing automation
+- Inventory management workflows
+- Customer engagement automation
+- Payment processing workflows
+
+### Multi-Channel Integration
+
+- **Web Store**: Customizable online storefront
+- **Mobile App**: Progressive Web App (PWA)
+- **Social Media**: Facebook, Instagram, TikTok integration
+- **Marketplaces**: Shopify, WooCommerce, Magento integration
+- **Messaging**: WhatsApp Business API, Facebook Messenger
+- **Payment Gateways**: Stripe, PayPal, PayHere, COD
+
+## 🛠 Tech Stack
+
+### Frontend
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type-safe JavaScript
+- **Tailwind CSS** - Utility-first CSS framework
+- **Headless UI** - Accessible UI components
+- **Lucide React** - Beautiful icons
+- **React Query** - Data fetching and caching
+- **React Hook Form** - Form management
+- **Zod** - Schema validation
+
+### Backend
+- **Next.js API Routes** - Server-side API endpoints
+- **Prisma ORM** - Database toolkit
+- **PostgreSQL** - Primary database
+- **Redis** - Caching and session storage
+- **NextAuth.js** - Authentication solution
+
+### AI & External Services
+- **OpenAI API** - AI-powered features
+- **Ollama** - Local LLM integration
+- **Twilio** - WhatsApp Business API
+- **Stripe** - Payment processing
+- **Cloudinary** - Image management
+
+### Development Tools
+- **ESLint** - Code linting
+- **Prettier** - Code formatting
+- **Husky** - Git hooks
+- **Docker** - Containerization
+- **GitHub Actions** - CI/CD
+
+## 🏗 Architecture
+
+### System Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Backend       │    │   External      │
+│   (Next.js)     │◄──►│   (API Routes)  │◄──►│   Services      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   PWA           │    │   Database      │    │   AI Services   │
+│   (Offline)     │    │   (PostgreSQL)  │    │   (OpenAI)      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Cache         │    │   File Storage  │    │   Payment       │
+│   (Redis)       │    │   (Cloudinary)  │    │   (Stripe)      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
 ### Database Schema
-The platform uses a comprehensive Prisma schema with:
-- Multi-tenant organization structure
-- Complete e-commerce models (Products, Orders, Customers)
-- Chat and communication tracking
-- Payment and shipping management
-- Marketing campaign system
 
-## 🚀 Quick Start
+The platform uses a multi-tenant architecture with the following core entities:
+
+- **Organizations** - Multi-tenant isolation
+- **Users** - Authentication and authorization
+- **Products** - Product catalog and inventory
+- **Orders** - Order management and tracking
+- **Customers** - Customer profiles and data
+- **Couriers** - Delivery management
+- **Warehouses** - Inventory locations
+- **Expenses** - Financial tracking
+- **Campaigns** - Marketing campaigns
+- **Reports** - Analytics and reporting
+
+## 🚀 Getting Started
 
 ### Prerequisites
+
 - Node.js 18+ 
-- PostgreSQL database
-- Redis (optional, for caching)
-- Ollama (for local AI features)
+- PostgreSQL 15+
+- Redis 6+
+- Git
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/smartstore-ai.git
-   cd smartstore-ai
+   git clone https://github.com/AsithaLKonara/SmartStoreSaaS.git
+   cd SmartStoreSaaS
    ```
 
 2. **Install dependencies**
@@ -97,261 +222,235 @@ The platform uses a comprehensive Prisma schema with:
 3. **Set up environment variables**
    ```bash
    cp env.example .env.local
-   # Edit .env.local with your configuration
    ```
 
-4. **Set up the database**
+4. **Configure environment variables** (see [Environment Setup](#environment-setup))
+
+5. **Set up the database**
    ```bash
    npx prisma generate
    npx prisma db push
-   npx prisma db seed
    ```
 
-5. **Run the development server**
+6. **Seed the database** (optional)
+   ```bash
+   npm run db:seed
+   ```
+
+7. **Start the development server**
    ```bash
    npm run dev
    ```
 
-6. **Open your browser**
+8. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
-## 📁 Project Structure
+## ⚙️ Environment Setup
 
-```
-smartstore-ai/
-├── src/
-│   ├── app/                 # Next.js 14 App Router
-│   │   ├── (auth)/          # Authentication pages
-│   │   ├── (dashboard)/     # Dashboard pages
-│   │   ├── api/             # API routes
-│   │   └── globals.css      # Global styles
-│   ├── components/          # Reusable components
-│   │   ├── ui/              # Base UI components
-│   │   ├── forms/           # Form components
-│   │   ├── dashboard/       # Dashboard components
-│   │   └── chat/            # Chat components
-│   ├── lib/                 # Utility libraries
-│   │   ├── prisma.ts        # Prisma client
-│   │   ├── auth.ts          # Authentication config
-│   │   └── utils.ts         # Utility functions
-│   ├── services/            # Business logic services
-│   │   ├── ai/              # AI services
-│   │   ├── chat/            # Chat services
-│   │   ├── payment/         # Payment services
-│   │   └── courier/         # Courier services
-│   ├── types/               # TypeScript type definitions
-│   └── hooks/               # Custom React hooks
-├── prisma/                  # Database schema and migrations
-├── public/                  # Static assets
-└── docs/                    # Documentation
+Create a `.env.local` file with the following variables:
+
+### Database
+```env
+DATABASE_URL="postgresql://username:password@localhost:5432/smartstore"
 ```
 
-## 🔧 Configuration
-
-### Environment Variables
-
-Key environment variables you need to configure:
-
-```bash
-# Database
-DATABASE_URL="postgresql://username:password@localhost:5432/smartstore_ai"
-
-# Authentication
-NEXTAUTH_URL="http://localhost:3000"
+### Authentication
+```env
 NEXTAUTH_SECRET="your-secret-key"
+NEXTAUTH_URL="http://localhost:3000"
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+```
 
-# Payment Gateways
-STRIPE_PUBLISHABLE_KEY="pk_test_..."
-STRIPE_SECRET_KEY="sk_test_..."
-
-# WhatsApp Integration
-TWILIO_ACCOUNT_SID="your-twilio-sid"
-TWILIO_AUTH_TOKEN="your-twilio-token"
-
-# AI Services
-OPENAI_API_KEY="your-openai-key"
+### AI Services
+```env
+OPENAI_API_KEY="your-openai-api-key"
 OLLAMA_BASE_URL="http://localhost:11434"
 ```
 
-### Database Setup
-
-1. **Create PostgreSQL database**
-2. **Run migrations**
-   ```bash
-   npx prisma migrate dev
-   ```
-3. **Seed initial data**
-   ```bash
-   npx prisma db seed
-   ```
-
-## 🎯 Core Modules
-
-### 1. Chat Center
-- Unified inbox for all channels
-- AI-powered chatbot responses
-- Message templates and automation
-- Agent assignment and handover
-
-### 2. Product Catalog
-- Product management with variants
-- Bulk import/export (CSV)
-- Multi-channel sync
-- Inventory tracking
-
-### 3. Order Management
-- Complete order lifecycle
-- Automated status updates
-- Batch processing
-- Return management
-
-### 4. Customer CRM
-- Auto-profile creation
-- Segmentation and tagging
-- Loyalty program
-- Activity tracking
-
-### 5. Payment Processing
-- Multiple payment methods
-- Gateway integration
-- Auto-reconciliation
-- Payment reminders
-
-### 6. Courier Integration
-- API integrations
-- Real-time tracking
-- Delivery optimization
-- Performance analytics
-
-## 🤖 AI Features
-
-### Local LLM Integration
-The platform supports local AI models via Ollama:
-
-```bash
-# Install Ollama
-curl -fsSL https://ollama.ai/install.sh | sh
-
-# Pull a model
-ollama pull llama2
-
-# Start Ollama service
-ollama serve
+### Payment Gateways
+```env
+STRIPE_SECRET_KEY="your-stripe-secret-key"
+STRIPE_PUBLISHABLE_KEY="your-stripe-publishable-key"
+PAYPAL_CLIENT_ID="your-paypal-client-id"
+PAYPAL_CLIENT_SECRET="your-paypal-client-secret"
 ```
 
-### AI Capabilities
-- **Product Discovery**: Natural language product search
-- **Order Processing**: Automated order creation from chat
-- **Customer Support**: FAQ and status inquiries
-- **Recommendations**: Product suggestions based on chat context
+### Messaging Services
+```env
+TWILIO_ACCOUNT_SID="your-twilio-account-sid"
+TWILIO_AUTH_TOKEN="your-twilio-auth-token"
+TWILIO_PHONE_NUMBER="your-twilio-phone-number"
+```
 
-## 📱 Multi-Channel Support
+### File Storage
+```env
+CLOUDINARY_CLOUD_NAME="your-cloudinary-cloud-name"
+CLOUDINARY_API_KEY="your-cloudinary-api-key"
+CLOUDINARY_API_SECRET="your-cloudinary-api-secret"
+```
 
-### WhatsApp Business API
-- Twilio integration
-- Message templates
-- Media sharing
-- Quick replies
+### Redis
+```env
+REDIS_URL="redis://localhost:6379"
+```
 
-### Facebook & Instagram
-- Messenger integration
-- Instagram DM support
-- Comment management
-- Page insights
+## 🗄 Database Setup
 
-### Website Widget
-- Embedded chat widget
-- Real-time messaging
-- File sharing
-- Location sharing
+### Using Docker (Recommended)
 
-## 💳 Payment Integration
+1. **Start PostgreSQL and Redis**
+   ```bash
+   docker-compose up -d
+   ```
 
-### Supported Gateways
-- **Stripe**: Credit/debit cards, digital wallets
-- **PayPal**: Global payment processing
-- **PayHere**: Local payment gateway
-- **COD**: Cash on delivery management
+2. **Run database migrations**
+   ```bash
+   npx prisma db push
+   ```
 
-### Features
-- Secure payment processing
-- Multiple currency support
-- Auto-reconciliation
-- Payment reminders
-- Fraud protection
+### Manual Setup
 
-## 🚚 Courier Integration
+1. **Install PostgreSQL**
+   - Download from [postgresql.org](https://www.postgresql.org/download/)
+   - Create a database named `smartstore`
 
-### Supported Couriers
-- **PickMe**: Local delivery service
-- **Aramex**: International shipping
-- **Custom APIs**: Extensible for other couriers
+2. **Install Redis**
+   - Download from [redis.io](https://redis.io/download)
+   - Start Redis server
 
-### Features
-- Real-time tracking
-- Delivery status updates
-- Customer rescheduling
-- Performance analytics
+3. **Update DATABASE_URL in .env.local**
+   ```env
+   DATABASE_URL="postgresql://username:password@localhost:5432/smartstore"
+   ```
 
-## 📊 Analytics & Reporting
+## 📚 API Documentation
 
-### Dashboard Metrics
-- Sales performance
-- Order status distribution
-- Customer acquisition
-- Inventory levels
-- Delivery success rates
+### Authentication Endpoints
 
-### Export Options
-- PDF reports
-- Excel spreadsheets
-- CSV data export
-- Automated reporting
+- `POST /api/auth/signin` - User sign in
+- `POST /api/auth/signup` - User registration
+- `GET /api/auth/session` - Get current session
+- `POST /api/auth/signout` - User sign out
 
-## 🔒 Security & Compliance
+### Core API Endpoints
 
-### Security Features
-- JWT authentication
-- Role-based access control
-- API rate limiting
-- Data encryption
-- Audit logging
+#### Products
+- `GET /api/products` - List all products
+- `POST /api/products` - Create new product
+- `GET /api/products/[id]` - Get product details
+- `PUT /api/products/[id]` - Update product
+- `DELETE /api/products/[id]` - Delete product
 
-### Compliance
-- GDPR compliance
-- Data privacy controls
-- Consent management
-- Data deletion requests
+#### Orders
+- `GET /api/orders` - List all orders
+- `POST /api/orders` - Create new order
+- `GET /api/orders/[id]` - Get order details
+- `PUT /api/orders/[id]` - Update order status
+
+#### Customers
+- `GET /api/customers` - List all customers
+- `POST /api/customers` - Create new customer
+- `GET /api/customers/[id]` - Get customer details
+
+#### Couriers
+- `GET /api/couriers` - List all couriers
+- `POST /api/couriers` - Create new courier
+- `GET /api/couriers/deliveries` - Get delivery assignments
+
+#### Warehouse
+- `GET /api/warehouses` - List all warehouses
+- `GET /api/warehouses/inventory` - Get inventory status
+- `GET /api/warehouses/movements` - Get inventory movements
+
+#### Expenses
+- `GET /api/expenses` - List all expenses
+- `POST /api/expenses` - Create new expense
+- `PUT /api/expenses/[id]/approve` - Approve expense
+
+#### Reports
+- `GET /api/reports` - List all reports
+- `POST /api/reports/generate` - Generate new report
+- `GET /api/reports/[id]/download` - Download report
+
+#### Bulk Operations
+- `GET /api/bulk-operations` - List all operations
+- `POST /api/bulk-operations/start` - Start bulk operation
+- `GET /api/bulk-operations/templates` - Get operation templates
+
+### AI Endpoints
+
+- `POST /api/chat/ai` - AI-powered chat interactions
+- `GET /api/analytics/ai` - AI-powered analytics
+- `POST /api/workflows/trigger` - Trigger automated workflows
 
 ## 🚀 Deployment
 
-### Vercel Deployment
-1. Connect your GitHub repository
-2. Configure environment variables
-3. Deploy automatically on push
-
-### Self-Hosted
-1. Set up PostgreSQL database
-2. Configure Redis (optional)
-3. Set environment variables
-4. Run with PM2 or Docker
-
 ### Docker Deployment
-```bash
-# Build the image
-docker build -t smartstore-ai .
 
-# Run the container
-docker run -p 3000:3000 smartstore-ai
-```
+1. **Build the Docker image**
+   ```bash
+   docker build -t smartstore-ai .
+   ```
+
+2. **Run with Docker Compose**
+   ```bash
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
+
+### Vercel Deployment
+
+1. **Install Vercel CLI**
+   ```bash
+   npm i -g vercel
+   ```
+
+2. **Deploy to Vercel**
+   ```bash
+   vercel --prod
+   ```
+
+### Environment Variables for Production
+
+Set the following environment variables in your production environment:
+
+- `DATABASE_URL` - Production PostgreSQL URL
+- `NEXTAUTH_SECRET` - Strong secret key
+- `NEXTAUTH_URL` - Production domain
+- `REDIS_URL` - Production Redis URL
+- All API keys for external services
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+We welcome contributions! Please follow these steps:
+
+1. **Fork the repository**
+2. **Create a feature branch**
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+3. **Make your changes**
+4. **Run tests**
+   ```bash
+   npm run test
+   ```
+5. **Commit your changes**
+   ```bash
+   git commit -m 'Add amazing feature'
+   ```
+6. **Push to the branch**
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+7. **Open a Pull Request**
+
+### Development Guidelines
+
+- Follow TypeScript best practices
+- Use ESLint and Prettier for code formatting
+- Write meaningful commit messages
+- Add tests for new features
+- Update documentation as needed
 
 ## 📄 License
 
@@ -359,18 +458,23 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- **Documentation**: [docs.smartstore-ai.com](https://docs.smartstore-ai.com)
-- **Issues**: [GitHub Issues](https://github.com/your-username/smartstore-ai/issues)
-- **Discord**: [Join our community](https://discord.gg/smartstore-ai)
+- **Documentation**: [docs.smartstore.ai](https://docs.smartstore.ai)
+- **Issues**: [GitHub Issues](https://github.com/AsithaLKonara/SmartStoreSaaS/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/AsithaLKonara/SmartStoreSaaS/discussions)
+- **Email**: support@smartstore.ai
 
-## 🎉 Acknowledgments
+## 🙏 Acknowledgments
 
-- Built with Next.js and Prisma
-- AI powered by OpenAI and Ollama
-- Icons by Lucide React
-- UI components by Headless UI
+- Next.js team for the amazing framework
+- Vercel for hosting and deployment
+- OpenAI for AI capabilities
+- All contributors and supporters
 
 ---
 
-**SmartStore AI** - Revolutionizing e-commerce with AI-powered automation 🚀 #   S m a r t S t o r e S a a S  
- 
+**Made with ❤️ by the SmartStore AI Team**
+
+[![GitHub stars](https://img.shields.io/github/stars/AsithaLKonara/SmartStoreSaaS?style=social)](https://github.com/AsithaLKonara/SmartStoreSaaS/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/AsithaLKonara/SmartStoreSaaS?style=social)](https://github.com/AsithaLKonara/SmartStoreSaaS/network/members)
+[![GitHub issues](https://img.shields.io/github/issues/AsithaLKonara/SmartStoreSaaS)](https://github.com/AsithaLKonara/SmartStoreSaaS/issues)
+[![GitHub license](https://img.shields.io/github/license/AsithaLKonara/SmartStoreSaaS)](https://github.com/AsithaLKonara/SmartStoreSaaS/blob/main/LICENSE)
