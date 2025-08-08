@@ -9,7 +9,7 @@ import {
   LineChart, BarChart, Activity, Target, Award, Clock, CheckCircle,
   XCircle, AlertTriangle, Plus, Eye, Settings
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 

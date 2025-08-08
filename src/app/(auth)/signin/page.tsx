@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { Bot, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 

@@ -9,7 +9,7 @@ import {
   BarChart3, Settings, Edit, Trash2, Eye, Navigation, Route, Package,
   DollarSign, Star, Calendar, Map, Wifi, WifiOff, Battery
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 

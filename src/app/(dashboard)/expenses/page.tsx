@@ -9,7 +9,7 @@ import {
   Trash2, Eye, Receipt, CreditCard, Banknote, ShoppingCart, Truck,
   Building, Users, Calendar, PieChart, LineChart, FileText, Tag
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
