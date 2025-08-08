@@ -176,10 +176,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ alert });
 
       case 'detect-suspicious-activity':
-        const { ipAddress, activityAction } = data;
+        const { ipAddress: suspiciousIpAddress, activityAction } = data;
         const isSuspicious = await securityService.detectSuspiciousActivity(
           session.user.id,
-          ipAddress,
+          suspiciousIpAddress,
           activityAction
         );
         return NextResponse.json({ isSuspicious });

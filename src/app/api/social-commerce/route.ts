@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true });
 
       case 'get-platform-stats':
-        const platform = await prisma.socialPlatform.findUnique({
+        const platformStats = await prisma.socialPlatform.findUnique({
           where: { id: data.platformId },
           include: {
             _count: {
@@ -239,21 +239,21 @@ export async function POST(request: NextRequest) {
           }
         });
 
-        if (!platform) {
+        if (!platformStats) {
           return NextResponse.json({ error: 'Platform not found' }, { status: 404 });
         }
 
-        const totalEngagement = platform.socialPosts.reduce((sum, post) => 
+        const totalEngagement = platformStats.socialPosts.reduce((sum, post) => 
           sum + post.engagement.likes + post.engagement.comments + post.engagement.shares, 0
         );
 
         const stats = {
-          productCount: platform._count.socialProducts,
-          postCount: platform._count.socialPosts,
-          recentPosts: platform.socialPosts.length,
+          productCount: platformStats._count.socialProducts,
+          postCount: platformStats._count.socialPosts,
+          recentPosts: platformStats.socialPosts.length,
           totalEngagement,
-          lastSync: platform.lastSync,
-          isActive: platform.isActive
+          lastSync: platformStats.lastSync,
+          isActive: platformStats.isActive
         };
 
         return NextResponse.json({ stats });

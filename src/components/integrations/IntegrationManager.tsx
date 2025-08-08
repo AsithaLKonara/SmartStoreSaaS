@@ -2,20 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  CheckCircleIcon, 
-  XCircleIcon, 
-  ExclamationTriangleIcon,
-  ChatBubbleLeftRightIcon,
-  ShoppingCartIcon,
-  TruckIcon
-} from '@heroicons/react/24/outline';
+  CheckCircle, 
+  XCircle, 
+  AlertTriangle,
+  MessageCircle,
+  ShoppingCart,
+  Truck
+} from 'lucide-react';
 
 interface IntegrationStatus {
   whatsapp: {
@@ -143,11 +143,11 @@ export function IntegrationManager({ organizationId }: IntegrationManagerProps) 
     switch (status) {
       case 'active':
       case 'healthy':
-        return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'unhealthy':
-        return <XCircleIcon className="h-5 w-5 text-red-500" />;
+        return <XCircle className="h-5 w-5 text-red-500" />;
       default:
-        return <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" />;
+        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
     }
   };
 
@@ -185,15 +185,15 @@ export function IntegrationManager({ organizationId }: IntegrationManagerProps) 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="whatsapp" className="flex items-center gap-2">
-            <ChatBubbleLeftRightIcon className="h-4 w-4" />
+            <MessageCircle className="h-4 w-4" />
             WhatsApp
           </TabsTrigger>
           <TabsTrigger value="woocommerce" className="flex items-center gap-2">
-            <ShoppingCartIcon className="h-4 w-4" />
+            <ShoppingCart className="h-4 w-4" />
             WooCommerce
           </TabsTrigger>
           <TabsTrigger value="couriers" className="flex items-center gap-2">
-            <TruckIcon className="h-4 w-4" />
+            <Truck className="h-4 w-4" />
             Couriers
           </TabsTrigger>
         </TabsList>

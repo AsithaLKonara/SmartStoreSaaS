@@ -15,7 +15,7 @@ import {
   AlertTriangle,
   CheckCircle
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { generateSKU } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -453,7 +453,7 @@ export default function NewProductPage() {
                       </div>
                       <Button
                         type="button"
-                        variant="danger"
+                        variant="destructive"
                         size="sm"
                         onClick={() => removeVariant(variant.id)}
                       >

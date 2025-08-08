@@ -40,9 +40,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { pickupAddress, deliveryAddress, package, orderId, organizationId, courierCode } = body;
+    const { pickupAddress, deliveryAddress, package: packageData, orderId, organizationId, courierCode } = body;
 
-    if (!pickupAddress || !deliveryAddress || !package || !orderId || !organizationId || !courierCode) {
+    if (!pickupAddress || !deliveryAddress || !packageData || !orderId || !organizationId || !courierCode) {
       return NextResponse.json({ 
         error: 'All shipment details required' 
       }, { status: 400 });
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const shipmentRequest = {
       pickupAddress,
       deliveryAddress,
-      package,
+      package: packageData,
       orderId,
       organizationId
     };

@@ -134,9 +134,9 @@ export async function POST(request: NextRequest) {
 
       case 'set-reorder-points':
         // Set reorder points based on AI predictions
-        const { productId, reorderPoint } = data;
+        const { productId: productIdForReorder, reorderPoint } = data;
         const product = await prisma.product.update({
-          where: { id: productId, organizationId },
+          where: { id: productIdForReorder, organizationId },
           data: { reorderPoint },
         });
         return NextResponse.json({ product });

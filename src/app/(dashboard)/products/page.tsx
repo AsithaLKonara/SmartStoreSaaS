@@ -18,7 +18,7 @@ import {
   TrendingUp,
   AlertTriangle
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -251,7 +251,7 @@ export default function ProductsPage() {
                 Deselect All
               </Button>
               <Button
-                variant="danger"
+                variant="destructive"
                 size="sm"
                 onClick={handleBulkDelete}
               >

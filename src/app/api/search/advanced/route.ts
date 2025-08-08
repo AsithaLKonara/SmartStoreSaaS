@@ -214,10 +214,10 @@ export async function POST(request: NextRequest) {
           includeInactive: data.includeInactive || false
         };
 
-        const searchType = data.searchType || 'global';
+        const advancedSearchType = data.searchType || 'global';
         let advancedResults;
 
-        switch (searchType) {
+        switch (advancedSearchType) {
           case 'products':
             advancedResults = await searchService.searchProducts(user.organizationId, advancedOptions);
             break;

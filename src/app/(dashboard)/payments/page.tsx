@@ -20,7 +20,7 @@ import {
   Calendar,
   RefreshCw
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { formatCurrency, formatDate, formatPhoneNumber } from '@/lib/utils';
 import toast from 'react-hot-toast';
 

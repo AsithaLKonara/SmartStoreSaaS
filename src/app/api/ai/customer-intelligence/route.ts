@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       include: { items: true, customer: true },
     });
 
-    const purchaseHistory = orders.map(order => ({
+    const purchaseHistory = orders.map((order: any) => ({
       orderId: order.id,
       customerId: order.customerId,
       date: order.createdAt,
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ churnRisk });
 
       case 'customer-segments':
-        const behaviorData = customers.map(customer => ({
+        const behaviorData = customers.map((customer: any) => ({
           customerId: customer.id,
           totalOrders: customer.orders.length,
           totalSpent: customer.totalSpent,
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
         const supportTickets = await prisma.supportTicket.findMany({
           where: { organizationId },
         });
-        const socialMediaData = []; // This would come from social media APIs
+        const socialMediaData: any[] = []; // This would come from social media APIs
         const sentiment = await customerIntelligenceService.analyzeCustomerSentiment(
           customers,
           reviews,
@@ -110,26 +110,26 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ error: 'Customer ID required' }, { status: 400 });
         }
         
-        const customer = customers.find(c => c.id === customerId);
+        const customer = customers.find((c: any) => c.id === customerId);
         if (!customer) {
           return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
         }
 
         const customerLTV = await customerIntelligenceService.predictCustomerLTV(
           [customer],
-          purchaseHistory.filter(p => p.customerId === customerId),
-          interactionHistory.filter(i => i.customerId === customerId)
+          purchaseHistory.filter((p: any) => p.customerId === customerId),
+          interactionHistory.filter((i: any) => i.customerId === customerId)
         );
 
         const customerChurnRisk = await customerIntelligenceService.assessChurnRisk(
           [customer],
-          purchaseHistory.filter(p => p.customerId === customerId),
-          interactionHistory.filter(i => i.customerId === customerId)
+          purchaseHistory.filter((p: any) => p.customerId === customerId),
+          interactionHistory.filter((i: any) => i.customerId === customerId)
         );
 
         const customerRecommendations = await customerIntelligenceService.generateProductRecommendations(
           [customer],
-          purchaseHistory.filter(p => p.customerId === customerId),
+          purchaseHistory.filter((p: any) => p.customerId === customerId),
           await prisma.product.findMany({ where: { organizationId } })
         );
 
@@ -198,9 +198,9 @@ export async function POST(request: NextRequest) {
 
       case 'update-customer-tags':
         // Update customer tags based on AI analysis
-        const { customerId, tags } = data;
+        const { customerId: customerIdForTags, tags } = data;
         const updatedCustomer = await prisma.customer.update({
-          where: { id: customerId, organizationId },
+          where: { id: customerIdForTags, organizationId },
           data: { tags },
         });
         return NextResponse.json({ customer: updatedCustomer });

@@ -7,9 +7,9 @@ import {
   DollarSign, Plus, Search, Filter, Download, Upload, AlertTriangle,
   CheckCircle, XCircle, Clock, TrendingUp, BarChart3, Settings, Edit,
   Trash2, Eye, Receipt, CreditCard, Banknote, ShoppingCart, Truck,
-  Building, Users, Calendar, PieChart, LineChart, FileText, Tag
+  Building2, Users, Calendar, PieChart, LineChart, FileText, Tag
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -88,7 +88,7 @@ export default function ExpensesPage() {
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'OPERATIONAL': return <Building className="w-4 h-4" />;
+      case 'OPERATIONAL': return <Building2 className="w-4 h-4" />;
       case 'MARKETING': return <TrendingUp className="w-4 h-4" />;
       case 'LOGISTICS': return <Truck className="w-4 h-4" />;
       case 'TECHNOLOGY': return <Settings className="w-4 h-4" />;

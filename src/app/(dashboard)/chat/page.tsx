@@ -21,7 +21,7 @@ import {
   Paperclip,
   Smile
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { formatDate, formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 

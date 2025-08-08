@@ -138,19 +138,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ results });
 
       case 'bulk-export':
-        const { entities, format: exportFormat } = data;
+        const { entities, format: bulkExportFormat } = data;
         const exportResults = [];
 
         for (const entity of entities) {
           try {
             if (entity === 'products') {
-              const result = await bulkOperationsService.exportProducts(user.organizationId, exportFormat);
+              const result = await bulkOperationsService.exportProducts(user.organizationId, bulkExportFormat);
               exportResults.push({ entity, success: true, result });
             } else if (entity === 'customers') {
-              const result = await bulkOperationsService.exportCustomers(user.organizationId, exportFormat);
+              const result = await bulkOperationsService.exportCustomers(user.organizationId, bulkExportFormat);
               exportResults.push({ entity, success: true, result });
             } else if (entity === 'orders') {
-              const result = await bulkOperationsService.exportOrders(user.organizationId, exportFormat);
+              const result = await bulkOperationsService.exportOrders(user.organizationId, bulkExportFormat);
               exportResults.push({ entity, success: true, result });
             }
           } catch (error) {

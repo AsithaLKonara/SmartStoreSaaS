@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
-import { SearchIcon, FilterIcon, XIcon, ChevronDownIcon } from '@heroicons/react/outline';
+import { Search, Filter, X, ChevronDown } from 'lucide-react';
 
 interface SearchResult {
   id: string;
@@ -201,7 +201,7 @@ export function AdvancedSearch({
       {/* Search Input */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <SearchIcon className="h-5 w-5 text-gray-400" />
+          <Search className="h-5 w-5 text-gray-400" />
         </div>
         
         <input
@@ -235,7 +235,7 @@ export function AdvancedSearch({
             onClick={() => setShowFiltersPanel(!showFiltersPanel)}
             className="absolute inset-y-0 right-16 flex items-center px-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
-            <FilterIcon className="h-4 w-4" />
+            <Filter className="h-4 w-4" />
           </button>
         )}
       </div>
@@ -340,7 +340,7 @@ export function AdvancedSearch({
                   }`}
                 >
                   <div className="flex items-center">
-                    <SearchIcon className="h-4 w-4 text-gray-400 mr-2" />
+                    <Search className="h-4 w-4 text-gray-400 mr-2" />
                     <span className="text-gray-900 dark:text-white">{suggestion}</span>
                   </div>
                 </button>

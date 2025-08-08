@@ -8,7 +8,7 @@ import {
   Users, Package, ShoppingCart, DollarSign, Settings, Plus, Eye, Trash2,
   BarChart3, Database, RefreshCw, Filter, Search, ArrowUpDown
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 

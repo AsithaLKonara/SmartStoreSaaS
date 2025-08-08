@@ -4,6 +4,40 @@ import { authOptions } from '@/lib/auth';
 import { businessIntelligenceService } from '@/lib/ai/businessIntelligenceService';
 import { prisma } from '@/lib/prisma';
 
+interface OrderWithRelations {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  total: number;
+  status: string;
+  customerId: string;
+  organizationId: string;
+  items: any[];
+  customer: any;
+}
+
+interface CustomerData {
+  id: string;
+  name: string;
+  email: string;
+  organizationId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  totalSpent?: number;
+  orders?: any[];
+}
+
+interface ProductData {
+  id: string;
+  name: string;
+  price: number;
+  organizationId: string;
+  createdAt: Date;
+  updatedAt: Date;
+  category?: string;
+  stock?: number;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -29,7 +63,7 @@ export async function GET(request: NextRequest) {
       where: { organizationId },
     });
 
-    const salesData = orders.map(order => ({
+    const salesData = orders.map((order: OrderWithRelations) => ({
       orderId: order.id,
       date: order.createdAt,
       total: order.total,
@@ -37,7 +71,7 @@ export async function GET(request: NextRequest) {
       items: order.items,
     }));
 
-    const orderData = orders.map(order => ({
+    const orderData = orders.map((order: OrderWithRelations) => ({
       orderId: order.id,
       status: order.status,
       createdAt: order.createdAt,
@@ -45,7 +79,7 @@ export async function GET(request: NextRequest) {
       total: order.total,
     }));
 
-    const customerData = customers.map(customer => ({
+    const customerData = customers.map((customer: CustomerData) => ({
       customerId: customer.id,
       name: customer.name,
       email: customer.email,
@@ -53,12 +87,12 @@ export async function GET(request: NextRequest) {
       orderCount: customer.orders?.length || 0,
     }));
 
-    const productData = products.map(product => ({
+    const productData = products.map((product: ProductData) => ({
       productId: product.id,
       name: product.name,
       price: product.price,
       stock: product.stock,
-      category: product.categoryId,
+      category: product.category,
     }));
 
     switch (type) {
@@ -89,7 +123,7 @@ export async function GET(request: NextRequest) {
         });
 
         const historicalData = {
-          sales: historicalOrders.map(order => ({
+          sales: historicalOrders.map((order: OrderWithRelations) => ({
             orderId: order.id,
             date: order.createdAt,
             total: order.total,
@@ -108,16 +142,16 @@ export async function GET(request: NextRequest) {
         };
 
         const kpis = await businessIntelligenceService.calculatePerformanceKPIs(
-          currentData,
-          historicalData,
-          targets
+          [currentData],
+          [historicalData],
+          [targets]
         );
         return NextResponse.json({ kpis });
 
       case 'sales-forecasts':
         const historicalSales = salesData;
-        const marketData = []; // This would come from market research
-        const seasonalData = []; // This would come from seasonal analysis
+        const marketData: any[] = []; // This would come from market research
+        const seasonalData: any[] = []; // This would come from seasonal analysis
         const forecasts = await businessIntelligenceService.generateSalesForecasts(
           historicalSales,
           marketData,
@@ -126,9 +160,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ forecasts });
 
       case 'market-trends':
-        const marketTrendsData = []; // This would come from market research APIs
-        const competitorData = []; // This would come from competitor analysis
-        const industryReports = []; // This would come from industry reports
+        const marketTrendsData: any[] = []; // This would come from market research APIs
+        const competitorData: any[] = []; // This would come from competitor analysis
+        const industryReports: any[] = []; // This would come from industry reports
         const trends = await businessIntelligenceService.analyzeMarketTrends(
           marketTrendsData,
           competitorData,
@@ -137,9 +171,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ trends });
 
       case 'competitive-analysis':
-        const competitorAnalysisData = []; // This would come from competitor research
-        const marketShareData = []; // This would come from market share analysis
-        const productComparison = []; // This would come from product comparison
+        const competitorAnalysisData: any[] = []; // This would come from competitor research
+        const marketShareData: any[] = []; // This would come from market share analysis
+        const productComparison: any[] = []; // This would come from product comparison
         const competitiveAnalysis = await businessIntelligenceService.performCompetitiveAnalysis(
           competitorAnalysisData,
           marketShareData,
@@ -154,25 +188,27 @@ export async function GET(request: NextRequest) {
           customers: customerData,
           products: productData,
         };
-        const marketRiskData = []; // This would come from market risk analysis
-        const financialData = []; // This would come from financial analysis
+        const marketRiskData: any[] = []; // This would come from market risk analysis
+        const financialData: any[] = []; // This would come from financial analysis
         const risks = await businessIntelligenceService.assessBusinessRisks(
-          businessData,
+          [businessData],
           marketRiskData,
           financialData
         );
         return NextResponse.json({ risks });
 
       case 'business-insights':
+        const marketTrendsDataInsights: any[] = []; // This would come from market research APIs
+        const competitorDataInsights: any[] = []; // This would come from competitor analysis
         const allData = {
           sales: salesData,
           orders: orderData,
           customers: customerData,
           products: productData,
-          market: marketTrendsData,
-          competitors: competitorData,
+          market: marketTrendsDataInsights,
+          competitors: competitorDataInsights,
         };
-        const insights = await businessIntelligenceService.generateBusinessInsights(allData);
+        const insights = await businessIntelligenceService.generateBusinessInsights([allData]);
         return NextResponse.json({ insights });
 
       case 'dashboard-summary':
@@ -184,22 +220,57 @@ export async function GET(request: NextRequest) {
           productData
         );
 
+        const currentDataSummary = {
+          sales: salesData,
+          orders: orderData,
+          customers: customerData,
+          products: productData,
+        };
+
+        const thirtyDaysAgoSummary = new Date();
+        thirtyDaysAgoSummary.setDate(thirtyDaysAgoSummary.getDate() - 30);
+
+        const historicalOrdersSummary = await prisma.order.findMany({
+          where: {
+            organizationId,
+            createdAt: { gte: thirtyDaysAgoSummary },
+          },
+        });
+
+        const historicalDataSummary = {
+          sales: historicalOrdersSummary.map((order: OrderWithRelations) => ({
+            orderId: order.id,
+            date: order.createdAt,
+            total: order.total,
+          })),
+        };
+
+        const targetsSummary = {
+          revenueGrowth: 15, // 15% growth target
+          customerAcquisitionCost: 50, // $50 CAC target
+          customerLifetimeValue: 500, // $500 LTV target
+          orderFulfillmentRate: 95, // 95% fulfillment rate
+          customerSatisfactionScore: 4.5, // 4.5/5 target
+          inventoryTurnover: 12, // 12 times per year
+          profitMargin: 25, // 25% target
+        };
+
         const kpisSummary = await businessIntelligenceService.calculatePerformanceKPIs(
-          currentData,
-          historicalData,
-          targets
+          [currentDataSummary],
+          [historicalDataSummary],
+          [targetsSummary]
         );
 
         const topProducts = products
-          .sort((a, b) => (b.sales || 0) - (a.sales || 0))
+          .sort((a: any, b: any) => (b.sales || 0) - (a.sales || 0))
           .slice(0, 5);
 
         const recentOrders = orders
-          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+          .sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime())
           .slice(0, 10);
 
         const customerActivity = customers
-          .sort((a, b) => b.orders?.length - a.orders?.length)
+          .sort((a: any, b: any) => (b.orders?.length || 0) - (a.orders?.length || 0))
           .slice(0, 5);
 
         return NextResponse.json({

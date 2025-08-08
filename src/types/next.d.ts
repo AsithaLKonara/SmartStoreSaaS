@@ -12,6 +12,7 @@ declare module 'next/link' {
     locale?: string | false;
     className?: string;
     children: ReactNode;
+    onClick?: () => void;
   }
   
   const Link: ComponentType<LinkProps>;
@@ -27,4 +28,19 @@ declare module 'next/navigation' {
     refresh: () => void;
     prefetch: (url: string) => Promise<void>;
   };
+  
+  export function useSearchParams(): {
+    get: (key: string) => string | null;
+    has: (key: string) => boolean;
+    getAll: (key: string) => string[];
+    keys: () => IterableIterator<string>;
+    values: () => IterableIterator<string>;
+    entries: () => IterableIterator<[string, string]>;
+    forEach: (callbackfn: (value: string, key: string) => void) => void;
+    toString: () => string;
+  };
+  
+  export function usePathname(): string;
+  
+  export function redirect(url: string): never;
 }

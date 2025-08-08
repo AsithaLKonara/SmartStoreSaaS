@@ -20,38 +20,34 @@ import {
   Bell,
   Search,
   Database,
-  HomeIcon,
-  CubeIcon,
-  ShoppingCartIcon,
-  UsersIcon,
-  TruckIcon,
-  BuildingOfficeIcon,
-  CurrencyDollarIcon,
-  MegaphoneIcon,
-  ChatBubbleLeftRightIcon,
-  ChartBarIcon,
-  CogIcon,
-  Cog6ToothIcon,
-  ArrowPathIcon
+  Home,
+  Package2,
+  Building2,
+  DollarSign,
+  Megaphone,
+  MessageCircle,
+  BarChart,
+  Settings2,
+  RefreshCw
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { ThemeProvider, ThemeToggle } from '@/components/theme/ThemeProvider';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-  { name: 'Products', href: '/products', icon: CubeIcon },
-  { name: 'Orders', href: '/orders', icon: ShoppingCartIcon },
-  { name: 'Customers', href: '/customers', icon: UsersIcon },
-  { name: 'Couriers', href: '/couriers', icon: TruckIcon },
-  { name: 'Warehouses', href: '/warehouses', icon: BuildingOfficeIcon },
-  { name: 'Expenses', href: '/expenses', icon: CurrencyDollarIcon },
-  { name: 'Campaigns', href: '/campaigns', icon: MegaphoneIcon },
-  { name: 'Chat', href: '/chat', icon: ChatBubbleLeftRightIcon },
-  { name: 'Reports', href: '/reports', icon: ChartBarIcon },
-  { name: 'Integrations', href: '/integrations', icon: CogIcon },
-  { name: 'Sync', href: '/sync', icon: ArrowPathIcon },
-  { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
+  { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Products', href: '/products', icon: Package2 },
+  { name: 'Orders', href: '/orders', icon: ShoppingCart },
+  { name: 'Customers', href: '/customers', icon: Users },
+  { name: 'Couriers', href: '/couriers', icon: Truck },
+  { name: 'Warehouses', href: '/warehouses', icon: Building2 },
+  { name: 'Expenses', href: '/expenses', icon: DollarSign },
+  { name: 'Campaigns', href: '/campaigns', icon: Megaphone },
+  { name: 'Chat', href: '/chat', icon: MessageCircle },
+  { name: 'Reports', href: '/reports', icon: BarChart },
+  { name: 'Integrations', href: '/integrations', icon: Settings },
+  { name: 'Sync', href: '/sync', icon: RefreshCw },
+  { name: 'Settings', href: '/settings', icon: Settings2 },
 ];
 
 export default function DashboardLayout({
