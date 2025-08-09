@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
               results.push({ fileName: file.name, success: true, result });
             }
           } catch (error) {
-            results.push({ fileName: file.name, success: false, error: error.message });
+            results.push({ fileName: file.name, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
           }
         }
 
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
               exportResults.push({ entity, success: true, result });
             }
           } catch (error) {
-            exportResults.push({ entity, success: false, error: error.message });
+            exportResults.push({ entity, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
           }
         }
 
@@ -175,8 +175,8 @@ export async function POST(request: NextRequest) {
             });
 
             for (let i = 0; i < Math.min(records.length, 10); i++) {
-              const record = records[i];
-              const validation = { row: i + 1, valid: true, errors: [] };
+              const record = records[i] as any;
+              const validation = { row: i + 1, valid: true, errors: [] as string[] };
 
               if (validateEntity === 'products') {
                 if (!record.name) validation.errors.push('Name is required');
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
 
             for (let i = 0; i < Math.min(records.length, 10); i++) {
               const record = records[i] as any;
-              const validation = { row: i + 1, valid: true, errors: [] };
+              const validation = { row: i + 1, valid: true, errors: [] as string[] };
 
               if (validateEntity === 'products') {
                 if (!record.name) validation.errors.push('Name is required');
@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
         } catch (error) {
           return NextResponse.json({ 
             valid: false, 
-            error: error.message 
+            error: error instanceof Error ? error.message : 'Unknown error'
           });
         }
 

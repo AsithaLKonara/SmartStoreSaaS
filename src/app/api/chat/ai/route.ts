@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     } else {
       // General conversation - use AI to generate contextual response
       const context = conversation.messages
-        .map(msg => `${msg.role}: ${msg.content}`)
+        .map((msg: any) => `${msg.role}: ${msg.content}`)
         .join('\n');
 
       aiResponse = await generateContextualResponse(message, context, session.user.organizationId);

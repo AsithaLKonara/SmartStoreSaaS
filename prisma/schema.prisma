@@ -115,6 +115,7 @@ model Organization {
   whatsAppMessages WhatsAppMessage[]
   whatsAppCatalogs WhatsAppCatalog[]
   wooCommerceIntegrations WooCommerceIntegration[]
+  bulkOperations BulkOperation[] // Added missing relation
 
   @@map("organizations")
 }
@@ -199,9 +200,9 @@ model Product {
   sku         String?
   price       Decimal
   comparePrice Decimal?
-  cost        Decimal?
-  stock       Int      @default(0)
-  minStock    Int      @default(0)
+  costPrice   Decimal? // Changed from 'cost' to 'costPrice' to match API
+  stockQuantity Int    @default(0) // Changed from 'stock' to 'stockQuantity' to match API
+  lowStockThreshold Int @default(0) // Changed from 'minStock' to 'lowStockThreshold' to match API
   weight      Decimal?
   dimensions  Json?
   images      String[]
@@ -235,7 +236,8 @@ model ProductVariant {
   name      String
   sku       String?
   price     Decimal?
-  stock     Int      @default(0)
+  costPrice Decimal? // Added costPrice to match API
+  stockQuantity Int @default(0) // Changed from 'stock' to 'stockQuantity' to match API
   attributes Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -268,12 +270,14 @@ model Order {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
   orderNumber   String      @unique
   status        OrderStatus @default(DRAFT)
-  total         Decimal
+  totalAmount   Decimal     // Changed from 'total' to 'totalAmount' to match API
   subtotal      Decimal
   tax           Decimal     @default(0)
   shipping      Decimal     @default(0)
   discount      Decimal     @default(0)
   currency      String      @default("USD")
+  paymentMethod String      @default("COD") // Added to match API
+  paymentStatus String      @default("PENDING") // Added to match API
   notes         String?
   metadata      Json?
   createdAt     DateTime    @default(now())
@@ -333,7 +337,7 @@ model Payment {
   id            String        @id @default(auto()) @map("_id") @db.ObjectId
   amount        Decimal
   currency      String        @default("USD")
-  method        PaymentMethod
+  method        String        // Changed from PaymentMethod enum to String to match API usage
   status        PaymentStatus @default(PENDING)
   gateway       String?
   gatewayId     String?
@@ -623,8 +627,6 @@ model ChannelMessage {
   // Relations
   conversation   CustomerConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   conversationId String               @db.ObjectId
-  customer       Customer             @relation(fields: [customerId], references: [id])
-  customerId     String               @db.ObjectId
 
   @@map("channel_messages")
 }

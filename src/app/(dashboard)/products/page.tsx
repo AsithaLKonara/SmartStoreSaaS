@@ -10,12 +10,10 @@ import {
   Download, 
   Upload, 
   Edit, 
-  Trash2, 
   Eye,
   Package,
   Tag,
   DollarSign,
-  TrendingUp,
   AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -344,7 +342,7 @@ export default function ProductsPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <TrendingUp className="w-4 h-4 text-gray-400" />
+                  <Package className="w-4 h-4 text-gray-400" />
                   <span className="text-sm text-gray-600">
                     {product.stockQuantity} in stock
                   </span>

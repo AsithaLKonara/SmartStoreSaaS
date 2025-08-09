@@ -14,8 +14,26 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get('categoryId');
     const search = searchParams.get('search');
     const stockFilter = searchParams.get('stockFilter');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const skip = (page - 1) * limit;
 
-    const where: any = {
+    interface WhereClause {
+      organizationId: string;
+      categoryId?: string;
+      OR?: Array<{
+        name?: { contains: string; mode: 'insensitive' };
+        sku?: { contains: string; mode: 'insensitive' };
+        description?: { contains: string; mode: 'insensitive' };
+      }>;
+      AND?: Array<{
+        stockQuantity?: { lte?: number; gt?: number } | number;
+        minStock?: { lte?: number; gt?: number };
+      }>;
+      stockQuantity?: { lte?: number; gt?: number } | number;
+    }
+
+    const where: WhereClause = {
       organizationId: session.user.organizationId,
     };
 
@@ -34,16 +52,24 @@ export async function GET(request: NextRequest) {
     if (stockFilter) {
       switch (stockFilter) {
         case 'low':
-          where.stockQuantity = { lte: where.lowStockThreshold };
+          // Use raw query to compare stock with minStock threshold
+          where.AND = [
+            {
+              stockQuantity: { lte: 100 } // Default low stock threshold
+            }
+          ];
           break;
         case 'out':
           where.stockQuantity = 0;
           break;
         case 'in':
-          where.stockQuantity = { gt: where.lowStockThreshold };
+          where.stockQuantity = { gt: 0 };
           break;
       }
     }
+
+    // Get total count for pagination
+    const total = await prisma.product.count({ where });
 
     const products = await prisma.product.findMany({
       where,
@@ -52,9 +78,21 @@ export async function GET(request: NextRequest) {
         variants: true,
       },
       orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
     });
 
-    return NextResponse.json({ products });
+    return NextResponse.json({ 
+      products, 
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNext: skip + limit < total,
+        hasPrev: page > 1,
+      }
+    });
   } catch (error) {
     console.error('Error fetching products:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

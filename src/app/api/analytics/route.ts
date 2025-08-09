@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate metrics
-    const currentRevenue = currentOrders.reduce((sum, order) => sum + order.totalAmount, 0);
-    const previousRevenue = previousOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const currentRevenue = currentOrders.reduce((sum: number, order: any) => sum + order.totalAmount, 0);
+    const previousRevenue = previousOrders.reduce((sum: number, order: any) => sum + order.totalAmount, 0);
     const revenueChange = previousRevenue > 0 ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 : 0;
 
     const currentOrderCount = currentOrders.length;
@@ -86,13 +86,13 @@ export async function GET(request: NextRequest) {
       const dayStart = new Date(date.setHours(0, 0, 0, 0));
       const dayEnd = new Date(date.setHours(23, 59, 59, 999));
 
-      const dayOrders = currentOrders.filter(order => 
+      const dayOrders = currentOrders.filter((order: any) => 
         order.createdAt >= dayStart && order.createdAt <= dayEnd
       );
 
       salesByDay.push({
         date: dayStart.toISOString(),
-        revenue: dayOrders.reduce((sum, order) => sum + order.totalAmount, 0),
+        revenue: dayOrders.reduce((sum: number, order: any) => sum + order.totalAmount, 0),
         orders: dayOrders.length,
       });
     }
@@ -100,8 +100,8 @@ export async function GET(request: NextRequest) {
     // Top products
     const productRevenue = new Map<string, { name: string; revenue: number; orders: number }>();
     
-    currentOrders.forEach(order => {
-      order.items.forEach(item => {
+    currentOrders.forEach((order: any) => {
+      order.items.forEach((item: any) => {
         const productId = item.productId;
         const existing = productRevenue.get(productId) || { 
           name: item.product.name, 
@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
     // Top customers
     const customerRevenue = new Map<string, { name: string; revenue: number; orders: number }>();
     
-    currentOrders.forEach(order => {
+    currentOrders.forEach((order: any) => {
       const customerId = order.customerId;
       const existing = customerRevenue.get(customerId) || { 
         name: order.customer.name, 
@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
     });
 
     const paymentMethods = new Map<string, number>();
-    payments.forEach(payment => {
+    payments.forEach((payment: any) => {
       const method = payment.method;
       paymentMethods.set(method, (paymentMethods.get(method) || 0) + payment.amount);
     });

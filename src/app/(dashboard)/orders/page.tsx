@@ -115,23 +115,32 @@ export default function OrdersPage() {
     
     let matchesDate = true;
     if (dateFilter) {
-      const orderDate = new Date(order.createdAt).toDateString();
-      const today = new Date().toDateString();
-      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toDateString();
-      const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const orderDate = new Date(order.createdAt);
+      const now = new Date();
+      
+      // Set time to start of day for accurate comparisons
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const orderDateOnly = new Date(orderDate.getFullYear(), orderDate.getMonth(), orderDate.getDate());
       
       switch (dateFilter) {
         case 'today':
-          matchesDate = orderDate === today;
+          matchesDate = orderDateOnly.getTime() === today.getTime();
           break;
         case 'yesterday':
-          matchesDate = orderDate === yesterday;
+          matchesDate = orderDateOnly.getTime() === yesterday.getTime();
           break;
         case 'last7days':
-          matchesDate = new Date(order.createdAt) >= lastWeek;
+          const lastWeek = new Date(today);
+          lastWeek.setDate(lastWeek.getDate() - 7);
+          matchesDate = orderDate >= lastWeek;
           break;
         case 'last30days':
-          matchesDate = new Date(order.createdAt) >= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+          const lastMonth = new Date(today);
+          lastMonth.setDate(lastMonth.getDate() - 30);
+          matchesDate = orderDate >= lastMonth;
           break;
       }
     }

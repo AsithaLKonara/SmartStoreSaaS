@@ -54,18 +54,28 @@ export function ThemeProvider({ children, defaultTheme = 'system' }: ThemeProvid
   // Prevent flash of unstyled content
   useEffect(() => {
     const style = document.createElement('style');
+    style.id = 'theme-style';
     style.innerHTML = `
       html { visibility: hidden; }
       html.theme-loaded { visibility: visible; }
     `;
-    document.head.appendChild(style);
+    
+    // Check if style already exists
+    const existingStyle = document.getElementById('theme-style');
+    if (!existingStyle) {
+      document.head.appendChild(style);
+    }
 
     if (darkMode.isLoaded) {
       document.documentElement.classList.add('theme-loaded');
     }
 
     return () => {
-      document.head.removeChild(style);
+      // Only remove if it exists and was created by this component
+      const styleToRemove = document.getElementById('theme-style');
+      if (styleToRemove && styleToRemove.parentNode) {
+        styleToRemove.parentNode.removeChild(styleToRemove);
+      }
     };
   }, [darkMode.isLoaded]);
 

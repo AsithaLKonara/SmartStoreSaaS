@@ -191,7 +191,6 @@ export function getStatusColor(status: string): string {
     returned: 'purple',
     pending: 'yellow',
     processing: 'blue',
-    completed: 'green',
     failed: 'red',
     refunded: 'gray',
   };

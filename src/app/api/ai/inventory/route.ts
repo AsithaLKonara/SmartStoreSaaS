@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       include: { items: true },
     });
 
-    const salesHistory = orders.map(order => ({
+    const salesHistory = orders.map((order: any) => ({
       orderId: order.id,
       date: order.createdAt,
       items: order.items,
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         const predictions = await aiInventoryService.predictStockoutRisk(
           products,
           salesHistory,
-          products.map(p => ({ productId: p.id, currentStock: p.stock }))
+          products.map((p: any) => ({ productId: p.id, currentStock: p.stock }))
         );
         return NextResponse.json({ predictions });
 
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
         const predictionsForPO = await aiInventoryService.predictStockoutRisk(
           products,
           salesHistory,
-          products.map(p => ({ productId: p.id, currentStock: p.stock }))
+          products.map((p: any) => ({ productId: p.id, currentStock: p.stock }))
         );
         const suppliersForPO = await prisma.supplier.findMany({
           where: { organizationId },
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ purchaseOrders });
 
       case 'pricing-optimization':
-        const competitorPrices = []; // This would come from competitor data
+        const competitorPrices: any[] = []; // This would come from competitor data
         const pricingRecommendations = await aiInventoryService.optimizePricing(
           products,
           salesHistory,

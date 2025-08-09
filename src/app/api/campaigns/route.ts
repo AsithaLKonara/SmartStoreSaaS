@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Add mock stats for demonstration
-    const campaignsWithStats = campaigns.map(campaign => ({
+    const campaignsWithStats = campaigns.map((campaign: any) => ({
       ...campaign,
       stats: {
         sent: Math.floor(Math.random() * 1000) + 100,

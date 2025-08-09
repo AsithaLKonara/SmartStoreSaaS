@@ -1,0 +1,46 @@
+{
+  "name": "smartstore-product-service",
+  "version": "1.0.0",
+  "description": "Product management service for SmartStore AI",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest",
+    "lint": "eslint src/",
+    "build": "echo 'No build step required'"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "prisma": "^5.6.0",
+    "@prisma/client": "^5.6.0",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "express-rate-limit": "^6.8.1",
+    "redis": "^4.6.7",
+    "winston": "^3.10.0",
+    "express-validator": "^7.0.1",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.3.1",
+    "axios": "^1.4.0",
+    "multer": "^1.4.5",
+    "sharp": "^0.32.4",
+    "elasticsearch": "^16.7.3",
+    "joi": "^17.9.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "jest": "^29.6.1",
+    "eslint": "^8.44.0",
+    "supertest": "^6.3.3"
+  },
+  "keywords": [
+    "product-service",
+    "catalog",
+    "microservices",
+    "smartstore"
+  ],
+  "author": "SmartStore AI Team",
+  "license": "MIT"
+}
