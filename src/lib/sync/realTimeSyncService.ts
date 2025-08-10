@@ -4,15 +4,12 @@ import { EventEmitter } from 'events';
 import { Redis } from 'ioredis';
 
 export interface SyncEvent {
-  id: string;
-  type: 'product' | 'order' | 'customer' | 'inventory' | 'message';
-  action: 'create' | 'update' | 'delete';
-  data: any;
-  source: 'web' | 'whatsapp' | 'woocommerce' | 'shopify' | 'api';
-  timestamp: Date;
+  type: 'product' | 'order' | 'customer' | 'inventory' | 'message' | 'conflict';
+  action: 'create' | 'update' | 'delete' | 'sync' | 'conflict';
+  entityId: string;
   organizationId: string;
-  userId?: string;
-  metadata?: any;
+  data?: any;
+  timestamp: Date;
 }
 
 export interface SyncConflict {

@@ -21,25 +21,28 @@ export interface WorkflowConnection {
 export interface WorkflowDefinition {
   id: string;
   name: string;
-  description: string;
-  version: string;
+  description?: string | null;
+  version: number;
   nodes: WorkflowNode[];
   connections: WorkflowConnection[];
   triggers: string[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  organizationId: string;
+  config?: any;
 }
 
 export interface WorkflowExecution {
   id: string;
   workflowId: string;
-  status: 'RUNNING' | 'COMPLETED' | 'FAILED' | 'PAUSED';
-  currentNodeId: string;
-  data: any;
+  status: string; // Changed from enum to string to match Prisma schema
+  currentNodeId?: string | null;
+  data?: any;
+  input?: any;
+  output?: any;
   startedAt: Date;
   completedAt?: Date;
-  error?: string;
   logs: WorkflowLog[];
 }
 
@@ -59,11 +62,15 @@ export interface WorkflowLog {
 export interface WorkflowTemplate {
   id: string;
   name: string;
-  description: string;
-  category: string;
-  definition: WorkflowDefinition;
-  tags: string[];
+  description?: string | null;
+  category?: string | null;
+  definition?: any;
+  tags?: any;
   usageCount: number;
+  isPublic: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  config?: any;
 }
 
 export class AdvancedWorkflowEngine {
@@ -78,7 +85,7 @@ export class AdvancedWorkflowEngine {
           description: definition.description,
           version: definition.version,
           nodes: definition.nodes,
-          connections: definition.connections,
+          connections: definition.connections as any,
           triggers: definition.triggers,
           isActive: definition.isActive,
         },
@@ -86,9 +93,12 @@ export class AdvancedWorkflowEngine {
 
       return {
         ...workflow,
-        nodes: workflow.nodes as WorkflowNode[],
-        connections: workflow.connections as WorkflowConnection[],
-        triggers: workflow.triggers as string[],
+        nodes: (workflow.nodes as any) || [],
+        connections: (workflow.connections as any) || [],
+        triggers: (workflow.triggers as any) || [],
+        version: workflow.version || 1,
+        organizationId: workflow.organizationId,
+        config: workflow.config,
       };
     } catch (error) {
       console.error('Error creating workflow:', error);
@@ -111,9 +121,12 @@ export class AdvancedWorkflowEngine {
 
       const definition: WorkflowDefinition = {
         ...workflow,
-        nodes: workflow.nodes as WorkflowNode[],
-        connections: workflow.connections as WorkflowConnection[],
-        triggers: workflow.triggers as string[],
+        nodes: (workflow.nodes as any) || [],
+        connections: (workflow.connections as any) || [],
+        triggers: (workflow.triggers as any) || [],
+        version: workflow.version || 1,
+        organizationId: workflow.organizationId,
+        config: workflow.config,
       };
 
       // Create execution record
@@ -123,7 +136,6 @@ export class AdvancedWorkflowEngine {
           status: 'RUNNING',
           currentNodeId: definition.nodes[0]?.id || '',
           data: triggerData,
-          logs: [],
         },
       });
 
@@ -132,7 +144,7 @@ export class AdvancedWorkflowEngine {
 
       return {
         ...execution,
-        logs: execution.logs as WorkflowLog[],
+        logs: [],
       };
     } catch (error) {
       console.error('Error executing workflow:', error);
@@ -145,13 +157,16 @@ export class AdvancedWorkflowEngine {
    */
   private async runWorkflowExecution(executionId: string, definition: WorkflowDefinition, data: any): Promise<void> {
     try {
-      const execution = await prisma.workflowExecution.findUnique({
+      // Update execution status to running
+      await prisma.workflowExecution.update({
         where: { id: executionId },
+        data: {
+          status: 'running', // Changed from 'RUNNING' to 'running' to match Prisma schema
+          data: data,
+        },
       });
 
-      if (!execution) return;
-
-      let currentNodeId = execution.currentNodeId;
+      let currentNodeId = definition.nodes[0]?.id; // Start with first node
       let currentData = data;
 
       while (currentNodeId) {
@@ -190,9 +205,17 @@ export class AdvancedWorkflowEngine {
             data: {
               currentNodeId,
               data: currentData,
-              logs: {
-                push: log,
-              },
+            },
+          });
+
+          // Create log entry separately since logs is a relation
+          await prisma.workflowLog.create({
+            data: {
+              executionId,
+              level: 'info',
+              message: log.message,
+              data: log.data,
+              timestamp: log.timestamp,
             },
           });
 
@@ -213,11 +236,18 @@ export class AdvancedWorkflowEngine {
           await prisma.workflowExecution.update({
             where: { id: executionId },
             data: {
-              status: 'FAILED',
-              error: log.message,
-              logs: {
-                push: log,
-              },
+              status: 'failed', // Changed from 'FAILED' to 'failed' to match Prisma schema
+            },
+          });
+
+          // Create error log entry
+          await prisma.workflowLog.create({
+            data: {
+              executionId,
+              level: 'error',
+              message: log.message,
+              data: log.data,
+              timestamp: log.timestamp,
             },
           });
 
@@ -230,7 +260,7 @@ export class AdvancedWorkflowEngine {
         await prisma.workflowExecution.update({
           where: { id: executionId },
           data: {
-            status: 'COMPLETED',
+            status: 'completed', // Changed from 'COMPLETED' to 'completed' to match Prisma schema
             completedAt: new Date(),
           },
         });
@@ -241,8 +271,8 @@ export class AdvancedWorkflowEngine {
       await prisma.workflowExecution.update({
         where: { id: executionId },
         data: {
-          status: 'FAILED',
-          error: error instanceof Error ? error.message : 'Unknown error',
+          status: 'failed', // Changed from 'FAILED' to 'failed' to match Prisma schema
+          // Removed error field as it doesn't exist in Prisma schema
         },
       });
     }
@@ -363,9 +393,13 @@ export class AdvancedWorkflowEngine {
       data: {
         customerId: data.customerId,
         status: 'PENDING',
-        total: data.total,
-        items: data.items,
+        totalAmount: data.totalAmount, // Changed from 'total' to 'totalAmount'
+        subtotal: data.subtotal || data.totalAmount, // Added required subtotal field
+        tax: data.tax || 0,
+        shipping: data.shipping || 0,
+        discount: data.discount || 0,
         organizationId: data.organizationId,
+        orderNumber: `ORD-${Date.now()}`, // Added required orderNumber field
       },
     });
     
@@ -384,12 +418,12 @@ export class AdvancedWorkflowEngine {
     }
 
     const newStock = operation === 'ADD' 
-      ? product.stock + quantity
-      : product.stock - quantity;
+      ? product.stockQuantity + quantity
+      : product.stockQuantity - quantity;
 
     await prisma.product.update({
       where: { id: productId },
-      data: { stock: newStock },
+      data: { stockQuantity: newStock },
     });
 
     return { productId, newStock };
@@ -455,21 +489,31 @@ export class AdvancedWorkflowEngine {
       const workflowTemplate = await prisma.workflowTemplate.create({
         data: {
           name: template.name,
-          description: template.description,
-          category: template.category,
-          definition: template.definition,
-          tags: template.tags,
+          description: template.description || null, // Handle null case
+          category: template.category || null,
+          definition: template.definition || null,
+          tags: template.tags || null,
+          isPublic: template.isPublic || false,
+          config: template.config || null,
         },
       });
 
       return {
-        ...workflowTemplate,
-        definition: workflowTemplate.definition as WorkflowDefinition,
-        tags: workflowTemplate.tags as string[],
+        id: workflowTemplate.id,
+        name: workflowTemplate.name,
+        description: workflowTemplate.description || undefined, // Convert null to undefined for interface
+        category: workflowTemplate.category || undefined,
+        definition: workflowTemplate.definition,
+        tags: workflowTemplate.tags,
+        usageCount: workflowTemplate.usageCount,
+        isPublic: workflowTemplate.isPublic,
+        createdAt: workflowTemplate.createdAt,
+        updatedAt: workflowTemplate.updatedAt,
+        config: workflowTemplate.config,
       };
     } catch (error) {
       console.error('Error creating workflow template:', error);
-      throw new Error('Failed to create workflow template');
+      throw error;
     }
   }
 
@@ -479,17 +523,25 @@ export class AdvancedWorkflowEngine {
       
       const templates = await prisma.workflowTemplate.findMany({
         where,
-        orderBy: { usageCount: 'desc' },
+        orderBy: { createdAt: 'desc' },
       });
 
       return templates.map(template => ({
-        ...template,
-        definition: template.definition as WorkflowDefinition,
-        tags: template.tags as string[],
+        id: template.id,
+        name: template.name,
+        description: template.description || undefined, // Convert null to undefined for interface
+        category: template.category || undefined,
+        definition: template.definition,
+        tags: template.tags,
+        usageCount: template.usageCount,
+        isPublic: template.isPublic,
+        createdAt: template.createdAt,
+        updatedAt: template.updatedAt,
+        config: template.config,
       }));
     } catch (error) {
       console.error('Error getting workflow templates:', error);
-      return [];
+      throw error;
     }
   }
 
@@ -509,18 +561,27 @@ export class AdvancedWorkflowEngine {
 
       const executions = await prisma.workflowExecution.findMany({
         where,
-        orderBy: { startedAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
+        orderBy: { startedAt: 'desc' },
+        include: { logs: true },
       });
 
       return executions.map(execution => ({
-        ...execution,
-        logs: execution.logs as WorkflowLog[],
+        id: execution.id,
+        workflowId: execution.workflowId,
+        status: execution.status,
+        currentNodeId: execution.currentNodeId,
+        data: execution.data,
+        input: execution.input,
+        output: execution.output,
+        startedAt: execution.startedAt,
+        completedAt: execution.completedAt,
+        logs: execution.logs || [], // Initialize logs array
       }));
     } catch (error) {
       console.error('Error getting workflow executions:', error);
-      return [];
+      throw error;
     }
   }
 

@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { aiChatService } from '@/lib/ai/chatService';
-import { sendEmail } from '@/lib/email';
-import { sendWhatsAppMessage } from '@/lib/messaging';
+import { emailService } from '@/lib/email';
+import { whatsappService } from '@/lib/messaging';
 import { createNotification } from '@/lib/notifications';
 
 interface WorkflowStep {
@@ -394,24 +394,28 @@ export class WorkflowEngine {
   private async sendOrderConfirmation(data: Record<string, any>): Promise<void> {
     const order = await prisma.order.findUnique({
       where: { id: data.orderId },
-      include: { customer: true, items: { include: { product: true } } },
+      include: { customer: true },
     });
 
     if (!order) return;
 
-    // Send email confirmation
-    await sendEmail({
-      to: order.customer.email,
-      subject: `Order Confirmation #${order.orderNumber}`,
-      template: 'order-confirmation',
-      data: { order },
-    });
+    // Send email confirmation only if customer has email
+    if (order.customer.email) {
+      await emailService.sendEmail({
+        to: order.customer.email,
+        subject: `Order Confirmation #${order.orderNumber}`,
+        templateId: 'order-confirmation',
+        data: { order },
+      });
+    }
 
-    // Send WhatsApp confirmation
-    await sendWhatsAppMessage({
-      to: order.customer.phone,
-      message: `Your order #${order.orderNumber} has been confirmed! Total: $${order.totalAmount}`,
-    });
+    // Send WhatsApp confirmation only if customer has phone
+    if (order.customer.phone) {
+      await whatsappService.sendMessage({
+        to: order.customer.phone,
+        message: `Your order #${order.orderNumber} has been confirmed! Total: $${order.totalAmount}`,
+      });
+    }
   }
 
   private async assignCourier(data: Record<string, any>): Promise<void> {
@@ -433,7 +437,7 @@ export class WorkflowEngine {
           orderId: order.id,
           courierId: courier.id,
           status: 'ASSIGNED',
-          organizationId: order.organizationId,
+          // Removed organizationId as it doesn't exist in Shipment model
         },
       });
     }
@@ -479,19 +483,23 @@ export class WorkflowEngine {
 
     if (!customer) return;
 
-    // Send welcome email
-    await sendEmail({
-      to: customer.email,
-      subject: 'Welcome to SmartStore AI!',
-      template: 'welcome',
-      data: { customer },
-    });
+    // Send welcome email only if customer has email
+    if (customer.email) {
+      await emailService.sendEmail({
+        to: customer.email,
+        subject: 'Welcome to SmartStore AI!',
+        templateId: 'welcome',
+        data: { customer },
+      });
+    }
 
-    // Send welcome WhatsApp message
-    await sendWhatsAppMessage({
-      to: customer.phone,
-      message: `Welcome to SmartStore AI! We're excited to have you as a customer.`,
-    });
+    // Send welcome WhatsApp message only if customer has phone
+    if (customer.phone) {
+      await whatsappService.sendMessage({
+        to: customer.phone,
+        message: `Welcome to SmartStore AI! We're excited to have you as a customer.`,
+      });
+    }
   }
 
   private async createCustomerProfile(data: Record<string, any>): Promise<void> {
@@ -523,13 +531,15 @@ export class WorkflowEngine {
 
     if (!order) return;
 
-    // Send receipt
-    await sendEmail({
-      to: order.customer.email,
-      subject: `Payment Receipt #${order.orderNumber}`,
-      template: 'payment-receipt',
-      data: { order },
-    });
+    // Send receipt email only if customer has email
+    if (order.customer.email) {
+      await emailService.sendEmail({
+        to: order.customer.email,
+        subject: `Receipt for Order #${order.orderNumber}`,
+        templateId: 'receipt',
+        data: { order },
+      });
+    }
   }
 
   private async triggerFulfillment(data: Record<string, any>): Promise<void> {

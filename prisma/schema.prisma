@@ -30,10 +30,10 @@ model User {
   accounts        Account[]
   activities      Activity[]
   assignedChats   ChatMessage[]
-  createdOrders   Order[]
-  updatedOrders   Order[]
-  createdProducts Product[]
-  updatedProducts Product[]
+  createdOrders   Order[] @relation("OrderCreatedBy")
+  updatedOrders   Order[] @relation("OrderUpdatedBy")
+  createdProducts Product[] @relation("ProductCreatedBy")
+  updatedProducts Product[] @relation("ProductUpdatedBy")
   preferences     UserPreference?
   searchHistory   SearchHistory[]
   assignedConversations CustomerConversation[]
@@ -69,6 +69,20 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
+}
+
+model Activity {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  type        String   // 'login', 'order_created', 'product_viewed', etc.
+  description String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.ObjectId
+
+  @@map("activities")
 }
 
 model VerificationToken {
@@ -130,7 +144,7 @@ model Customer {
   tags        String[]
   source      String?
   isActive    Boolean  @default(true)
-  totalSpent  Decimal  @default(0)
+  totalSpent  Float    @default(0)
   points      Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -184,7 +198,7 @@ model Category {
   organization Organization @relation(fields: [organizationId], references: [id])
   organizationId String     @db.ObjectId
   products      Product[]
-  parent        Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  parent        Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   parentId      String?     @db.ObjectId
   children      Category[]  @relation("CategoryHierarchy")
 
@@ -198,12 +212,12 @@ model Product {
   slug        String
   description String?
   sku         String?
-  price       Decimal
-  comparePrice Decimal?
-  costPrice   Decimal? // Changed from 'cost' to 'costPrice' to match API
+  price       Float
+  comparePrice Float?
+  costPrice   Float? // Changed from 'cost' to 'costPrice' to match API
   stockQuantity Int    @default(0) // Changed from 'stock' to 'stockQuantity' to match API
   lowStockThreshold Int @default(0) // Changed from 'minStock' to 'lowStockThreshold' to match API
-  weight      Decimal?
+  weight      Float?
   dimensions  Json?
   images      String[]
   isActive    Boolean  @default(true)
@@ -215,7 +229,7 @@ model Product {
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id])
   organizationId String     @db.ObjectId
-  category      Category? @relation(fields: [categoryId], references: [id])
+  category      Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   categoryId    String?   @db.ObjectId
   createdBy     User     @relation("ProductCreatedBy", fields: [createdById], references: [id])
   createdById   String   @db.ObjectId
@@ -235,15 +249,15 @@ model ProductVariant {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   sku       String?
-  price     Decimal?
-  costPrice Decimal? // Added costPrice to match API
+  price     Float?
+  costPrice Float? // Added costPrice to match API
   stockQuantity Int @default(0) // Changed from 'stock' to 'stockQuantity' to match API
   attributes Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId String  @db.ObjectId
 
   @@unique([productId, name])
@@ -270,11 +284,11 @@ model Order {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
   orderNumber   String      @unique
   status        OrderStatus @default(DRAFT)
-  totalAmount   Decimal     // Changed from 'total' to 'totalAmount' to match API
-  subtotal      Decimal
-  tax           Decimal     @default(0)
-  shipping      Decimal     @default(0)
-  discount      Decimal     @default(0)
+  totalAmount   Float     // Changed from 'total' to 'totalAmount' to match API
+  subtotal      Float
+  tax           Float     @default(0)
+  shipping      Float     @default(0)
+  discount      Float     @default(0)
   currency      String      @default("USD")
   paymentMethod String      @default("COD") // Added to match API
   paymentStatus String      @default("PENDING") // Added to match API
@@ -305,14 +319,14 @@ model Order {
 model OrderItem {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   quantity  Int
-  price     Decimal
-  total     Decimal
+  price     Float
+  total     Float
   metadata  Json?
 
   // Relations
   order     Order   @relation(fields: [orderId], references: [id])
   orderId   String  @db.ObjectId
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId String  @db.ObjectId
 
   @@map("order_items")
@@ -335,7 +349,7 @@ model OrderActivity {
 // Payment System
 model Payment {
   id            String        @id @default(auto()) @map("_id") @db.ObjectId
-  amount        Decimal
+  amount        Float
   currency      String        @default("USD")
   method        String        // Changed from PaymentMethod enum to String to match API usage
   status        PaymentStatus @default(PENDING)
@@ -454,7 +468,7 @@ model Campaign {
 // Financial Management
 model Expense {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  amount      Decimal
+  amount      Float
   description String
   category    String?
   date        DateTime
@@ -510,14 +524,18 @@ model Workflow {
   type           String   // 'order', 'inventory', 'customer', 'custom'
   isActive       Boolean  @default(true)
   config         Json?    // Workflow configuration
+  nodes          Json?    // Workflow nodes data
+  connections    Json?    // Workflow connections data
+  triggers       Json?    // Workflow triggers data
+  version        Int      @default(1)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   // Relations
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId String       @db.ObjectId
-  nodes          WorkflowNode[]
-  connections    WorkflowConnection[]
+  workflowNodes  WorkflowNode[]
+  workflowConnections WorkflowConnection[]
   executions     WorkflowExecution[]
 
   @@map("workflows")
@@ -551,12 +569,14 @@ model WorkflowConnection {
 }
 
 model WorkflowExecution {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  status     String   // 'running', 'completed', 'failed', 'paused'
-  input      Json?    // Input data
-  output     Json?    // Output data
-  startedAt  DateTime @default(now())
-  completedAt DateTime?
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  status        String   // 'running', 'completed', 'failed', 'paused'
+  input         Json?    // Input data
+  output        Json?    // Output data
+  data          Json?    // Execution data
+  currentNodeId String?  // Current executing node
+  startedAt     DateTime @default(now())
+  completedAt   DateTime?
 
   // Relations
   workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
@@ -586,6 +606,9 @@ model WorkflowTemplate {
   description String?
   category    String?
   config      Json?    // Template configuration
+  definition  Json?    // Template definition
+  tags        Json?    // Template tags
+  usageCount  Int      @default(0)
   isPublic    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -672,7 +695,7 @@ model PaymentMethod {
 model PaymentIntent {
   id                    String   @id @default(auto()) @map("_id") @db.ObjectId
   stripePaymentIntentId String?  @unique
-  amount                Decimal
+  amount                Float
   currency              String   @default("USD")
   status                String   // 'pending', 'processing', 'succeeded', 'failed', 'canceled'
   metadata              Json?
@@ -711,7 +734,7 @@ model Subscription {
 
 model Invoice {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  amount      Decimal
+  amount      Float
   currency    String   @default("USD")
   status      String   // 'draft', 'open', 'paid', 'void', 'uncollectible'
   dueDate     DateTime?
@@ -762,6 +785,8 @@ model SocialProduct {
   platformId String         @db.ObjectId
   product    Product        @relation(fields: [productId], references: [id])
   productId  String         @db.ObjectId
+  customer   Customer?      @relation(fields: [customerId], references: [id])
+  customerId String?        @db.ObjectId
 
   @@unique([productId, platformId])
   @@map("social_products")
@@ -939,6 +964,7 @@ enum ProductActivityType {
 
 enum OrderStatus {
   DRAFT
+  PENDING
   CONFIRMED
   PACKED
   OUT_FOR_DELIVERY
@@ -958,7 +984,7 @@ enum OrderActivityType {
   RETURNED
 }
 
-enum PaymentMethod {
+enum PaymentMethodType {
   CASH_ON_DELIVERY
   CREDIT_CARD
   DEBIT_CARD
@@ -979,6 +1005,7 @@ enum PaymentStatus {
 
 enum ShipmentStatus {
   PENDING
+  ASSIGNED
   PICKED_UP
   IN_TRANSIT
   OUT_FOR_DELIVERY

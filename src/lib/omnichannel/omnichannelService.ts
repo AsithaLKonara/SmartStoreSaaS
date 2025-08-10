@@ -2,12 +2,11 @@ import { prisma } from '@/lib/prisma';
 
 export interface ChannelMessage {
   id: string;
-  channel: 'whatsapp' | 'facebook' | 'instagram' | 'website' | 'email' | 'sms';
-  customerId: string;
+  channel: string;
   message: string;
   timestamp: Date;
   isIncoming: boolean;
-  status: 'sent' | 'delivered' | 'read' | 'failed';
+  status: string;
   metadata?: any;
 }
 
@@ -16,9 +15,9 @@ export interface CustomerConversation {
   customerId: string;
   channel: string;
   messages: ChannelMessage[];
-  status: 'active' | 'resolved' | 'pending';
+  status: string;
   assignedAgent?: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  priority: string;
   tags: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -95,7 +94,6 @@ export class OmnichannelService {
       data: {
         conversationId,
         channel,
-        customerId: conversation.customerId,
         message,
         timestamp: new Date(),
         isIncoming: false,

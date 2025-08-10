@@ -231,6 +231,10 @@ export function unique<T>(array: T[]): T[] {
   return [...new Set(array)];
 }
 
+export function removeDuplicates<T>(array: T[]): T[] {
+  return Array.from(new Set(array));
+}
+
 export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
   return array.reduce((groups, item) => {
     const group = String(item[key]);
