@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { prisma } from '../prisma';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -213,7 +214,7 @@ export class CustomerIntelligenceService {
   }
 
   /**
-   * Analyze customer sentiment
+   * Analyze customer sentiment using Prisma models
    */
   async analyzeCustomerSentiment(
     customerData: any[],
@@ -251,6 +252,45 @@ export class CustomerIntelligenceService {
     } catch (error) {
       console.error('Error analyzing customer sentiment:', error);
       return [];
+    }
+  }
+
+  /**
+   * Get customer sentiment data from Prisma models
+   */
+  async getCustomerSentimentData(organizationId: string, customerId?: string): Promise<{
+    reviews: any[];
+    supportTickets: any[];
+    customerSegments: any[];
+    customerOffers: any[];
+  }> {
+    try {
+      const whereClause = customerId ? { customerId } : {};
+      const orgClause = { organizationId };
+
+      const [reviews, supportTickets, customerSegments, customerOffers] = await Promise.all([
+        prisma.review.findMany({
+          where: { ...whereClause, ...orgClause },
+          include: { customer: true, product: true }
+        }),
+        prisma.supportTicket.findMany({
+          where: { ...whereClause, ...orgClause },
+          include: { customer: true, order: true }
+        }),
+        prisma.customerSegment.findMany({
+          where: orgClause,
+          include: { customerSegmentCustomers: { include: { customer: true } } }
+        }),
+        prisma.customerOffer.findMany({
+          where: orgClause,
+          include: { customerOfferCustomers: { include: { customer: true } } }
+        })
+      ]);
+
+      return { reviews, supportTickets, customerSegments, customerOffers };
+    } catch (error) {
+      console.error('Error fetching customer sentiment data:', error);
+      return { reviews: [], supportTickets: [], customerSegments: [], customerOffers: [] };
     }
   }
 

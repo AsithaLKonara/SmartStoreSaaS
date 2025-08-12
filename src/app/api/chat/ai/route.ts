@@ -36,7 +36,22 @@ export async function POST(request: NextRequest) {
 
     // Analyze message intent and sentiment
     const sentiment = await aiChatService.analyzeCustomerSentiment(message);
-    const isUrgent = await aiChatService.detectUrgentIssues(conversation);
+    const isUrgent = await aiChatService.detectUrgentIssues({
+      id: conversation.id,
+      title: conversation.title || undefined,
+      status: conversation.status,
+      priority: conversation.priority || 'MEDIUM',
+      customerId: conversation.customerId,
+      messages: conversation.messages.map((msg: any) => ({
+        id: msg.id,
+        content: msg.content,
+        role: msg.direction === 'INBOUND' ? 'user' : 'assistant',
+        timestamp: msg.createdAt
+      })),
+                assignedTo: conversation.assignedTo || undefined,
+      createdAt: conversation.createdAt,
+      updatedAt: conversation.updatedAt
+    });
 
     let aiResponse = '';
     let action = null;
@@ -63,7 +78,22 @@ export async function POST(request: NextRequest) {
       }
     } else if (message.toLowerCase().includes('buy') || message.toLowerCase().includes('purchase')) {
       // Order creation from chat
-      const orderData = await aiChatService.createOrderFromChat(conversation);
+      const orderData = await aiChatService.createOrderFromChat({
+        id: conversation.id,
+        title: conversation.title || undefined,
+        status: conversation.status,
+        priority: conversation.priority || 'MEDIUM',
+        customerId: conversation.customerId,
+        messages: conversation.messages.map((msg: any) => ({
+          id: msg.id,
+          content: msg.content,
+          role: msg.direction === 'INBOUND' ? 'user' : 'assistant',
+          timestamp: msg.createdAt
+        })),
+        assignedTo: conversation.assignedTo || undefined,
+        createdAt: conversation.createdAt,
+        updatedAt: conversation.updatedAt
+      });
       if (orderData) {
         action = {
           type: 'create_order',
@@ -100,14 +130,17 @@ export async function POST(request: NextRequest) {
     const aiMessage = await prisma.chatMessage.create({
       data: {
         conversationId,
-        role: 'assistant',
+        direction: 'OUTBOUND' as any,
+        type: 'TEXT' as any,
         content: aiResponse,
         metadata: {
-          sentiment,
-          isUrgent,
+          sentiment: sentiment.overall || 'neutral',
+          isUrgent: isUrgent,
           confidence: 0.9,
           aiGenerated: true,
         },
+        organizationId: session.user.organizationId,
+        customerId: conversation.customerId,
       },
     });
 
@@ -120,7 +153,6 @@ export async function POST(request: NextRequest) {
     await prisma.chatConversation.update({
       where: { id: conversationId },
       data: {
-        lastMessageAt: new Date(),
         status: isUrgent ? 'URGENT' : 'ACTIVE',
       },
     });
@@ -172,12 +204,13 @@ async function createUrgentIssueNotification(conversation: any, message: string,
         type: 'URGENT_CHAT',
         title: 'Urgent Customer Issue',
         message: `Urgent issue in conversation #${conversation.id}: ${message.substring(0, 100)}...`,
-        organizationId,
+        recipient: conversation.assignedTo || conversation.customerId,
         metadata: {
           conversationId: conversation.id,
           customerId: conversation.customerId,
           priority: 'high',
         },
+        organizationId: conversation.organizationId,
       },
     });
 
@@ -237,15 +270,15 @@ async function getAIChatStats(organizationId: string): Promise<any> {
     const totalMessages = await prisma.chatMessage.count({
       where: {
         conversation: { organizationId },
-        role: 'assistant',
-        metadata: { path: ['aiGenerated'], equals: true },
+        direction: 'OUTBOUND',
+        metadata: { equals: { aiGenerated: true } },
       },
     });
 
     const urgentIssues = await prisma.chatMessage.count({
       where: {
         conversation: { organizationId },
-        metadata: { path: ['isUrgent'], equals: true },
+        metadata: { equals: { isUrgent: true } },
       },
     });
 
@@ -274,8 +307,8 @@ async function calculateAverageResponseTime(organizationId: string): Promise<num
     const messages = await prisma.chatMessage.findMany({
       where: {
         conversation: { organizationId },
-        role: 'assistant',
-        metadata: { path: ['aiGenerated'], equals: true },
+        direction: 'OUTBOUND',
+        metadata: { equals: { aiGenerated: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -287,7 +320,7 @@ async function calculateAverageResponseTime(organizationId: string): Promise<num
       const currentMessage = messages[i];
       const previousMessage = messages[i - 1];
 
-      if (currentMessage.role === 'assistant' && previousMessage.role === 'user') {
+      if (currentMessage.direction === 'OUTBOUND' && previousMessage.direction === 'INBOUND') {
         const responseTime = currentMessage.createdAt.getTime() - previousMessage.createdAt.getTime();
         totalResponseTime += responseTime;
         responseCount++;

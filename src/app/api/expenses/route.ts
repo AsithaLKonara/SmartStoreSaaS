@@ -30,23 +30,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, amount, category, type, paymentMethod, vendor, tags } = body;
+    const { description, amount, category, date, metadata } = body;
 
-    if (!title || !description || !amount || !category || !type || !paymentMethod) {
-      return NextResponse.json({ message: 'Required fields are missing' }, { status: 400 });
+    if (!description || !amount || !date) {
+      return NextResponse.json({ message: 'Description, amount, and date are required' }, { status: 400 });
     }
 
     const expense = await prisma.expense.create({
       data: {
-        title,
         description,
         amount: parseFloat(amount),
-        category: category as any,
-        type: type as any,
-        paymentMethod: paymentMethod as any,
-        vendor,
-        tags: tags || [],
-        status: 'PENDING',
+        category: category || null,
+        date: new Date(date),
+        metadata: metadata || {},
         organizationId: session.user.organizationId,
       },
     });

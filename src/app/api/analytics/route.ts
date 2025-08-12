@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
       where: {
         organizationId: session.user.organizationId,
         createdAt: { gte: startDate },
-        status: 'PAID',
+        status: 'COMPLETED',
       },
     });
 

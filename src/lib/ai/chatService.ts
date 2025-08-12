@@ -27,6 +27,23 @@ interface OrderFromChat {
   notes?: string;
 }
 
+interface ChatConversationData {
+  id: string;
+  title?: string;
+  status: string;
+  priority: string;
+  customerId: string;
+  messages: Array<{
+    id: string;
+    content: string;
+    role: 'user' | 'assistant' | 'system';
+    timestamp: Date;
+  }>;
+  assignedTo?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class AIChatService {
   private openai: OpenAI;
   private ollamaBaseUrl: string;
@@ -115,10 +132,10 @@ export class AIChatService {
   }
 
   // Order Processing
-  async createOrderFromChat(conversation: any): Promise<OrderFromChat | null> {
+  async createOrderFromChat(conversation: ChatConversationData): Promise<OrderFromChat | null> {
     try {
       const messages = conversation.messages
-        .map((msg: any) => `${msg.role}: ${msg.content}`)
+        .map((msg) => `${msg.role}: ${msg.content}`)
         .join('\n');
 
       const prompt = `
@@ -231,7 +248,7 @@ export class AIChatService {
     }
   }
 
-  // Sentiment Analysis
+  // Sentiment Analysis with proper data types
   async analyzeCustomerSentiment(message: string): Promise<SentimentScore> {
     try {
       const prompt = `
@@ -263,10 +280,10 @@ export class AIChatService {
     }
   }
 
-  async detectUrgentIssues(conversation: any): Promise<boolean> {
+  async detectUrgentIssues(conversation: ChatConversationData): Promise<boolean> {
     try {
       const messages = conversation.messages
-        .map((msg: any) => msg.content)
+        .map((msg) => msg.content)
         .join(' ');
 
       const prompt = `
@@ -294,6 +311,61 @@ export class AIChatService {
     }
   }
 
+  // Chat Conversation Management
+  async getChatConversation(conversationId: string, organizationId: string): Promise<ChatConversationData | null> {
+    try {
+      const conversation = await prisma.chatConversation.findFirst({
+        where: { id: conversationId, organizationId },
+        include: {
+          customer: true,
+          messages: true,
+          assignedAgent: true
+        }
+      });
+
+      if (!conversation) return null;
+
+      return {
+        id: conversation.id,
+        title: conversation.title || undefined,
+        status: conversation.status,
+        priority: conversation.priority,
+        customerId: conversation.customerId,
+        messages: conversation.messages.map((msg: any) => ({
+          id: msg.id,
+          content: msg.content,
+          role: msg.direction === 'INBOUND' ? 'user' : 'assistant',
+          timestamp: msg.createdAt
+        })),
+        assignedTo: conversation.assignedTo || undefined,
+        createdAt: conversation.createdAt,
+        updatedAt: conversation.updatedAt
+      };
+    } catch (error) {
+      console.error('Error fetching chat conversation:', error);
+      return null;
+    }
+  }
+
+  async updateChatConversationStatus(
+    conversationId: string, 
+    status: string, 
+    priority?: string
+  ): Promise<void> {
+    try {
+      await prisma.chatConversation.update({
+        where: { id: conversationId },
+        data: { 
+          status,
+          priority: priority || undefined,
+          updatedAt: new Date()
+        }
+      });
+    } catch (error) {
+      console.error('Error updating chat conversation status:', error);
+    }
+  }
+
   // Helper methods
   private async getProductCatalog(organizationId: string): Promise<string> {
     const products = await prisma.product.findMany({
@@ -310,7 +382,7 @@ export class AIChatService {
     });
 
     return products
-      .map(p => `${p.name} (${p.category.name}) - $${p.price} - ${p.description}`)
+      .map(p => `${p.name} (${p.category?.name || 'Uncategorized'}) - $${p.price} - ${p.description}`)
       .join('\n');
   }
 

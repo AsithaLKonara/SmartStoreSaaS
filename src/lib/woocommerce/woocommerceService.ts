@@ -1,5 +1,5 @@
-import { prisma } from '@/lib/prisma';
-import { realTimeSyncService, SyncEvent } from '@/lib/sync/realTimeSyncService';
+import { prisma } from '../prisma';
+import { realTimeSyncService, SyncEvent } from '../sync/realTimeSyncService';
 import { EventEmitter } from 'events';
 
 export interface WooCommerceConfig {
@@ -127,9 +127,20 @@ export class WooCommerceService extends EventEmitter {
       } else {
         const response = await this.makeRequest(config, 'products', 'POST', wooProduct);
         
+        // Store WooCommerce ID in ProductActivity metadata and update syncedAt
+        await prisma.productActivity.create({
+          data: {
+            type: 'STATUS_CHANGED',
+            quantity: 0,
+            description: `Product synced to WooCommerce with ID: ${response.id}`,
+            metadata: { wooCommerceId: response.id.toString() },
+            productId: product.id
+          }
+        });
+
         await prisma.product.update({
           where: { id: product.id },
-          data: { wooCommerceId: response.id.toString() }
+          data: { syncedAt: new Date() }
         });
       }
 
@@ -161,6 +172,7 @@ export class WooCommerceService extends EventEmitter {
       id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'product',
       action: action as any,
+      entityId: product.id,
       data: product,
       source: 'woocommerce',
       timestamp: new Date(),

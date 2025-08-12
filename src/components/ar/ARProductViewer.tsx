@@ -179,9 +179,9 @@ export const ARProductViewer: React.FC<ARProductViewerProps> = ({
         loader.load(
           url,
           resolve,
-          (progress) => {
-            console.log('Loading progress:', (progress.loaded / progress.total) * 100 + '%');
-          },
+                (progress: { loaded: number; total: number }) => {
+        console.log('Loading progress:', (progress.loaded / progress.total) * 100 + '%');
+      },
           reject
         );
       });
@@ -205,10 +205,10 @@ export const ARProductViewer: React.FC<ARProductViewerProps> = ({
       model.position.sub(center.multiplyScalar(scale));
       
       // Enable shadows
-      model.traverse((child) => {
+      model.traverse((child: THREE.Object3D) => {
         if ((child as THREE.Mesh).isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
+          (child as THREE.Mesh).castShadow = true;
+          (child as THREE.Mesh).receiveShadow = true;
         }
       });
 
@@ -293,8 +293,9 @@ export const ARProductViewer: React.FC<ARProductViewerProps> = ({
         }
       } else {
         // Exit AR mode
-        if (rendererRef.current?.xr.getSession()) {
-          await rendererRef.current.xr.getSession().end();
+        const session = rendererRef.current?.xr.getSession();
+        if (session) {
+          await session.end();
           setIsARMode(false);
         }
       }

@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '../prisma';
 
 export interface SocialPlatform {
   id: string;
@@ -69,7 +69,7 @@ export class SocialCommerceService {
 
     return platforms.map(platform => ({
       id: platform.id,
-      name: platform.name,
+      name: platform.name as 'facebook' | 'instagram' | 'tiktok' | 'pinterest' | 'twitter',
       isActive: platform.isActive,
       config: platform.config,
       lastSync: platform.lastSync,
@@ -80,7 +80,7 @@ export class SocialCommerceService {
   async connectPlatform(organizationId: string, platform: string, config: any): Promise<SocialPlatform> {
     const socialPlatform = await prisma.socialPlatform.upsert({
       where: {
-        organizationId_name: { organizationId, name: platform }
+        organizationId_name: { organizationId, name: platform as any }
       },
       update: {
         config,
@@ -89,7 +89,7 @@ export class SocialCommerceService {
       },
       create: {
         organizationId,
-        name: platform,
+        name: platform as any,
         config,
         isActive: true,
         lastSync: new Date()
@@ -98,7 +98,7 @@ export class SocialCommerceService {
 
     return {
       id: socialPlatform.id,
-      name: socialPlatform.name,
+      name: socialPlatform.name as 'facebook' | 'instagram' | 'tiktok' | 'pinterest' | 'twitter',
       isActive: socialPlatform.isActive,
       config: socialPlatform.config,
       lastSync: socialPlatform.lastSync,
@@ -107,77 +107,81 @@ export class SocialCommerceService {
   }
 
   async syncProductsToPlatform(platformId: string, productIds: string[]): Promise<SocialProduct[]> {
-    const platform = await prisma.socialPlatform.findUnique({
-      where: { id: platformId }
-    });
+    try {
+      const platform = await prisma.socialPlatform.findUnique({
+        where: { id: platformId }
+      });
 
-    if (!platform || !platform.isActive) {
-      throw new Error('Platform not found or inactive');
-    }
-
-    const products = await prisma.product.findMany({
-      where: { id: { in: productIds } }
-    });
-
-    const socialProducts: SocialProduct[] = [];
-
-    for (const product of products) {
-      try {
-        // Sync product to social platform
-        const platformProductId = await this.syncProductToPlatform(platform, product);
-
-        const socialProduct = await prisma.socialProduct.upsert({
-          where: {
-            productId_platformId: { productId: product.id, platformId }
-          },
-          update: {
-            platformProductId,
-            status: 'active',
-            lastSync: new Date(),
-            metadata: { syncedAt: new Date() }
-          },
-          create: {
-            productId: product.id,
-            platformId,
-            platformProductId,
-            status: 'active',
-            lastSync: new Date(),
-            metadata: { syncedAt: new Date() }
-          }
-        });
-
-        socialProducts.push(socialProduct);
-      } catch (error) {
-        console.error(`Failed to sync product ${product.id} to ${platform.name}:`, error);
-        
-        await prisma.socialProduct.upsert({
-          where: {
-            productId_platformId: { productId: product.id, platformId }
-          },
-          update: {
-            status: 'error',
-            lastSync: new Date(),
-            metadata: { error: error.message }
-          },
-          create: {
-            productId: product.id,
-            platformId,
-            platformProductId: '',
-            status: 'error',
-            lastSync: new Date(),
-            metadata: { error: error.message }
-          }
-        });
+      if (!platform) {
+        throw new Error('Platform not found');
       }
+
+      const products = await prisma.product.findMany({
+        where: { id: { in: productIds } }
+      });
+
+      const socialProducts: SocialProduct[] = [];
+
+      for (const product of products) {
+        try {
+          const platformProductId = await this.syncProductToPlatform(platform, product);
+          
+          const socialProduct = await prisma.socialProduct.upsert({
+            where: {
+              productId_platformId: { productId: product.id, platformId }
+            },
+            update: {
+              status: 'active',
+              lastSync: new Date(),
+              metadata: { lastSync: new Date() }
+            },
+            create: {
+              platformId,
+              productId: product.id,
+              platformProductId,
+              status: 'active',
+              lastSync: new Date(),
+              metadata: { lastSync: new Date() }
+            }
+          });
+
+          socialProducts.push({
+            id: socialProduct.id,
+            productId: socialProduct.productId,
+            platformId: socialProduct.platformId,
+            platformProductId: socialProduct.platformProductId,
+            status: socialProduct.status as 'active' | 'inactive' | 'syncing' | 'error',
+            metadata: socialProduct.metadata,
+            lastSync: socialProduct.lastSync
+          });
+        } catch (error) {
+          console.error(`Failed to sync product ${product.id} to platform:`, error);
+          
+          // Update social product with error status
+          await prisma.socialProduct.upsert({
+            where: {
+              productId_platformId: { productId: product.id, platformId }
+            },
+            update: {
+              status: 'error',
+              metadata: { error: (error as Error).message }
+            },
+            create: {
+              platformId,
+              productId: product.id,
+              platformProductId: 'error',
+              status: 'error',
+              lastSync: new Date(),
+              metadata: { error: (error as Error).message }
+            }
+          });
+        }
+      }
+
+      return socialProducts;
+    } catch (error) {
+      throw new Error(`Failed to sync products to platform: ${error}`);
     }
-
-    // Update platform last sync
-    await prisma.socialPlatform.update({
-      where: { id: platformId },
-      data: { lastSync: new Date() }
-    });
-
-    return socialProducts;
   }
 
   async createSocialPost(platformId: string, postData: {
@@ -187,224 +191,300 @@ export class SocialCommerceService {
     productIds: string[];
     scheduledAt?: Date;
   }): Promise<SocialPost> {
-    const post = await prisma.socialPost.create({
-      data: {
-        platformId,
-        type: postData.type,
-        content: postData.content,
-        mediaUrls: postData.mediaUrls,
-        productIds: postData.productIds,
-        scheduledAt: postData.scheduledAt,
-        status: postData.scheduledAt ? 'scheduled' : 'draft',
-        engagement: {
-          likes: 0,
-          comments: 0,
-          shares: 0,
-          clicks: 0
+    try {
+      const post = await prisma.socialPost.create({
+        data: {
+          platformId,
+          type: postData.type as any,
+          content: postData.content,
+          mediaUrls: postData.mediaUrls,
+          productIds: postData.productIds,
+          scheduledAt: postData.scheduledAt,
+          status: 'draft',
+          engagement: { likes: 0, comments: 0, shares: 0, clicks: 0 }
         }
-      }
-    });
+      });
 
-    return post;
+      return {
+        id: post.id,
+        platformId: post.platformId,
+        type: post.type as 'product' | 'story' | 'reel' | 'post',
+        content: post.content,
+        mediaUrls: post.mediaUrls,
+        productIds: post.productIds,
+        scheduledAt: post.scheduledAt || undefined,
+        publishedAt: post.publishedAt || undefined,
+        status: post.status as 'draft' | 'scheduled' | 'published' | 'failed',
+        engagement: post.engagement as any
+      };
+    } catch (error) {
+      throw new Error(`Failed to create social post: ${error}`);
+    }
   }
 
   async publishPost(postId: string): Promise<SocialPost> {
-    const post = await prisma.socialPost.findUnique({
-      where: { id: postId },
-      include: { platform: true }
-    });
-
-    if (!post) {
-      throw new Error('Post not found');
-    }
-
     try {
-      // Publish to social platform
-      const platformPostId = await this.publishToPlatform(post.platform, post);
-
-      const updatedPost = await prisma.socialPost.update({
-        where: { id: postId },
-        data: {
-          status: 'published',
-          publishedAt: new Date(),
-          metadata: { platformPostId }
-        }
+      const post = await prisma.socialPost.findUnique({
+        where: { id: postId }
       });
 
-      return updatedPost;
+      if (!post) {
+        throw new Error('Post not found');
+      }
+
+      const platform = await prisma.socialPlatform.findUnique({
+        where: { id: post.platformId }
+      });
+
+      if (!platform) {
+        throw new Error('Platform not found');
+      }
+
+      try {
+        const platformPostId = await this.publishToPlatform(platform, post);
+        
+        const updatedPost = await prisma.socialPost.update({
+          where: { id: postId },
+          data: {
+            status: 'published',
+            publishedAt: new Date(),
+            metadata: { platformPostId }
+          }
+        });
+
+        return {
+          id: updatedPost.id,
+          platformId: updatedPost.platformId,
+          type: updatedPost.type as 'product' | 'story' | 'reel' | 'post',
+          content: updatedPost.content,
+          mediaUrls: updatedPost.mediaUrls,
+          productIds: updatedPost.productIds,
+          scheduledAt: updatedPost.scheduledAt || undefined,
+          publishedAt: updatedPost.publishedAt || undefined,
+          status: updatedPost.status as 'draft' | 'scheduled' | 'published' | 'failed',
+          engagement: updatedPost.engagement as any
+        };
+      } catch (error) {
+        // Update post with error status
+        await prisma.socialPost.update({
+          where: { id: postId },
+          data: {
+            status: 'failed',
+            metadata: { error: (error as Error).message }
+          }
+        });
+        throw error;
+      }
     } catch (error) {
-      await prisma.socialPost.update({
-        where: { id: postId },
-        data: {
-          status: 'failed',
-          metadata: { error: error.message }
-        }
-      });
-
-      throw error;
+      throw new Error(`Failed to publish post: ${error}`);
     }
   }
 
   async getSocialAnalytics(organizationId: string, startDate: Date, endDate: Date): Promise<SocialAnalytics> {
-    const platforms = await prisma.socialPlatform.findMany({
-      where: { organizationId },
-      include: {
-        socialPosts: {
-          where: {
-            publishedAt: {
-              gte: startDate,
-              lte: endDate
-            }
-          }
-        },
-        socialProducts: {
-          include: {
-            product: true
-          }
+    try {
+      const platforms = await prisma.socialPlatform.findMany({
+        where: { organizationId }
+      });
+
+      const posts = await prisma.socialPost.findMany({
+        where: {
+          platform: { organizationId },
+          createdAt: { gte: startDate, lte: endDate }
         }
+      });
+
+      // Calculate total engagement
+      const totalEngagement = posts.reduce((sum, post) => {
+        if (post.engagement && typeof post.engagement === 'object') {
+          const engagement = post.engagement as any;
+          return sum + (engagement.likes || 0) + (engagement.comments || 0) + (engagement.shares || 0);
+        }
+        return sum;
+      }, 0);
+
+      // Calculate platform breakdown
+      const platformBreakdown: Record<string, any> = {};
+      let totalFollowers = 0;
+
+      for (const platform of platforms) {
+        const platformPosts = posts.filter(post => post.platformId === platform.id);
+        const platformEngagement = platformPosts.reduce((sum, post) => {
+          if (post.engagement && typeof post.engagement === 'object') {
+            const engagement = post.engagement as any;
+            return sum + (engagement.likes || 0) + (engagement.comments || 0) + (engagement.shares || 0);
+          }
+          return sum;
+        }, 0);
+
+        const followers = (platform.config as any)?.followers || 0;
+        totalFollowers += followers;
+
+        platformBreakdown[platform.name] = {
+          followers,
+          posts: platformPosts.length,
+          engagement: platformEngagement,
+          sales: 0 // This would need to be calculated from actual sales data
+        };
       }
-    });
 
-    let totalFollowers = 0;
-    let totalPosts = 0;
-    let totalEngagement = 0;
-    let totalSales = 0;
-
-    const platformBreakdown: Record<string, any> = {};
-    const productSales: Record<string, { name: string; sales: number; engagement: number }> = {};
-
-    for (const platform of platforms) {
-      const posts = platform.socialPosts;
-      const engagement = posts.reduce((sum, post) => 
-        sum + post.engagement.likes + post.engagement.comments + post.engagement.shares, 0
-      );
-
-      platformBreakdown[platform.name] = {
-        followers: platform.config?.followers || 0,
-        posts: posts.length,
-        engagement,
-        sales: 0 // Calculate from orders
-      };
-
-      totalFollowers += platform.config?.followers || 0;
-      totalPosts += posts.length;
-      totalEngagement += engagement;
-
-      // Calculate product sales from social posts
+      // Calculate top products
+      const productSales: Record<string, { sales: number; engagement: number }> = {};
+      
       for (const post of posts) {
         for (const productId of post.productIds) {
           if (!productSales[productId]) {
-            const product = platform.socialProducts.find(sp => sp.productId === productId)?.product;
-            productSales[productId] = {
-              name: product?.name || 'Unknown Product',
-              sales: 0,
-              engagement: 0
-            };
+            productSales[productId] = { sales: 0, engagement: 0 };
           }
-          productSales[productId].engagement += post.engagement.clicks;
+          
+          if (post.engagement && typeof post.engagement === 'object') {
+            const engagement = post.engagement as any;
+            productSales[productId].engagement += engagement.clicks || 0;
+          }
         }
       }
+
+      const topProducts = Object.entries(productSales)
+        .map(([productId, data]) => ({
+          productId,
+          name: `Product ${productId}`, // This should be fetched from actual product data
+          sales: data.sales,
+          engagement: data.engagement
+        }))
+        .sort((a, b) => b.engagement - a.engagement)
+        .slice(0, 10);
+
+      return {
+        totalFollowers,
+        totalPosts: posts.length,
+        totalEngagement,
+        totalSales: 0, // This would need to be calculated from actual sales data
+        platformBreakdown,
+        topProducts
+      };
+    } catch (error) {
+      throw new Error(`Failed to get social analytics: ${error}`);
     }
-
-    // Get top products by engagement
-    const topProducts = Object.entries(productSales)
-      .map(([productId, data]) => ({
-        productId,
-        name: data.name,
-        sales: data.sales,
-        engagement: data.engagement
-      }))
-      .sort((a, b) => b.engagement - a.engagement)
-      .slice(0, 10);
-
-    return {
-      totalFollowers,
-      totalPosts,
-      totalEngagement,
-      totalSales,
-      platformBreakdown,
-      topProducts
-    };
   }
 
   async updatePostEngagement(postId: string, engagement: any): Promise<void> {
-    await prisma.socialPost.update({
-      where: { id: postId },
-      data: { engagement }
-    });
+    try {
+      await prisma.socialPost.update({
+        where: { id: postId },
+        data: { engagement }
+      });
+    } catch (error) {
+      throw new Error(`Failed to update post engagement: ${error}`);
+    }
   }
 
   async getScheduledPosts(platformId?: string): Promise<SocialPost[]> {
-    const where: any = {
-      status: 'scheduled',
-      scheduledAt: { gte: new Date() }
-    };
+    try {
+      const whereClause: any = {
+        status: 'scheduled',
+        scheduledAt: { gte: new Date() }
+      };
 
-    if (platformId) {
-      where.platformId = platformId;
+      if (platformId) {
+        whereClause.platformId = platformId;
+      }
+
+      const posts = await prisma.socialPost.findMany({
+        where: whereClause,
+        include: { platform: true }
+      });
+
+      return posts.map(post => ({
+        id: post.id,
+        platformId: post.platformId,
+        type: post.type as 'product' | 'story' | 'reel' | 'post',
+        content: post.content,
+        mediaUrls: post.mediaUrls,
+        productIds: post.productIds,
+        scheduledAt: post.scheduledAt || undefined,
+        publishedAt: post.publishedAt || undefined,
+        status: post.status as 'draft' | 'scheduled' | 'published' | 'failed',
+        engagement: post.engagement as any
+      }));
+    } catch (error) {
+      throw new Error(`Failed to get scheduled posts: ${error}`);
     }
-
-    return await prisma.socialPost.findMany({
-      where,
-      include: { platform: true },
-      orderBy: { scheduledAt: 'asc' }
-    });
   }
 
   async deleteSocialPost(postId: string): Promise<void> {
-    const post = await prisma.socialPost.findUnique({
-      where: { id: postId },
-      include: { platform: true }
-    });
+    try {
+      const post = await prisma.socialPost.findUnique({
+        where: { id: postId }
+      });
 
-    if (post && post.status === 'published' && post.metadata?.platformPostId) {
-      // Delete from social platform
-      await this.deleteFromPlatform(post.platform, post.metadata.platformPostId);
+      if (post && post.status === 'published' && (post.metadata as any)?.platformPostId) {
+        const platform = await prisma.socialPlatform.findUnique({
+          where: { id: post.platformId }
+        });
+
+        if (platform) {
+          await this.deleteFromPlatform(platform, (post.metadata as any).platformPostId);
+        }
+      }
+
+      await prisma.socialPost.delete({
+        where: { id: postId }
+      });
+    } catch (error) {
+      throw new Error(`Failed to delete social post: ${error}`);
     }
-
-    await prisma.socialPost.delete({
-      where: { id: postId }
-    });
   }
 
   async syncInventory(platformId: string): Promise<void> {
-    const platform = await prisma.socialPlatform.findUnique({
-      where: { id: platformId }
-    });
+    try {
+      const platform = await prisma.socialPlatform.findUnique({
+        where: { id: platformId }
+      });
 
-    if (!platform) return;
-
-    const socialProducts = await prisma.socialProduct.findMany({
-      where: { platformId, status: 'active' },
-      include: { product: true }
-    });
-
-    for (const socialProduct of socialProducts) {
-      try {
-        // Update inventory on social platform
-        await this.updateInventoryOnPlatform(platform, socialProduct);
-        
-        await prisma.socialProduct.update({
-          where: { id: socialProduct.id },
-          data: { lastSync: new Date() }
-        });
-      } catch (error) {
-        console.error(`Failed to sync inventory for product ${socialProduct.productId}:`, error);
+      if (!platform) {
+        throw new Error('Platform not found');
       }
+
+      const socialProducts = await prisma.socialProduct.findMany({
+        where: { platformId, status: 'active' }
+      });
+
+      for (const socialProduct of socialProducts) {
+        try {
+          await this.updateInventoryOnPlatform(platform, socialProduct);
+          
+          await prisma.socialProduct.update({
+            where: { id: socialProduct.id },
+            data: { lastSync: new Date() }
+          });
+        } catch (error) {
+          console.error(`Failed to sync inventory for product ${socialProduct.productId}:`, error);
+          
+          await prisma.socialProduct.update({
+            where: { id: socialProduct.id },
+            data: {
+              status: 'error',
+              metadata: { error: (error as Error).message }
+            }
+          });
+        }
+      }
+    } catch (error) {
+      throw new Error(`Failed to sync inventory: ${error}`);
     }
   }
 
-  // Platform-specific implementations
   private async syncProductToPlatform(platform: any, product: any): Promise<string> {
     switch (platform.name) {
       case 'facebook':
-        return await this.syncToFacebook(platform, product);
+        return this.syncToFacebook(platform, product);
       case 'instagram':
-        return await this.syncToInstagram(platform, product);
+        return this.syncToInstagram(platform, product);
       case 'tiktok':
-        return await this.syncToTikTok(platform, product);
+        return this.syncToTikTok(platform, product);
       case 'pinterest':
-        return await this.syncToPinterest(platform, product);
+        return this.syncToPinterest(platform, product);
+      case 'twitter':
+        return this.syncToTwitter(platform, product);
       default:
         throw new Error(`Unsupported platform: ${platform.name}`);
     }
@@ -413,13 +493,15 @@ export class SocialCommerceService {
   private async publishToPlatform(platform: any, post: any): Promise<string> {
     switch (platform.name) {
       case 'facebook':
-        return await this.publishToFacebook(platform, post);
+        return this.publishToFacebook(platform, post);
       case 'instagram':
-        return await this.publishToInstagram(platform, post);
+        return this.publishToInstagram(platform, post);
       case 'tiktok':
-        return await this.publishToTikTok(platform, post);
+        return this.publishToTikTok(platform, post);
       case 'pinterest':
-        return await this.publishToPinterest(platform, post);
+        return this.publishToPinterest(platform, post);
+      case 'twitter':
+        return this.publishToTwitter(platform, post);
       default:
         throw new Error(`Unsupported platform: ${platform.name}`);
     }
@@ -428,110 +510,125 @@ export class SocialCommerceService {
   private async deleteFromPlatform(platform: any, platformPostId: string): Promise<void> {
     switch (platform.name) {
       case 'facebook':
-        await this.deleteFromFacebook(platform, platformPostId);
-        break;
+        return this.deleteFromFacebook(platform, platformPostId);
       case 'instagram':
-        await this.deleteFromInstagram(platform, platformPostId);
-        break;
+        return this.deleteFromInstagram(platform, platformPostId);
       case 'tiktok':
-        await this.deleteFromTikTok(platform, platformPostId);
-        break;
+        return this.deleteFromTikTok(platform, platformPostId);
       case 'pinterest':
-        await this.deleteFromPinterest(platform, platformPostId);
-        break;
+        return this.deleteFromPinterest(platform, platformPostId);
+      case 'twitter':
+        return this.deleteFromTwitter(platform, platformPostId);
+      default:
+        throw new Error(`Unsupported platform: ${platform.name}`);
     }
   }
 
   private async updateInventoryOnPlatform(platform: any, socialProduct: any): Promise<void> {
     switch (platform.name) {
       case 'facebook':
-        await this.updateInventoryOnFacebook(platform, socialProduct);
-        break;
+        return this.updateInventoryOnFacebook(platform, socialProduct);
       case 'instagram':
-        await this.updateInventoryOnInstagram(platform, socialProduct);
-        break;
+        return this.updateInventoryOnInstagram(platform, socialProduct);
       case 'tiktok':
-        await this.updateInventoryOnTikTok(platform, socialProduct);
-        break;
+        return this.updateInventoryOnTikTok(platform, socialProduct);
       case 'pinterest':
-        await this.updateInventoryOnPinterest(platform, socialProduct);
-        break;
+        return this.updateInventoryOnPinterest(platform, socialProduct);
+      case 'twitter':
+        return this.updateInventoryOnTwitter(platform, socialProduct);
+      default:
+        throw new Error(`Unsupported platform: ${platform.name}`);
     }
   }
 
-  // Facebook implementations
+  // Platform-specific implementation methods
   private async syncToFacebook(platform: any, product: any): Promise<string> {
-    // Facebook Catalog API implementation
-    return `fb_product_${Date.now()}`;
+    // Implement Facebook product sync
+    return `fb_${Date.now()}`;
   }
 
   private async publishToFacebook(platform: any, post: any): Promise<string> {
-    // Facebook Graph API implementation
+    // Implement Facebook post publishing
     return `fb_post_${Date.now()}`;
   }
 
   private async deleteFromFacebook(platform: any, platformPostId: string): Promise<void> {
-    // Facebook Graph API delete implementation
+    // Implement Facebook post deletion
   }
 
   private async updateInventoryOnFacebook(platform: any, socialProduct: any): Promise<void> {
-    // Facebook Catalog API inventory update
+    // Implement Facebook inventory update
   }
 
-  // Instagram implementations
   private async syncToInstagram(platform: any, product: any): Promise<string> {
-    // Instagram Basic Display API implementation
-    return `ig_product_${Date.now()}`;
+    // Implement Instagram product sync
+    return `ig_${Date.now()}`;
   }
 
   private async publishToInstagram(platform: any, post: any): Promise<string> {
-    // Instagram Basic Display API implementation
+    // Implement Instagram post publishing
     return `ig_post_${Date.now()}`;
   }
 
   private async deleteFromInstagram(platform: any, platformPostId: string): Promise<void> {
-    // Instagram Basic Display API delete implementation
+    // Implement Instagram post deletion
   }
 
   private async updateInventoryOnInstagram(platform: any, socialProduct: any): Promise<void> {
-    // Instagram Basic Display API inventory update
+    // Implement Instagram inventory update
   }
 
-  // TikTok implementations
   private async syncToTikTok(platform: any, product: any): Promise<string> {
-    // TikTok Shop API implementation
-    return `tt_product_${Date.now()}`;
+    // Implement TikTok product sync
+    return `tt_${Date.now()}`;
   }
 
   private async publishToTikTok(platform: any, post: any): Promise<string> {
-    // TikTok API implementation
+    // Implement TikTok post publishing
     return `tt_post_${Date.now()}`;
   }
 
   private async deleteFromTikTok(platform: any, platformPostId: string): Promise<void> {
-    // TikTok API delete implementation
+    // Implement TikTok post deletion
   }
 
   private async updateInventoryOnTikTok(platform: any, socialProduct: any): Promise<void> {
-    // TikTok Shop API inventory update
+    // Implement TikTok inventory update
   }
 
-  // Pinterest implementations
   private async syncToPinterest(platform: any, product: any): Promise<string> {
-    // Pinterest API implementation
-    return `pin_product_${Date.now()}`;
+    // Implement Pinterest product sync
+    return `pin_${Date.now()}`;
   }
 
   private async publishToPinterest(platform: any, post: any): Promise<string> {
-    // Pinterest API implementation
+    // Implement Pinterest post publishing
     return `pin_post_${Date.now()}`;
   }
 
   private async deleteFromPinterest(platform: any, platformPostId: string): Promise<void> {
-    // Pinterest API delete implementation
+    // Implement Pinterest post deletion
   }
 
   private async updateInventoryOnPinterest(platform: any, socialProduct: any): Promise<void> {
-    // Pinterest API inventory update
+    // Implement Pinterest inventory update
+  }
+
+  private async syncToTwitter(platform: any, product: any): Promise<string> {
+    // Implement Twitter product sync
+    return `tw_${Date.now()}`;
+  }
+
+  private async publishToTwitter(platform: any, post: any): Promise<string> {
+    // Implement Twitter post publishing
+    return `tw_post_${Date.now()}`;
+  }
+
+  private async deleteFromTwitter(platform: any, platformPostId: string): Promise<void> {
+    // Implement Twitter post deletion
+  }
+
+  private async updateInventoryOnTwitter(platform: any, socialProduct: any): Promise<void> {
+    // Implement Twitter inventory update
   }
 } 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   LineChart,
   Line,
@@ -17,7 +17,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  RechartsFunction,
 } from 'recharts';
 import { useRealTimeSync } from '@/hooks/useRealTimeSync';
 
@@ -74,39 +73,7 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { isConnected, subscribe, unsubscribe } = useRealTimeSync(organizationId);
-
-  useEffect(() => {
-    // Subscribe to real-time events
-    if (eventTypes.length > 0) {
-      eventTypes.forEach(eventType => {
-        subscribe(eventType, handleRealTimeUpdate);
-      });
-    }
-
-    // Set up refresh interval if specified
-    if (config.refreshInterval && config.refreshInterval > 0) {
-      intervalRef.current = setInterval(() => {
-        refreshData();
-      }, config.refreshInterval);
-    }
-
-    return () => {
-      // Cleanup subscriptions
-      if (eventTypes.length > 0) {
-        eventTypes.forEach(eventType => {
-          unsubscribe(eventType, handleRealTimeUpdate);
-        });
-      }
-
-      // Clear interval
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [eventTypes, config.refreshInterval]);
-
-  const handleRealTimeUpdate = (event: any) => {
+  const handleRealTimeUpdate = useCallback((event: any) => {
     // Process real-time event and update chart data
     setData(prevData => {
       const newData = processEventData(event, prevData);
@@ -118,7 +85,28 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
       
       return newData;
     });
-  };
+  }, [onDataUpdate]);
+
+  const { isConnected, events } = useRealTimeSync({
+    organizationId,
+    onEvent: handleRealTimeUpdate
+  });
+
+  useEffect(() => {
+    // Set up refresh interval if specified
+    if (config.refreshInterval && config.refreshInterval > 0) {
+      intervalRef.current = setInterval(() => {
+        refreshData();
+      }, config.refreshInterval);
+    }
+
+    return () => {
+      // Clear interval
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [config.refreshInterval]);
 
   const processEventData = (event: any, currentData: ChartData[]): ChartData[] => {
     // This is a generic processor - you might want to customize this

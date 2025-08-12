@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { whatsAppService } from '@/lib/whatsapp/whatsappService';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,7 +18,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
     }
 
-    await whatsAppService.updateCatalog(organizationId);
+    // Check if catalog exists, create if it doesn't
+    const existingCatalog = await prisma.whatsAppCatalog.findUnique({
+      where: { organizationId }
+    });
+
+    if (!existingCatalog) {
+      await whatsAppService.createCatalog('Main Catalog', organizationId);
+    }
     
     return NextResponse.json({ 
       success: true, 

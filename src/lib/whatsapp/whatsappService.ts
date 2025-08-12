@@ -1,8 +1,8 @@
-import { prisma } from '@/lib/prisma';
-import { realTimeSyncService, SyncEvent } from '@/lib/sync/realTimeSyncService';
+import { prisma } from '../prisma';
+import { realTimeSyncService, SyncEvent } from '../sync/realTimeSyncService';
 import { EventEmitter } from 'events';
 import axios, { AxiosInstance } from 'axios';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 export interface WhatsAppMessage {
   id: string;
@@ -168,12 +168,14 @@ export class WhatsAppService extends EventEmitter {
 
       // Emit sync event
       await realTimeSyncService.broadcastEvent({
+        id: `whatsapp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: 'whatsapp_message_sent',
+        action: 'create',
         entityId: whatsappMessage.id,
-        entityType: 'whatsapp_message',
         organizationId,
         data: whatsappMessage,
         timestamp: new Date(),
+        source: 'whatsapp'
       });
 
       return whatsappMessage;
@@ -224,12 +226,14 @@ export class WhatsAppService extends EventEmitter {
       await this.storeMessage(whatsappMessage);
 
       await realTimeSyncService.broadcastEvent({
+        id: `whatsapp_template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: 'whatsapp_template_sent',
+        action: 'create',
         entityId: whatsappMessage.id,
-        entityType: 'whatsapp_message',
         organizationId,
         data: whatsappMessage,
         timestamp: new Date(),
+        source: 'whatsapp'
       });
 
       return whatsappMessage;
@@ -285,12 +289,14 @@ export class WhatsAppService extends EventEmitter {
       await this.storeMessage(whatsappMessage);
 
       await realTimeSyncService.broadcastEvent({
+        id: `whatsapp_media_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: 'whatsapp_media_sent',
+        action: 'create',
         entityId: whatsappMessage.id,
-        entityType: 'whatsapp_message',
         organizationId,
         data: whatsappMessage,
         timestamp: new Date(),
+        source: 'whatsapp'
       });
 
       return whatsappMessage;
@@ -332,12 +338,14 @@ export class WhatsAppService extends EventEmitter {
       await this.storeMessage(whatsappMessage);
 
       await realTimeSyncService.broadcastEvent({
+        id: `whatsapp_interactive_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: 'whatsapp_interactive_sent',
+        action: 'create',
         entityId: whatsappMessage.id,
-        entityType: 'whatsapp_message',
         organizationId,
         data: whatsappMessage,
         timestamp: new Date(),
+        source: 'whatsapp'
       });
 
       return whatsappMessage;
@@ -351,13 +359,17 @@ export class WhatsAppService extends EventEmitter {
    * Upload media and get media ID
    */
   async uploadMedia(
-    mediaBuffer: Buffer,
+    mediaBuffer: Buffer | Uint8Array,
     mediaType: 'image' | 'document' | 'audio' | 'video',
     filename?: string
   ): Promise<string> {
     try {
       const formData = new FormData();
-      formData.append('file', new Blob([mediaBuffer]), filename);
+      // Convert Buffer to ArrayBuffer for Blob compatibility
+      const arrayBuffer = mediaBuffer.buffer.slice(mediaBuffer.byteOffset, mediaBuffer.byteOffset + mediaBuffer.byteLength);
+      // Ensure we have a regular ArrayBuffer, not SharedArrayBuffer
+      const regularArrayBuffer = arrayBuffer instanceof SharedArrayBuffer ? new ArrayBuffer(arrayBuffer.byteLength) : arrayBuffer;
+      formData.append('file', new Blob([regularArrayBuffer]), filename);
       formData.append('type', mediaType);
       formData.append('messaging_product', 'whatsapp');
 
@@ -419,10 +431,9 @@ export class WhatsAppService extends EventEmitter {
         data: {
           name: template.name,
           language: template.language,
-          category: template.category,
-          components: template.components,
-          status: 'PENDING',
-          templateId: response.data.id,
+          category: template.category || null,
+          content: JSON.stringify(template.components), // Store components as JSON in content field
+          organizationId: this.businessAccountId || '',
         },
       });
 
@@ -462,28 +473,36 @@ export class WhatsAppService extends EventEmitter {
 
       const response = await this.apiClient.post(`/${this.businessAccountId}/product_catalogs`, payload);
       
-      const catalog: WhatsAppCatalog = {
+      const catalogData: WhatsAppCatalog = {
         id: response.data.id,
         name,
         description,
         products: [],
-          organizationId,
-          isActive: true,
+        organizationId,
+        isActive: true,
         lastUpdated: new Date(),
       };
 
       // Store catalog in database
-      await prisma.whatsAppCatalog.create({
+      const whatsappCatalog = await prisma.whatsAppCatalog.create({
         data: {
-          catalogId: catalog.id,
-          name: catalog.name,
-          description: catalog.description,
-          organizationId: catalog.organizationId,
-          isActive: catalog.isActive,
+          name,
+          description: description || undefined,
+          products: [],
+          organizationId,
+          isActive: true,
         },
       });
 
-      return catalog;
+      return {
+        id: whatsappCatalog.id,
+        name: whatsappCatalog.name,
+        description: whatsappCatalog.description || undefined,
+        products: [],
+        organizationId: whatsappCatalog.organizationId,
+        isActive: whatsappCatalog.isActive,
+        lastUpdated: whatsappCatalog.lastUpdated,
+      };
     } catch (error) {
       console.error('Error creating WhatsApp catalog:', error);
       throw new Error('Failed to create WhatsApp catalog');
@@ -773,18 +792,16 @@ For immediate assistance, visit our website or call customer service.
     try {
     await prisma.whatsAppMessage.create({
       data: {
-          messageId: message.id,
-        from: message.from,
-        to: message.to,
-        type: message.type,
-        content: message.content,
-        timestamp: message.timestamp,
-        status: message.status,
-        organizationId: message.organizationId,
-        customerId: message.customerId,
-        orderId: message.orderId,
-          templateName: message.templateName,
-          mediaId: message.mediaId,
+          from: message.from,
+          to: message.to,
+          type: message.type,
+          content: JSON.stringify(message.content),
+          timestamp: message.timestamp,
+          status: message.status,
+          organizationId: message.organizationId,
+          customerId: message.customerId,
+          orderId: message.orderId,
+          metadata: message.metadata,
         },
       });
     } catch (error) {
@@ -795,24 +812,28 @@ For immediate assistance, visit our website or call customer service.
   private async handleIncomingMessage(message: WhatsAppMessage): Promise<void> {
     // Broadcast to real-time sync
     await realTimeSyncService.broadcastEvent({
+      id: `whatsapp_received_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'whatsapp_message_received',
+      action: 'create',
       entityId: message.id,
-      entityType: 'whatsapp_message',
       organizationId: message.organizationId,
       data: message,
       timestamp: new Date(),
+      source: 'whatsapp'
     });
   }
 
   private async handleMessageStatus(status: any): Promise<void> {
     // Broadcast status update
     await realTimeSyncService.broadcastEvent({
+      id: `whatsapp_status_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'whatsapp_message_status',
+      action: 'update',
       entityId: status.id,
-      entityType: 'whatsapp_message',
       organizationId: '', // Will need to be determined
       data: status,
       timestamp: new Date(),
+      source: 'whatsapp'
     });
   }
 
@@ -837,7 +858,7 @@ For immediate assistance, visit our website or call customer service.
           type: 'body',
           parameters: [
             { type: 'text', text: order.id },
-            { type: 'text', text: order.total.toString() },
+            { type: 'text', text: order.totalAmount.toString() },
           ],
         },
       ]
@@ -887,7 +908,7 @@ For immediate assistance, visit our website or call customer service.
           type: 'body',
           parameters: [
             { type: 'text', text: order.id },
-            { type: 'text', text: order.total.toString() },
+            { type: 'text', text: order.totalAmount.toString() },
           ],
         },
       ]

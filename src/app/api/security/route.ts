@@ -4,6 +4,22 @@ import { authOptions } from '@/lib/auth';
 import { securityService } from '@/lib/security/securityService';
 import { prisma } from '@/lib/prisma';
 
+// Helper function to get permissions based on role
+function getPermissionsForRole(role: string): string[] {
+  switch (role) {
+    case 'ADMIN':
+      return ['read', 'write', 'delete', 'manage_users', 'manage_settings', 'view_analytics'];
+    case 'MANAGER':
+      return ['read', 'write', 'delete', 'manage_users', 'view_analytics'];
+    case 'STAFF':
+      return ['read', 'write'];
+    case 'PACKING':
+      return ['read'];
+    default:
+      return ['read'];
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -36,25 +52,24 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ auditLogs });
 
       case 'security-alerts':
-        const alerts = await prisma.securityAlert.findMany({
-          where: { organizationId },
-          orderBy: { timestamp: 'desc' },
-          take: 50,
-        });
+        // Security alerts not implemented yet
+        const alerts: any[] = [];
         return NextResponse.json({ alerts });
 
       case 'user-permissions':
         const user = await prisma.user.findUnique({
           where: { id: session.user.id },
-          include: { role: true },
         });
         
         if (!user?.role) {
-          return NextResponse.json({ permissions: [] });
+          return NextResponse.json({ permissions: [], role: null });
         }
 
+        // Define permissions based on role
+        const permissions = getPermissionsForRole(user.role);
+        
         return NextResponse.json({ 
-          permissions: user.role.permissions,
+          permissions,
           role: user.role,
         });
 
@@ -81,18 +96,11 @@ export async function GET(request: NextRequest) {
           },
         });
 
-        const recentSecurityEvents = await prisma.securityAudit.findMany({
-          where: { organizationId },
-          orderBy: { timestamp: 'desc' },
-          take: 10,
-        });
+        // Security audit not implemented yet
+        const recentSecurityEvents: any[] = [];
 
-        const activeAlerts = await prisma.securityAlert.count({
-          where: { 
-            organizationId,
-            resolved: false,
-          },
-        });
+        // Security alerts not implemented yet
+        const activeAlerts = 0;
 
         return NextResponse.json({
           totalUsers,
@@ -124,6 +132,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, data } = body;
     const organizationId = session.user.organizationId;
+
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization ID not found' }, { status: 400 });
+    }
 
     switch (action) {
       case 'setup-mfa':

@@ -129,10 +129,9 @@ async function processMessageContent(message: any, customer: any): Promise<void>
   } else if (content.includes('help') || content.includes('support')) {
     await handleSupportQuery(message, customer);
   } else {
-    await whatsAppService.sendMessage(
+    await whatsAppService.sendTextMessage(
       message.from,
       'Thank you for your message! How can I help you today? You can ask about:\n- Order status\n- Products\n- Support',
-      'text',
       message.organizationId
     );
   }
@@ -146,23 +145,21 @@ async function handleOrderQuery(message: any, customer: any): Promise<void> {
   });
 
   if (orders.length === 0) {
-    await whatsAppService.sendMessage(
+    await whatsAppService.sendTextMessage(
       message.from,
       'You don\'t have any orders yet. Would you like to browse our products?',
-      'text',
       message.organizationId
     );
     return;
   }
 
-  const orderList = orders.map(order => 
+  const orderList = orders.map((order: any) => 
     `Order #${order.orderNumber}: ${order.status} - $${order.totalAmount}`
   ).join('\n');
 
-  await whatsAppService.sendMessage(
+  await whatsAppService.sendTextMessage(
     message.from,
     `Here are your recent orders:\n\n${orderList}`,
-    'text',
     message.organizationId
   );
 }
@@ -178,32 +175,29 @@ async function handleProductQuery(message: any, customer: any): Promise<void> {
   });
 
   if (products.length === 0) {
-    await whatsAppService.sendMessage(
+    await whatsAppService.sendTextMessage(
       message.from,
       'No products available at the moment.',
-      'text',
       message.organizationId
     );
     return;
   }
 
-  const productList = products.map(product => 
+  const productList = products.map((product: any) => 
     `${product.name} - $${product.price} (${product.stockQuantity} in stock)`
   ).join('\n');
 
-  await whatsAppService.sendMessage(
+  await whatsAppService.sendTextMessage(
     message.from,
     `Here are some of our products:\n\n${productList}\n\nVisit our website to see more!`,
-    'text',
     message.organizationId
   );
 }
 
 async function handleSupportQuery(message: any, customer: any): Promise<void> {
-  await whatsAppService.sendMessage(
+  await whatsAppService.sendTextMessage(
     message.from,
     'Our support team is here to help! Please provide your order number or describe your issue, and we\'ll get back to you soon.',
-    'text',
     message.organizationId
   );
 } 

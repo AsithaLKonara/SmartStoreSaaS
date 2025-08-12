@@ -9,32 +9,56 @@ const winston = require('winston');
 const compression = require('compression');
 const morgan = require('morgan');
 const promClient = require('prom-client');
+const hpp = require('hpp');
+const mongoSanitize = require('express-mongo-sanitize');
+const xss = require('xss-clean');
+const slowDown = require('express-slow-down');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize Redis client
-const redisClient = redis.createClient({
-  url: process.env.REDIS_URL || 'redis://localhost:6379'
-});
-
-// Initialize logger
+// Enhanced logging configuration
 const logger = winston.createLogger({
-  level: 'info',
+  level: process.env.LOG_LEVEL || 'info',
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
     winston.format.json()
   ),
+  defaultMeta: { service: 'api-gateway' },
   transports: [
-    new winston.transports.Console(),
     new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'logs/combined.log' })
-  ]
+    new winston.transports.File({ filename: 'logs/combined.log' }),
+  ],
 });
 
-// Initialize Prometheus metrics
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new winston.transports.Console({
+    format: winston.format.simple()
+  }));
+}
+
+// Redis client with enhanced security
+const redisClient = redis.createClient({
+  url: process.env.REDIS_URL || 'redis://localhost:6379',
+  password: process.env.REDIS_PASSWORD,
+  tls: process.env.REDIS_TLS_ENABLED === 'true' ? {} : undefined,
+  retry_strategy: (options) => {
+    if (options.total_retry_time > 1000 * 60 * 60) {
+      return new Error('Retry time exhausted');
+    }
+    if (options.attempt > 10) {
+      return undefined;
+    }
+    return Math.min(options.attempt * 100, 3000);
+  }
+});
+
+redisClient.on('error', (err) => logger.error('Redis Client Error:', err));
+redisClient.on('connect', () => logger.info('Redis Client Connected'));
+
+// Prometheus metrics
 const register = new promClient.Registry();
 promClient.collectDefaultMetrics({ register });
 
@@ -68,7 +92,7 @@ const services = {
   iot: process.env.IOT_SERVICE_URL || 'http://iot-service:3012'
 };
 
-// Middleware
+// Enhanced security middleware
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -81,19 +105,77 @@ app.use(helmet({
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       frameSrc: ["'none'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
     },
   },
+  hsts: {
+    maxAge: parseInt(process.env.HSTS_MAX_AGE || '31536000'),
+    includeSubDomains: process.env.HSTS_INCLUDE_SUBDOMAINS === 'true',
+    preload: process.env.HSTS_PRELOAD === 'true',
+  },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  frameguard: { action: 'deny' },
+  noSniff: true,
+  xssFilter: true,
 }));
 
+// Additional security middleware
+app.use(hpp()); // Protect against HTTP Parameter Pollution
+app.use(mongoSanitize()); // Prevent NoSQL injection
+app.use(xss()); // Prevent XSS attacks
+
+// Enhanced CORS configuration
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000'],
   credentials: true,
-  optionsSuccessStatus: 200
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Requested-With'],
+  exposedHeaders: ['X-Total-Count', 'X-Rate-Limit-Remaining'],
+  maxAge: 86400, // 24 hours
 }));
 
-app.use(compression());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Enhanced rate limiting
+const rateLimiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
+  message: {
+    error: 'Too many requests from this IP, please try again later.',
+    retryAfter: Math.ceil(parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000') / 1000),
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: process.env.RATE_LIMIT_SKIP_SUCCESSFUL_REQUESTS === 'true',
+  skipFailedRequests: process.env.RATE_LIMIT_SKIP_FAILED_REQUESTS === 'true',
+  keyGenerator: (req) => {
+    // Use user ID if authenticated, otherwise IP address
+    return req.user?.id || req.ip;
+  },
+  handler: (req, res) => {
+    logger.warn(`Rate limit exceeded for ${req.ip}`, {
+      ip: req.ip,
+      userId: req.user?.id,
+      userAgent: req.get('User-Agent'),
+    });
+    res.status(429).json({
+      error: 'Too many requests',
+      retryAfter: Math.ceil(parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000') / 1000),
+    });
+  },
+});
+
+// Speed limiting for suspicious requests
+const speedLimiter = slowDown({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  delayAfter: 50, // Allow 50 requests per 15 minutes, then...
+  delayMs: 500, // Begin adding 500ms of delay per request above 50
+  maxDelayMs: 20000, // Maximum delay of 20 seconds
+  skipSuccessfulRequests: false,
+  skipFailedRequests: false,
+});
+
+// Apply rate limiting to all routes
+app.use(rateLimiter);
+app.use(speedLimiter);
 
 // Request logging
 app.use(morgan('combined', {
@@ -102,52 +184,107 @@ app.use(morgan('combined', {
   }
 }));
 
+// Compression
+app.use(compression());
+
+// Body parsing with size limits
+app.use(express.json({ 
+  limit: '10mb',
+  verify: (req, res, buf) => {
+    try {
+      JSON.parse(buf);
+    } catch (e) {
+      res.status(400).json({ error: 'Invalid JSON' });
+      throw new Error('Invalid JSON');
+    }
+  }
+}));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request timeout middleware
+app.use((req, res, next) => {
+  const timeout = parseInt(process.env.API_REQUEST_TIMEOUT_MS || '30000');
+  req.setTimeout(timeout, () => {
+    res.status(408).json({ error: 'Request timeout' });
+  });
+  next();
+});
+
+// Security headers middleware
+app.use((req, res, next) => {
+  // Additional security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('X-Download-Options', 'noopen');
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+  res.setHeader('X-DNS-Prefetch-Control', 'off');
+  
+  // Remove server information
+  res.removeHeader('X-Powered-By');
+  
+  next();
+});
+
+// Request ID middleware for tracing
+app.use((req, res, next) => {
+  req.id = require('crypto').randomBytes(16).toString('hex');
+  res.setHeader('X-Request-ID', req.id);
+  next();
+});
+
 // Metrics middleware
 app.use((req, res, next) => {
   const start = Date.now();
   
   res.on('finish', () => {
-    const duration = (Date.now() - start) / 1000;
-    const route = req.route?.path || req.path;
-    
-    httpRequestsTotal.inc({
-      method: req.method,
-      route,
-      status_code: res.statusCode
+    const duration = Date.now() - start;
+    httpRequestsTotal.inc({ 
+      method: req.method, 
+      route: req.route?.path || req.path, 
+      status_code: res.statusCode 
     });
-    
-    httpRequestDuration.observe({
-      method: req.method,
-      route
-    }, duration);
+    httpRequestDuration.observe({ 
+      method: req.method, 
+      route: req.route?.path || req.path 
+    }, duration / 1000);
   });
   
   next();
 });
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // limit each IP to 1000 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP, please try again later.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => {
-    // Skip rate limiting for health checks and metrics
-    return req.path === '/health' || req.path === '/metrics';
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV,
+    version: process.env.npm_package_version || '1.0.0'
+  });
+});
+
+// Metrics endpoint
+app.get('/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
+  } catch (err) {
+    res.status(500).end(err);
   }
 });
 
-app.use(limiter);
-
-// JWT Authentication middleware
+// JWT Authentication middleware with enhanced security
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
+    logger.warn('Access attempt without token', {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      path: req.path,
+    });
     return res.status(401).json({ error: 'Access token required' });
   }
 
@@ -155,217 +292,168 @@ const authenticateToken = async (req, res, next) => {
     // Check if token is blacklisted
     const isBlacklisted = await redisClient.get(`blacklist:${token}`);
     if (isBlacklisted) {
+      logger.warn('Blacklisted token used', {
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        path: req.path,
+      });
       return res.status(401).json({ error: 'Token has been revoked' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Verify token with proper error handling
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ['HS256'],
+      issuer: process.env.JWT_ISSUER || 'smartstore',
+      audience: process.env.JWT_AUDIENCE || 'smartstore-users',
+    });
+
+    // Check token expiration
+    if (decoded.exp && Date.now() >= decoded.exp * 1000) {
+      logger.warn('Expired token used', {
+        ip: req.ip,
+        userId: decoded.id,
+        userAgent: req.get('User-Agent'),
+        path: req.path,
+      });
+      return res.status(401).json({ error: 'Token has expired' });
+    }
+
+    // Add user info to request
     req.user = decoded;
+    
+    // Log successful authentication
+    logger.info('User authenticated', {
+      userId: decoded.id,
+      ip: req.ip,
+      path: req.path,
+    });
+
     next();
   } catch (error) {
-    logger.error('Token verification failed:', error);
-    return res.status(403).json({ error: 'Invalid token' });
-  }
-};
-
-// Circuit breaker implementation
-class CircuitBreaker {
-  constructor(threshold = 5, timeout = 60000) {
-    this.failureCount = 0;
-    this.threshold = threshold;
-    this.timeout = timeout;
-    this.state = 'CLOSED'; // CLOSED, OPEN, HALF_OPEN
-    this.nextAttempt = Date.now();
-  }
-
-  async call(fn) {
-    if (this.state === 'OPEN') {
-      if (this.nextAttempt <= Date.now()) {
-        this.state = 'HALF_OPEN';
-      } else {
-        throw new Error('Circuit breaker is OPEN');
-      }
-    }
-
-    try {
-      const result = await fn();
-      this.onSuccess();
-      return result;
-    } catch (error) {
-      this.onFailure();
-      throw error;
-    }
-  }
-
-  onSuccess() {
-    this.failureCount = 0;
-    this.state = 'CLOSED';
-  }
-
-  onFailure() {
-    this.failureCount++;
-    if (this.failureCount >= this.threshold) {
-      this.state = 'OPEN';
-      this.nextAttempt = Date.now() + this.timeout;
-    }
-  }
-}
-
-const circuitBreakers = new Map();
-
-// Get or create circuit breaker for service
-const getCircuitBreaker = (serviceName) => {
-  if (!circuitBreakers.has(serviceName)) {
-    circuitBreakers.set(serviceName, new CircuitBreaker());
-  }
-  return circuitBreakers.get(serviceName);
-};
-
-// Service health check
-const checkServiceHealth = async (serviceName, serviceUrl) => {
-  try {
-    const response = await fetch(`${serviceUrl}/health`, {
-      method: 'GET',
-      timeout: 5000
+    logger.error('Token verification failed:', {
+      error: error.message,
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      path: req.path,
     });
-    return response.ok;
-  } catch (error) {
-    logger.warn(`Service ${serviceName} health check failed:`, error.message);
-    return false;
+    
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token has expired' });
+    } else if (error.name === 'JsonWebTokenError') {
+      return res.status(403).json({ error: 'Invalid token' });
+    } else {
+      return res.status(403).json({ error: 'Token verification failed' });
+    }
   }
 };
 
-// Load balancer for service instances
-class LoadBalancer {
-  constructor() {
-    this.serviceInstances = new Map();
-    this.currentIndex = new Map();
-  }
-
-  addInstance(serviceName, url) {
-    if (!this.serviceInstances.has(serviceName)) {
-      this.serviceInstances.set(serviceName, []);
-      this.currentIndex.set(serviceName, 0);
-    }
-    this.serviceInstances.get(serviceName).push(url);
-  }
-
-  getNextInstance(serviceName) {
-    const instances = this.serviceInstances.get(serviceName);
-    if (!instances || instances.length === 0) {
-      return null;
+// Role-based access control middleware
+const requireRole = (roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const index = this.currentIndex.get(serviceName);
-    const instance = instances[index];
-    this.currentIndex.set(serviceName, (index + 1) % instances.length);
-    
-    return instance;
+    if (!roles.includes(req.user.role)) {
+      logger.warn('Unauthorized access attempt', {
+        userId: req.user.id,
+        userRole: req.user.role,
+        requiredRoles: roles,
+        ip: req.ip,
+        path: req.path,
+      });
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+
+    next();
+  };
+};
+
+// API key authentication middleware
+const authenticateAPIKey = (req, res, next) => {
+  const apiKey = req.headers[process.env.API_KEY_HEADER || 'X-API-Key'];
+  
+  if (!apiKey) {
+    return res.status(401).json({ error: 'API key required' });
   }
-}
 
-const loadBalancer = new LoadBalancer();
+  // Validate API key (implement your validation logic here)
+  if (apiKey !== process.env.API_KEY) {
+    logger.warn('Invalid API key used', {
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+      path: req.path,
+    });
+    return res.status(403).json({ error: 'Invalid API key' });
+  }
 
-// Initialize service instances
-Object.entries(services).forEach(([name, url]) => {
-  loadBalancer.addInstance(name, url);
-});
+  next();
+};
 
-// Proxy configuration with circuit breaker
+// Proxy options with enhanced security
 const createProxyOptions = (serviceName, pathRewrite = {}) => ({
   target: services[serviceName],
   changeOrigin: true,
   pathRewrite,
-  timeout: 30000,
-  proxyTimeout: 30000,
   onProxyReq: (proxyReq, req, res) => {
-    // Add correlation ID for tracing
-    const correlationId = req.headers['x-correlation-id'] || 
-                         `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    proxyReq.setHeader('X-Correlation-ID', correlationId);
+    // Add security headers to proxied requests
+    proxyReq.setHeader('X-Forwarded-For', req.ip);
+    proxyReq.setHeader('X-Forwarded-Proto', req.protocol);
+    proxyReq.setHeader('X-Request-ID', req.id);
     
-    // Forward user information
-    if (req.user) {
-      proxyReq.setHeader('X-User-ID', req.user.id);
-      proxyReq.setHeader('X-User-Role', req.user.role);
-      proxyReq.setHeader('X-Organization-ID', req.user.organizationId);
-    }
-    
-    logger.info(`Proxying ${req.method} ${req.path} to ${serviceName}`, {
-      correlationId,
+    // Log proxy request
+    logger.info(`Proxying to ${serviceName}`, {
+      service: serviceName,
+      method: req.method,
+      path: req.path,
       userId: req.user?.id,
-      service: serviceName
+      ip: req.ip,
+    });
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    // Log proxy response
+    logger.info(`Response from ${serviceName}`, {
+      service: serviceName,
+      statusCode: proxyRes.statusCode,
+      method: req.method,
+      path: req.path,
+      userId: req.user?.id,
     });
   },
   onError: (err, req, res) => {
-    logger.error(`Proxy error for ${serviceName}:`, err);
+    logger.error(`Proxy error to ${serviceName}:`, {
+      error: err.message,
+      service: serviceName,
+      method: req.method,
+      path: req.path,
+      userId: req.user?.id,
+    });
     
-    const circuitBreaker = getCircuitBreaker(serviceName);
-    circuitBreaker.onFailure();
-    
-    if (!res.headersSent) {
-      res.status(503).json({
-        error: 'Service temporarily unavailable',
-        service: serviceName,
-        timestamp: new Date().toISOString()
-      });
-    }
-  }
+    res.status(502).json({ 
+      error: 'Service temporarily unavailable',
+      service: serviceName,
+    });
+  },
 });
 
-// Health check endpoint
-app.get('/health', async (req, res) => {
-  const health = {
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    services: {}
-  };
-
-  // Check all services
-  const healthChecks = Object.entries(services).map(async ([name, url]) => {
-    const isHealthy = await checkServiceHealth(name, url);
-    health.services[name] = {
-      status: isHealthy ? 'healthy' : 'unhealthy',
-      url
-    };
-  });
-
-  await Promise.all(healthChecks);
-
-  const unhealthyServices = Object.values(health.services)
-    .filter(service => service.status === 'unhealthy');
-
-  if (unhealthyServices.length > 0) {
-    health.status = 'degraded';
-    res.status(503);
-  }
-
-  res.json(health);
-});
-
-// Metrics endpoint
-app.get('/metrics', (req, res) => {
-  res.set('Content-Type', register.contentType);
-  res.end(register.metrics());
-});
-
-// API Routes with authentication
+// API Routes with enhanced security
 
 // Public routes (no authentication required)
 app.use('/api/auth', createProxyMiddleware(createProxyOptions('user', {
   '^/api/auth': ''
 })));
 
-app.use('/api/products', createProxyMiddleware(createProxyOptions('product', {
-  '^/api/products': ''
-})));
-
-app.use('/api/search', createProxyMiddleware(createProxyOptions('search', {
-  '^/api/search': ''
+app.use('/api/health', createProxyMiddleware(createProxyOptions('user', {
+  '^/api/health': ''
 })));
 
 // Protected routes (authentication required)
 app.use('/api/users', authenticateToken, createProxyMiddleware(createProxyOptions('user', {
   '^/api/users': ''
+})));
+
+app.use('/api/products', authenticateToken, createProxyMiddleware(createProxyOptions('product', {
+  '^/api/products': ''
 })));
 
 app.use('/api/orders', authenticateToken, createProxyMiddleware(createProxyOptions('order', {
@@ -376,105 +464,67 @@ app.use('/api/payments', authenticateToken, createProxyMiddleware(createProxyOpt
   '^/api/payments': ''
 })));
 
-app.use('/api/inventory', authenticateToken, createProxyMiddleware(createProxyOptions('inventory', {
-  '^/api/inventory': ''
+// Admin routes (role-based access)
+app.use('/api/admin', authenticateToken, requireRole(['ADMIN', 'SUPER_ADMIN']), createProxyMiddleware(createProxyOptions('user', {
+  '^/api/admin': ''
 })));
 
-app.use('/api/notifications', authenticateToken, createProxyMiddleware(createProxyOptions('notification', {
-  '^/api/notifications': ''
+// API key protected routes
+app.use('/api/webhooks', authenticateAPIKey, createProxyMiddleware(createProxyOptions('user', {
+  '^/api/webhooks': ''
 })));
-
-app.use('/api/analytics', authenticateToken, createProxyMiddleware(createProxyOptions('analytics', {
-  '^/api/analytics': ''
-})));
-
-app.use('/api/ai', authenticateToken, createProxyMiddleware(createProxyOptions('ai', {
-  '^/api/ai': ''
-})));
-
-app.use('/api/files', authenticateToken, createProxyMiddleware(createProxyOptions('file', {
-  '^/api/files': ''
-})));
-
-app.use('/api/blockchain', authenticateToken, createProxyMiddleware(createProxyOptions('blockchain', {
-  '^/api/blockchain': ''
-})));
-
-app.use('/api/iot', authenticateToken, createProxyMiddleware(createProxyOptions('iot', {
-  '^/api/iot': ''
-})));
-
-// WebSocket proxy for real-time features
-const { createProxyMiddleware: createWsProxy } = require('http-proxy-middleware');
-
-const wsProxy = createWsProxy({
-  target: 'ws://notification-service:3006',
-  changeOrigin: true,
-  ws: true,
-  logLevel: 'info'
-});
-
-app.use('/ws', wsProxy);
 
 // Error handling middleware
-app.use((error, req, res, next) => {
-  logger.error('Unhandled error:', error);
-  
-  if (res.headersSent) {
-    return next(error);
-  }
-  
-  res.status(500).json({
-    error: 'Internal server error',
-    timestamp: new Date().toISOString(),
-    correlationId: req.headers['x-correlation-id']
+app.use((err, req, res, next) => {
+  logger.error('Unhandled error:', {
+    error: err.message,
+    stack: err.stack,
+    method: req.method,
+    path: req.path,
+    userId: req.user?.id,
+    ip: req.ip,
+  });
+
+  res.status(500).json({ 
+    error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message,
+    requestId: req.id,
   });
 });
 
 // 404 handler
 app.use('*', (req, res) => {
-  res.status(404).json({
+  logger.warn('Route not found', {
+    method: req.method,
+    path: req.path,
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+  });
+  
+  res.status(404).json({ 
     error: 'Route not found',
-    path: req.originalUrl,
-    timestamp: new Date().toISOString()
+    requestId: req.id,
   });
 });
 
 // Graceful shutdown
-const gracefulShutdown = (signal) => {
-  logger.info(`Received ${signal}. Starting graceful shutdown...`);
-  
-  server.close(() => {
-    logger.info('HTTP server closed');
-    
-    redisClient.quit(() => {
-      logger.info('Redis connection closed');
-      process.exit(0);
-    });
-  });
-  
-  // Force shutdown after 30 seconds
-  setTimeout(() => {
-    logger.error('Could not close connections in time, forcefully shutting down');
-    process.exit(1);
-  }, 30000);
-};
-
-// Start server
-const server = app.listen(PORT, async () => {
-  try {
-    await redisClient.connect();
-    logger.info('Connected to Redis');
-  } catch (error) {
-    logger.error('Failed to connect to Redis:', error);
-  }
-  
-  logger.info(`API Gateway running on port ${PORT}`);
-  logger.info('Service endpoints:', services);
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received, shutting down gracefully');
+  redisClient.quit();
+  process.exit(0);
 });
 
-// Handle shutdown signals
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGINT', () => {
+  logger.info('SIGINT received, shutting down gracefully');
+  redisClient.quit();
+  process.exit(0);
+});
+
+// Start server
+app.listen(PORT, () => {
+  logger.info(`API Gateway running on port ${PORT}`);
+  logger.info(`Environment: ${process.env.NODE_ENV}`);
+  logger.info(`Health check: http://localhost:${PORT}/health`);
+  logger.info(`Metrics: http://localhost:${PORT}/metrics`);
+});
 
 module.exports = app;

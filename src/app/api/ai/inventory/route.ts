@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { aiInventoryService } from '@/lib/ai/inventoryService';
-import { prisma } from '@/lib/prisma';
+import { authOptions } from '../../../../lib/auth';
+import { aiInventoryService } from '../../../../lib/ai/inventoryService';
+import { prisma } from '../../../../lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,14 +15,18 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type');
     const organizationId = session.user.organizationId;
 
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization ID not found' }, { status: 400 });
+    }
+
     // Get data for AI analysis
     const products = await prisma.product.findMany({
-      where: { organizationId },
+      where: { organizationId: organizationId || '' },
       include: { category: true },
     });
 
     const orders = await prisma.order.findMany({
-      where: { organizationId },
+      where: { organizationId: organizationId || '' },
       include: { items: true },
     });
 
@@ -30,7 +34,7 @@ export async function GET(request: NextRequest) {
       orderId: order.id,
       date: order.createdAt,
       items: order.items,
-      total: order.total,
+      total: order.totalAmount,
     }));
 
     switch (type) {
@@ -38,7 +42,7 @@ export async function GET(request: NextRequest) {
         const predictions = await aiInventoryService.predictStockoutRisk(
           products,
           salesHistory,
-          products.map((p: any) => ({ productId: p.id, currentStock: p.stock }))
+          products.map((p: any) => ({ productId: p.id, currentStock: p.stockQuantity }))
         );
         return NextResponse.json({ predictions });
 
@@ -55,11 +59,10 @@ export async function GET(request: NextRequest) {
 
       case 'supplier-performance':
         const suppliers = await prisma.supplier.findMany({
-          where: { organizationId },
+          where: { organizationId: organizationId || '' },
         });
         const supplierPerformance = await aiInventoryService.evaluateSupplierPerformance(
-          suppliers,
-          orders
+          organizationId || ''
         );
         return NextResponse.json({ supplierPerformance });
 
@@ -67,14 +70,14 @@ export async function GET(request: NextRequest) {
         const predictionsForPO = await aiInventoryService.predictStockoutRisk(
           products,
           salesHistory,
-          products.map((p: any) => ({ productId: p.id, currentStock: p.stock }))
+          products.map((p: any) => ({ productId: p.id, currentStock: p.stockQuantity }))
         );
         const suppliersForPO = await prisma.supplier.findMany({
-          where: { organizationId },
+          where: { organizationId: organizationId || '' },
         });
         const purchaseOrders = await aiInventoryService.generatePurchaseOrders(
-          predictionsForPO,
-          suppliersForPO
+          organizationId || '',
+          predictionsForPO
         );
         return NextResponse.json({ purchaseOrders });
 
@@ -110,15 +113,19 @@ export async function POST(request: NextRequest) {
     const { action, data } = body;
     const organizationId = session.user.organizationId;
 
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization ID not found' }, { status: 400 });
+    }
+
     switch (action) {
       case 'generate-purchase-order':
         // Generate and save purchase order based on AI recommendations
         const purchaseOrder = await prisma.purchaseOrder.create({
           data: {
             ...data,
-            organizationId,
+            organizationId: organizationId || '',
             status: 'DRAFT',
-            createdBy: session.user.id,
+            createdById: session.user.id,
           },
         });
         return NextResponse.json({ purchaseOrder });
@@ -127,7 +134,7 @@ export async function POST(request: NextRequest) {
         // Update product pricing based on AI recommendations
         const { productId, newPrice } = data;
         const updatedProduct = await prisma.product.update({
-          where: { id: productId, organizationId },
+          where: { id: productId, organizationId: organizationId || '' },
           data: { price: newPrice },
         });
         return NextResponse.json({ updatedProduct });
@@ -136,7 +143,7 @@ export async function POST(request: NextRequest) {
         // Set reorder points based on AI predictions
         const { productId: productIdForReorder, reorderPoint } = data;
         const product = await prisma.product.update({
-          where: { id: productIdForReorder, organizationId },
+          where: { id: productIdForReorder, organizationId: organizationId || '' },
           data: { reorderPoint },
         });
         return NextResponse.json({ product });

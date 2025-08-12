@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '../prisma';
 import * as XLSX from 'xlsx';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
@@ -38,7 +38,7 @@ export interface ExportResult {
 
 export class BulkOperationsService {
   async createBulkOperation(type: 'import' | 'export', entity: string, metadata?: any): Promise<BulkOperation> {
-    return await prisma.bulkOperation.create({
+    const operation = await prisma.bulkOperation.create({
       data: {
         type,
         entity,
@@ -48,9 +48,30 @@ export class BulkOperationsService {
         successRecords: 0,
         failedRecords: 0,
         errors: [],
-        metadata
+        metadata,
+        organization: {
+          connect: {
+            id: process.env.DEFAULT_ORGANIZATION_ID || 'default'
+          }
+        }
       }
     });
+
+    return {
+      id: operation.id,
+      type: operation.type as 'import' | 'export',
+      entity: operation.entity as 'products' | 'customers' | 'orders' | 'inventory',
+      status: operation.status as 'pending' | 'processing' | 'completed' | 'failed',
+      totalRecords: operation.totalRecords,
+      processedRecords: operation.processedRecords,
+      successRecords: operation.successRecords,
+      failedRecords: operation.failedRecords,
+      fileUrl: operation.fileUrl || undefined,
+      errors: operation.errors,
+      metadata: operation.metadata,
+      createdAt: operation.createdAt,
+      completedAt: operation.completedAt || undefined,
+    };
   }
 
   async importProducts(organizationId: string, fileBuffer: Buffer, format: 'csv' | 'xlsx'): Promise<ImportResult> {
@@ -88,47 +109,36 @@ export class BulkOperationsService {
               name: row.name,
               description: row.description || '',
               price: parseFloat(row.price) || 0,
-              cost: parseFloat(row.cost) || 0,
               sku: row.sku || '',
-              barcode: row.barcode || '',
-              category: row.category || '',
-              brand: row.brand || '',
               weight: parseFloat(row.weight) || 0,
-              dimensions: row.dimensions || '',
               stockQuantity: parseInt(row.stockQuantity) || 0,
               reorderPoint: parseInt(row.reorderPoint) || 0,
               isActive: row.isActive === 'true' || row.isActive === true,
-              organizationId
+              organization: {
+                connect: { id: organizationId }
+              },
+              slug: row.sku || row.name?.toLowerCase().replace(/\s+/g, '-') || `product-${Date.now()}`,
+              createdBy: {
+                connect: { id: process.env.DEFAULT_USER_ID || 'default' }
+              }
             }
           });
           successCount++;
         } catch (error) {
-          errors.push(`Row ${i + 1}: ${error.message}`);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          errors.push(`Row ${i + 1}: ${errorMessage}`);
           failedCount++;
-        }
-
-        // Update progress every 10 records
-        if ((i + 1) % 10 === 0) {
-          await prisma.bulkOperation.update({
-            where: { id: operation.id },
-            data: {
-              processedRecords: i + 1,
-              successRecords: successCount,
-              failedRecords: failedCount,
-              errors: errors.slice(-100) // Keep last 100 errors
-            }
-          });
         }
       }
 
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
-          status: 'completed',
           processedRecords: data.length,
           successRecords: successCount,
           failedRecords: failedCount,
-          errors: errors.slice(-100),
+          errors,
+          status: failedCount === 0 ? 'completed' : 'completed',
           completedAt: new Date()
         }
       });
@@ -139,19 +149,27 @@ export class BulkOperationsService {
         processedRecords: data.length,
         successRecords: successCount,
         failedRecords: failedCount,
-        errors: errors.slice(-100)
+        errors
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
           status: 'failed',
-          errors: [error.message],
+          errors: [errorMessage],
           completedAt: new Date()
         }
       });
 
-      throw error;
+      return {
+        success: false,
+        totalRecords: 0,
+        processedRecords: 0,
+        successRecords: 0,
+        failedRecords: 0,
+        errors: [errorMessage]
+      };
     }
   }
 
@@ -185,50 +203,47 @@ export class BulkOperationsService {
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
         try {
+          // Combine address information into a single address field
+          const fullAddress = [
+            row.address || '',
+            row.city || '',
+            row.state || '',
+            row.country || '',
+            row.postalCode || ''
+          ].filter(Boolean).join(', ');
+
           await prisma.customer.create({
             data: {
-              name: row.name,
-              email: row.email,
+              name: row.name || '',
+              email: row.email || '',
               phone: row.phone || '',
-              address: row.address || '',
-              city: row.city || '',
-              state: row.state || '',
-              country: row.country || '',
-              postalCode: row.postalCode || '',
-              organizationId,
-              metadata: {
-                source: 'bulk_import',
-                importDate: new Date().toISOString()
+              address: fullAddress,
+              tags: row.tags ? row.tags.split(',').map((tag: string) => tag.trim()) : [],
+              source: row.source || 'bulk_import',
+              totalSpent: parseFloat(row.totalSpent) || 0,
+              points: parseInt(row.points) || 0,
+              isActive: row.isActive === 'true' || row.isActive === true,
+              organization: {
+                connect: { id: organizationId }
               }
             }
           });
           successCount++;
         } catch (error) {
-          errors.push(`Row ${i + 1}: ${error.message}`);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          errors.push(`Row ${i + 1}: ${errorMessage}`);
           failedCount++;
-        }
-
-        if ((i + 1) % 10 === 0) {
-          await prisma.bulkOperation.update({
-            where: { id: operation.id },
-            data: {
-              processedRecords: i + 1,
-              successRecords: successCount,
-              failedRecords: failedCount,
-              errors: errors.slice(-100)
-            }
-          });
         }
       }
 
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
-          status: 'completed',
           processedRecords: data.length,
           successRecords: successCount,
           failedRecords: failedCount,
-          errors: errors.slice(-100),
+          errors,
+          status: failedCount === 0 ? 'completed' : 'completed',
           completedAt: new Date()
         }
       });
@@ -239,19 +254,27 @@ export class BulkOperationsService {
         processedRecords: data.length,
         successRecords: successCount,
         failedRecords: failedCount,
-        errors: errors.slice(-100)
+        errors
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
           status: 'failed',
-          errors: [error.message],
+          errors: [errorMessage],
           completedAt: new Date()
         }
       });
 
-      throw error;
+      return {
+        success: false,
+        totalRecords: 0,
+        processedRecords: 0,
+        successRecords: 0,
+        failedRecords: 0,
+        errors: [errorMessage]
+      };
     }
   }
 
@@ -261,7 +284,19 @@ export class BulkOperationsService {
     try {
       const products = await prisma.product.findMany({
         where: { organizationId },
-        orderBy: { createdAt: 'desc' }
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          sku: true,
+          weight: true,
+          stockQuantity: true,
+          reorderPoint: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true
+        }
       });
 
       await prisma.bulkOperation.update({
@@ -270,51 +305,31 @@ export class BulkOperationsService {
       });
 
       let fileUrl: string;
-      let fileContent: Buffer;
+      let fileData: any;
 
-      if (format === 'json') {
-        fileContent = Buffer.from(JSON.stringify(products, null, 2));
-        fileUrl = `/exports/products_${Date.now()}.json`;
-      } else if (format === 'csv') {
-        const csvData = products.map(product => ({
-          id: product.id,
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          cost: product.cost,
-          sku: product.sku,
-          barcode: product.barcode,
-          category: product.category,
-          brand: product.brand,
-          weight: product.weight,
-          dimensions: product.dimensions,
-          stockQuantity: product.stockQuantity,
-          reorderPoint: product.reorderPoint,
-          isActive: product.isActive,
-          createdAt: product.createdAt,
-          updatedAt: product.updatedAt
-        }));
-
-        const csvString = stringify(csvData, { header: true });
-        fileContent = Buffer.from(csvString);
-        fileUrl = `/exports/products_${Date.now()}.csv`;
-      } else {
+      if (format === 'csv') {
+        fileData = stringify(products, { header: true });
+        fileUrl = `data:text/csv;charset=utf-8,${encodeURIComponent(fileData)}`;
+      } else if (format === 'xlsx') {
         const worksheet = XLSX.utils.json_to_sheet(products);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
-        fileContent = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-        fileUrl = `/exports/products_${Date.now()}.xlsx`;
+        const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+        fileData = buffer;
+        fileUrl = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${buffer.toString('base64')}`;
+      } else {
+        fileData = JSON.stringify(products, null, 2);
+        fileUrl = `data:application/json;charset=utf-8,${encodeURIComponent(fileData)}`;
       }
 
-      // Save file (in production, save to cloud storage)
-      // For now, we'll just update the operation with the file URL
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
-          status: 'completed',
           processedRecords: products.length,
           successRecords: products.length,
+          failedRecords: 0,
           fileUrl,
+          status: 'completed',
           completedAt: new Date()
         }
       });
@@ -326,16 +341,17 @@ export class BulkOperationsService {
         format
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
           status: 'failed',
-          errors: [error.message],
+          errors: [errorMessage],
           completedAt: new Date()
         }
       });
 
-      throw error;
+      throw new Error(`Export failed: ${errorMessage}`);
     }
   }
 
@@ -345,7 +361,20 @@ export class BulkOperationsService {
     try {
       const customers = await prisma.customer.findMany({
         where: { organizationId },
-        orderBy: { createdAt: 'desc' }
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          address: true,
+          tags: true,
+          source: true,
+          totalSpent: true,
+          points: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true
+        }
       });
 
       await prisma.bulkOperation.update({
@@ -354,44 +383,31 @@ export class BulkOperationsService {
       });
 
       let fileUrl: string;
-      let fileContent: Buffer;
+      let fileData: any;
 
-      if (format === 'json') {
-        fileContent = Buffer.from(JSON.stringify(customers, null, 2));
-        fileUrl = `/exports/customers_${Date.now()}.json`;
-      } else if (format === 'csv') {
-        const csvData = customers.map(customer => ({
-          id: customer.id,
-          name: customer.name,
-          email: customer.email,
-          phone: customer.phone,
-          address: customer.address,
-          city: customer.city,
-          state: customer.state,
-          country: customer.country,
-          postalCode: customer.postalCode,
-          createdAt: customer.createdAt,
-          updatedAt: customer.updatedAt
-        }));
-
-        const csvString = stringify(csvData, { header: true });
-        fileContent = Buffer.from(csvString);
-        fileUrl = `/exports/customers_${Date.now()}.csv`;
-      } else {
+      if (format === 'csv') {
+        fileData = stringify(customers, { header: true });
+        fileUrl = `data:text/csv;charset=utf-8,${encodeURIComponent(fileData)}`;
+      } else if (format === 'xlsx') {
         const worksheet = XLSX.utils.json_to_sheet(customers);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Customers');
-        fileContent = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-        fileUrl = `/exports/customers_${Date.now()}.xlsx`;
+        const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+        fileData = buffer;
+        fileUrl = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${buffer.toString('base64')}`;
+      } else {
+        fileData = JSON.stringify(customers, null, 2);
+        fileUrl = `data:application/json;charset=utf-8,${encodeURIComponent(fileData)}`;
       }
 
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
-          status: 'completed',
           processedRecords: customers.length,
           successRecords: customers.length,
+          failedRecords: 0,
           fileUrl,
+          status: 'completed',
           completedAt: new Date()
         }
       });
@@ -403,16 +419,17 @@ export class BulkOperationsService {
         format
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
           status: 'failed',
-          errors: [error.message],
+          errors: [errorMessage],
           completedAt: new Date()
         }
       });
 
-      throw error;
+      throw new Error(`Export failed: ${errorMessage}`);
     }
   }
 
@@ -423,12 +440,22 @@ export class BulkOperationsService {
       const orders = await prisma.order.findMany({
         where: { organizationId },
         include: {
-          customer: true,
+          customer: {
+            select: {
+              name: true,
+              email: true,
+              phone: true
+            }
+          },
           items: {
-            include: { product: true }
+            select: {
+              productId: true,
+              quantity: true,
+              price: true,
+              total: true
+            }
           }
-        },
-        orderBy: { createdAt: 'desc' }
+        }
       });
 
       await prisma.bulkOperation.update({
@@ -436,45 +463,49 @@ export class BulkOperationsService {
         data: { totalRecords: orders.length, status: 'processing' }
       });
 
+      // Transform orders to exportable format
+      const exportData = orders.map((order: any) => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        customerName: order.customer?.name || '',
+        customerEmail: order.customer?.email || '',
+        customerPhone: order.customer?.phone || '',
+        totalAmount: order.totalAmount,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        // Store address information in metadata since shippingAddress and billingAddress don't exist
+        shippingAddress: order.metadata?.shippingAddress || '',
+        billingAddress: order.metadata?.billingAddress || ''
+      }));
+
       let fileUrl: string;
-      let fileContent: Buffer;
+      let fileData: any;
 
-      if (format === 'json') {
-        fileContent = Buffer.from(JSON.stringify(orders, null, 2));
-        fileUrl = `/exports/orders_${Date.now()}.json`;
-      } else if (format === 'csv') {
-        const csvData = orders.map(order => ({
-          id: order.id,
-          orderNumber: order.orderNumber,
-          customerName: order.customer.name,
-          customerEmail: order.customer.email,
-          totalAmount: order.totalAmount,
-          status: order.status,
-          paymentMethod: order.paymentMethod,
-          shippingAddress: order.shippingAddress,
-          billingAddress: order.billingAddress,
-          createdAt: order.createdAt,
-          updatedAt: order.updatedAt
-        }));
-
-        const csvString = stringify(csvData, { header: true });
-        fileContent = Buffer.from(csvString);
-        fileUrl = `/exports/orders_${Date.now()}.csv`;
-      } else {
-        const worksheet = XLSX.utils.json_to_sheet(orders);
+      if (format === 'csv') {
+        fileData = stringify(exportData, { header: true });
+        fileUrl = `data:text/csv;charset=utf-8,${encodeURIComponent(fileData)}`;
+      } else if (format === 'xlsx') {
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Orders');
-        fileContent = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-        fileUrl = `/exports/orders_${Date.now()}.xlsx`;
+        const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+        fileData = buffer;
+        fileUrl = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${buffer.toString('base64')}`;
+      } else {
+        fileData = JSON.stringify(exportData, null, 2);
+        fileUrl = `data:application/json;charset=utf-8,${encodeURIComponent(fileData)}`;
       }
 
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
-          status: 'completed',
           processedRecords: orders.length,
           successRecords: orders.length,
+          failedRecords: 0,
           fileUrl,
+          status: 'completed',
           completedAt: new Date()
         }
       });
@@ -486,30 +517,65 @@ export class BulkOperationsService {
         format
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
           status: 'failed',
-          errors: [error.message],
+          errors: [errorMessage],
           completedAt: new Date()
         }
       });
 
-      throw error;
+      throw new Error(`Export failed: ${errorMessage}`);
     }
   }
 
   async getBulkOperations(organizationId: string): Promise<BulkOperation[]> {
-    return await prisma.bulkOperation.findMany({
-      where: { metadata: { path: ['organizationId'], equals: organizationId } },
+    const operations = await prisma.bulkOperation.findMany({
+      where: { organizationId },
       orderBy: { createdAt: 'desc' }
     });
+
+    return operations.map((operation: any) => ({
+      id: operation.id,
+      type: operation.type as 'import' | 'export',
+      entity: operation.entity as 'products' | 'customers' | 'orders' | 'inventory',
+      status: operation.status as 'pending' | 'processing' | 'completed' | 'failed',
+      totalRecords: operation.totalRecords,
+      processedRecords: operation.processedRecords,
+      successRecords: operation.successRecords,
+      failedRecords: operation.failedRecords,
+      fileUrl: operation.fileUrl || undefined,
+      errors: operation.errors,
+      metadata: operation.metadata,
+      createdAt: operation.createdAt,
+      completedAt: operation.completedAt || undefined,
+    }));
   }
 
   async getBulkOperation(operationId: string): Promise<BulkOperation | null> {
-    return await prisma.bulkOperation.findUnique({
+    const operation = await prisma.bulkOperation.findUnique({
       where: { id: operationId }
     });
+
+    if (!operation) return null;
+
+    return {
+      id: operation.id,
+      type: operation.type as 'import' | 'export',
+      entity: operation.entity as 'products' | 'customers' | 'orders' | 'inventory',
+      status: operation.status as 'pending' | 'processing' | 'completed' | 'failed',
+      totalRecords: operation.totalRecords,
+      processedRecords: operation.processedRecords,
+      successRecords: operation.successRecords,
+      failedRecords: operation.failedRecords,
+      fileUrl: operation.fileUrl || undefined,
+      errors: operation.errors,
+      metadata: operation.metadata,
+      createdAt: operation.createdAt,
+      completedAt: operation.completedAt || undefined,
+    };
   }
 
   async deleteBulkOperation(operationId: string): Promise<void> {

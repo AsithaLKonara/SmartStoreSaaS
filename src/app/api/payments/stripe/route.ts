@@ -147,7 +147,7 @@ async function cancelSubscription(data: any, userId: string) {
   const subscription = await prisma.subscription.findFirst({
     where: {
       stripeSubscriptionId: subscriptionId,
-      user: { id: userId },
+      customer: { id: userId },
     },
   });
 

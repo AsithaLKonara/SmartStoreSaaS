@@ -252,18 +252,16 @@ export class BarcodeService {
     try {
       const product = await prisma.product.findFirst({
         where: {
-          barcode,
+          sku: barcode,
           organizationId,
+          isActive: true,
         },
         include: {
           category: true,
-          images: true,
         },
       });
 
-      if (!product) {
-        return null;
-      }
+      if (!product) return null;
 
       return {
         barcode,
@@ -271,10 +269,10 @@ export class BarcodeService {
         description: product.description || undefined,
         price: product.price,
         category: product.category?.name,
-        brand: product.brand || undefined,
-        manufacturer: product.manufacturer || undefined,
-        images: product.images.map(img => img.url),
-        specifications: product.specifications as Record<string, any> || {},
+        brand: undefined, // Removed - not in schema
+        manufacturer: undefined, // Removed - not in schema
+        images: product.images || [],
+        specifications: {}, // Removed - not in schema
         source: 'internal',
       };
     } catch (error) {
@@ -440,23 +438,9 @@ export class BarcodeService {
 
   private async cacheProductLookup(barcode: string, product: ProductLookup, organizationId: string): Promise<void> {
     try {
-      await prisma.productLookupCache.upsert({
-        where: {
-          barcode_organizationId: {
-            barcode,
-            organizationId,
-          },
-        },
-        update: {
-          productData: product as any,
-          lastUpdated: new Date(),
-        },
-        create: {
-          barcode,
-          organizationId,
-          productData: product as any,
-        },
-      });
+      // Remove caching functionality since productLookupCache model doesn't exist
+      // This could be implemented with a different approach if needed
+      console.log('Product lookup caching disabled - model not available');
     } catch (error) {
       console.error('Error caching product lookup:', error);
     }

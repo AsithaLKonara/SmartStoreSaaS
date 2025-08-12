@@ -58,16 +58,14 @@ export async function GET(request: NextRequest) {
     const transformedPayments = payments.map(payment => ({
       id: payment.id,
       orderId: payment.orderId,
-      orderNumber: payment.order.orderNumber,
-      customer: payment.order.customer,
+      orderNumber: payment.order?.orderNumber,
+      customer: payment.order?.customer,
       amount: payment.amount,
       method: payment.method,
       status: payment.status,
-      transactionId: payment.transactionId,
       gateway: payment.gateway,
       createdAt: payment.createdAt,
       updatedAt: payment.updatedAt,
-      paidAt: payment.paidAt,
     }));
 
     return NextResponse.json({ payments: transformedPayments });
@@ -130,10 +128,8 @@ export async function POST(request: NextRequest) {
         amount,
         method,
         status: status || 'PENDING',
-        transactionId: transactionId || `TXN_${Date.now()}`,
         gateway: gateway || method,
         organizationId: session.user.organizationId,
-        paidAt: status === 'PAID' ? new Date() : null,
       },
       include: {
         order: {

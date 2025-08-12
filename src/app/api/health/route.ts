@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     // Check database connection
     try {
-      await prisma.$queryRaw`SELECT 1`;
+      await prisma.$connect();
       health.services.database = 'healthy';
     } catch (error) {
       health.services.database = 'unhealthy';
@@ -38,8 +38,13 @@ export async function GET(request: NextRequest) {
     // Check Redis connection
     try {
       const redis = realTimeSyncService['redis'];
-      await redis.ping();
-      health.services.redis = 'healthy';
+      if (redis) {
+        await redis.ping();
+        health.services.redis = 'healthy';
+      } else {
+        health.services.redis = 'unhealthy';
+        health.status = 'degraded';
+      }
     } catch (error) {
       health.services.redis = 'unhealthy';
       health.status = 'degraded';

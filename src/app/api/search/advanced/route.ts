@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
         if (!query) {
           return NextResponse.json({ error: 'Query required' }, { status: 400 });
         }
-        const suggestions = await searchService.getSearchSuggestions(user.organizationId, query, type);
+        const suggestions = await searchService.getSearchSuggestions(user.organizationId, query);
         return NextResponse.json({ suggestions });
 
       case 'popular':
@@ -250,7 +250,6 @@ export async function POST(request: NextRequest) {
         // Save search query for future reference
         const savedSearch = await prisma.searchHistory.create({
           data: {
-            organizationId: user.organizationId,
             userId: user.id,
             query: data.query,
             filters: data.filters,
@@ -263,7 +262,6 @@ export async function POST(request: NextRequest) {
       case 'get-saved-searches':
         const savedSearches = await prisma.searchHistory.findMany({
           where: { 
-            organizationId: user.organizationId,
             userId: user.id
           },
           orderBy: { createdAt: 'desc' },

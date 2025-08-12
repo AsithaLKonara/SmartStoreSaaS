@@ -1,16 +1,26 @@
-import { prisma } from '@/lib/prisma';
-import { realTimeSyncService } from '@/lib/sync/realTimeSyncService';
+import { prisma } from '../prisma';
+import { realTimeSyncService } from '../sync/realTimeSyncService';
+
+// SpeechRecognition type definitions - using any to avoid conflicts
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
 
 export interface VoiceCommand {
   id: string;
-  userId: string;
   command: string;
-  intent: string;
-  entities: Record<string, any>;
-  confidence: number;
-  response: string;
+  action: string;
+  userId: string | null; // Make nullable to match Prisma model
+  intent: string | null; // Make nullable to match Prisma model
+  entities: Record<string, any> | null; // Make nullable to match Prisma model
+  confidence: number | null; // Make nullable to match Prisma model
+  response: string | null; // Make nullable to match Prisma model
   timestamp: Date;
-  processed: boolean;
+  processed: boolean | null; // Make nullable to match Prisma model
+  organizationId: string | null; // Make nullable to match Prisma model
 }
 
 export interface VoiceIntent {
@@ -42,7 +52,7 @@ export interface VoiceResponse {
 }
 
 export class VoiceCommerceService {
-  private recognition: SpeechRecognition | null = null;
+  private recognition: any | null = null;
   private synthesis: SpeechSynthesis | null = null;
   private isListening = false;
   private intents: VoiceIntent[] = [];
@@ -82,12 +92,12 @@ export class VoiceCommerceService {
         this.isListening = false;
       };
 
-      this.recognition.onerror = (event) => {
+      this.recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         this.isListening = false;
       };
 
-      this.recognition.onresult = (event) => {
+      this.recognition.onresult = (event: any) => {
         this.handleSpeechResult(event);
       };
 
@@ -280,30 +290,39 @@ export class VoiceCommerceService {
       const { intent, entities, confidence } = await this.extractIntent(cleanTranscript);
       
       // Store command
-      const command = await this.storeVoiceCommand({
+      const command: VoiceCommand = {
+        id: '',
         userId,
         command: transcript,
-        intent,
-        entities,
-        confidence,
+        action: 'voice_command',
+        intent: intent,
+        entities: entities,
+        confidence: confidence,
+        response: '',
         timestamp: new Date(),
         processed: false,
-      });
+        organizationId: organizationId,
+      };
+
+      const storedCommand = await this.storeVoiceCommand(command);
+      await this.updateCommandStatus(storedCommand.id, true);
 
       // Process command based on intent
       const response = await this.handleIntent(intent, entities, userId, organizationId);
       
       // Update command as processed
-      await this.updateCommandStatus(command.id, true, response.text);
+      await this.updateCommandStatus(storedCommand.id, true, response.text);
 
       // Broadcast event
       await realTimeSyncService.broadcastEvent({
+        id: `voice_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: 'voice_command_processed',
-        entityId: command.id,
-        entityType: 'voice_command',
-        organizationId,
+        action: 'create',
+        entityId: storedCommand.id,
+        organizationId: storedCommand.organizationId || 'system', // Provide default value for null case
         data: { command, response },
         timestamp: new Date(),
+        source: 'voice-commerce'
       });
 
       return response;
@@ -354,7 +373,7 @@ export class VoiceCommerceService {
   /**
    * Handle speech recognition results
    */
-  private handleSpeechResult(event: SpeechRecognitionEvent): void {
+  private handleSpeechResult(event: any): void {
     let finalTranscript = '';
     let interimTranscript = '';
 
@@ -575,7 +594,7 @@ export class VoiceCommerceService {
         };
       }
 
-      const productNames = products.map(p => p.name).join(', ');
+      const productNames = products.map((p: any) => p.name).join(', ');
       
       return {
         text: `I found ${products.length} products for "${searchTerm}": ${productNames}. Would you like to add any to your cart?`,
@@ -585,7 +604,7 @@ export class VoiceCommerceService {
             data: { products },
           },
         ],
-        suggestions: products.slice(0, 3).map(p => `add ${p.name} to cart`),
+        suggestions: products.slice(0, 3).map((p: any) => `add ${p.name} to cart`),
       };
     } catch (error) {
       console.error('Error searching products:', error);
@@ -669,7 +688,7 @@ export class VoiceCommerceService {
       if (orderId) {
         const order = orders[0];
         return {
-          text: `Order ${order.id} is ${order.status.toLowerCase()}. The total was $${order.total}.`,
+          text: `Order ${order.id} is ${order.status.toLowerCase()}. The total was $${order.totalAmount}.`,
           actions: [
             {
               type: 'show_order',
@@ -678,7 +697,7 @@ export class VoiceCommerceService {
           ],
         };
       } else {
-        const statusText = orders.map(order => 
+        const statusText = orders.map((order: any) => 
           `Order ${order.id} is ${order.status.toLowerCase()}`
         ).join(', ');
         
@@ -744,7 +763,7 @@ export class VoiceCommerceService {
           } : {}),
           ...(priceRange?.max ? { price: { lte: priceRange.max } } : {}),
         },
-        orderBy: { rating: 'desc' },
+        orderBy: { createdAt: 'desc' },
         take: 3,
       });
 
@@ -755,7 +774,7 @@ export class VoiceCommerceService {
         };
       }
 
-      const recommendations = products.map(p => `${p.name} for $${p.price}`).join(', ');
+      const recommendations = products.map((p: any) => `${p.name} for $${p.price}`).join(', ');
       
       return {
         text: `I recommend: ${recommendations}. Would you like to add any to your cart?`,
@@ -765,7 +784,7 @@ export class VoiceCommerceService {
             data: { products },
           },
         ],
-        suggestions: products.map(p => `add ${p.name} to cart`),
+        suggestions: products.map((p: any) => `add ${p.name} to cart`),
       };
     } catch (error) {
       console.error('Error getting recommendations:', error);
@@ -794,7 +813,7 @@ export class VoiceCommerceService {
    * Store voice command
    */
   private async storeVoiceCommand(commandData: Omit<VoiceCommand, 'id' | 'response'>): Promise<VoiceCommand> {
-    const command = await prisma.voiceCommand.create({
+    const voiceCommand = await prisma.voiceCommand.create({
       data: {
         userId: commandData.userId,
         command: commandData.command,
@@ -802,28 +821,32 @@ export class VoiceCommerceService {
         entities: commandData.entities,
         confidence: commandData.confidence,
         timestamp: commandData.timestamp,
-        processed: commandData.processed,
+        processed: commandData.processed || undefined, // Convert null to undefined for Prisma
         response: '',
-      },
+        action: commandData.action,
+        organization: { connect: { id: commandData.organizationId || 'system' } } // Provide default for null case
+      }
     });
 
     return {
-      id: command.id,
-      userId: command.userId,
-      command: command.command,
-      intent: command.intent,
-      entities: command.entities as Record<string, any>,
-      confidence: command.confidence,
-      response: command.response,
-      timestamp: command.timestamp,
-      processed: command.processed,
+      id: voiceCommand.id,
+      userId: voiceCommand.userId, // Can be null
+      command: voiceCommand.command,
+      intent: voiceCommand.intent, // Can be null
+      entities: voiceCommand.entities as Record<string, any> | null, // Can be null
+      confidence: voiceCommand.confidence, // Can be null
+      response: voiceCommand.response, // Can be null
+      timestamp: voiceCommand.timestamp,
+      processed: voiceCommand.processed, // Can be null
+      organizationId: voiceCommand.organizationId, // Can be null
+      action: voiceCommand.action || '', // Can be null, provide default
     };
   }
 
   /**
    * Update command status
    */
-  private async updateCommandStatus(commandId: string, processed: boolean, response: string): Promise<void> {
+  private async updateCommandStatus(commandId: string, processed: boolean, response: string = ''): Promise<void> {
     await prisma.voiceCommand.update({
       where: { id: commandId },
       data: { processed, response },
@@ -840,16 +863,18 @@ export class VoiceCommerceService {
       take: limit,
     });
 
-    return commands.map(cmd => ({
+    return commands.map((cmd: any) => ({
       id: cmd.id,
-      userId: cmd.userId,
+      userId: cmd.userId, // Can be null
       command: cmd.command,
-      intent: cmd.intent,
-      entities: cmd.entities as Record<string, any>,
-      confidence: cmd.confidence,
-      response: cmd.response,
+      intent: cmd.intent, // Can be null
+      entities: cmd.entities as Record<string, any> | null, // Can be null
+      confidence: cmd.confidence, // Can be null
+      response: cmd.response, // Can be null
       timestamp: cmd.timestamp,
-      processed: cmd.processed,
+      processed: cmd.processed, // Can be null
+      organizationId: cmd.organizationId, // Can be null
+      action: cmd.action || '', // Can be null, provide default
     }));
   }
 

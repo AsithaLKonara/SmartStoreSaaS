@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -89,7 +89,7 @@ async function main() {
     }),
   ]);
 
-  console.log('✅ Created categories:', categories.map(c => c.name));
+  console.log('✅ Created categories:', categories.map((c: any) => c.name));
 
   // Create demo products
   const products = await Promise.all([
@@ -108,9 +108,9 @@ async function main() {
         sku: 'LAPTOP-001',
         price: 1299.99,
         comparePrice: 1499.99,
-        cost: 800.00,
-        stock: 25,
-        minStock: 5,
+        costPrice: 800.00,
+        stockQuantity: 25,
+        lowStockThreshold: 5,
         weight: 2.5,
         dimensions: { length: 35, width: 24, height: 2 },
         images: ['https://images.unsplash.com/photo-1496181133206-80ce9b88a853'],
@@ -136,9 +136,9 @@ async function main() {
         sku: 'TSHIRT-001',
         price: 29.99,
         comparePrice: 39.99,
-        cost: 15.00,
-        stock: 100,
-        minStock: 20,
+        costPrice: 15.00,
+        stockQuantity: 100,
+        lowStockThreshold: 20,
         weight: 0.2,
         dimensions: { length: 30, width: 25, height: 1 },
         images: ['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab'],
@@ -164,9 +164,9 @@ async function main() {
         sku: 'GARDEN-001',
         price: 89.99,
         comparePrice: 119.99,
-        cost: 45.00,
-        stock: 15,
-        minStock: 5,
+        costPrice: 45.00,
+        stockQuantity: 15,
+        lowStockThreshold: 5,
         weight: 3.5,
         dimensions: { length: 40, width: 30, height: 10 },
         images: ['https://images.unsplash.com/photo-1416879595882-3373a0480b5b'],
@@ -179,7 +179,7 @@ async function main() {
     }),
   ]);
 
-  console.log('✅ Created products:', products.map(p => p.name));
+  console.log('✅ Created products:', products.map((p: any) => p.name));
 
   // Create demo customers
   const customers = await Promise.all([
@@ -242,7 +242,7 @@ async function main() {
     }),
   ]);
 
-  console.log('✅ Created customers:', customers.map(c => c.name));
+  console.log('✅ Created customers:', customers.map((c: any) => c.name));
 
   // Create demo orders
   const orders = await Promise.all([
@@ -252,7 +252,7 @@ async function main() {
       create: {
         orderNumber: 'ORD-123456',
         status: 'CONFIRMED',
-        total: 1329.98,
+        totalAmount: 1329.98,
         subtotal: 1299.99,
         tax: 29.99,
         shipping: 0,
@@ -270,7 +270,7 @@ async function main() {
       create: {
         orderNumber: 'ORD-123457',
         status: 'DELIVERED',
-        total: 119.98,
+        totalAmount: 119.98,
         subtotal: 89.99,
         tax: 9.99,
         shipping: 20.00,
@@ -283,16 +283,13 @@ async function main() {
     }),
   ]);
 
-  console.log('✅ Created orders:', orders.map(o => o.orderNumber));
+  console.log('✅ Created orders:', orders.map((o: any) => o.orderNumber));
 
   // Create order items
   await Promise.all([
     prisma.orderItem.upsert({
       where: { 
-        orderId_productId: { 
-          orderId: orders[0].id, 
-          productId: products[0].id 
-        } 
+        id: 'order-item-1' 
       },
       update: {},
       create: {
@@ -305,10 +302,7 @@ async function main() {
     }),
     prisma.orderItem.upsert({
       where: { 
-        orderId_productId: { 
-          orderId: orders[1].id, 
-          productId: products[2].id 
-        } 
+        id: 'order-item-2' 
       },
       update: {},
       create: {
@@ -365,7 +359,7 @@ async function main() {
     }),
   ]);
 
-  console.log('✅ Created couriers:', couriers.map(c => c.name));
+  console.log('✅ Created couriers:', couriers.map((c: any) => c.name));
 
   // Create demo chat messages
   const chatMessages = await Promise.all([

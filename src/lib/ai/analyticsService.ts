@@ -94,8 +94,10 @@ export class AIAnalyticsService {
 
       if (!customer) return 0.5;
 
-      const daysSinceLastOrder = customer.lastOrderDate
-        ? Math.floor((Date.now() - new Date(customer.lastOrderDate).getTime()) / (1000 * 60 * 60 * 24))
+      // Calculate last order date from orders
+      const lastOrder = customer.orders[0]; // orders are ordered by createdAt desc
+      const daysSinceLastOrder = lastOrder
+        ? Math.floor((Date.now() - new Date(lastOrder.createdAt).getTime()) / (1000 * 60 * 60 * 24))
         : 365;
 
       const orderFrequency = customer.orders.length / 12; // orders per month
@@ -140,16 +142,16 @@ export class AIAnalyticsService {
           id: 'regular',
           name: 'Regular Customers',
           criteria: 'Total spent $100-$1000, multiple orders',
-          customerCount: customers.filter(c => c.totalSpent >= 100 && c.totalSpent <= 1000 && c.orderCount > 1).length,
-          averageValue: customers.filter(c => c.totalSpent >= 100 && c.totalSpent <= 1000 && c.orderCount > 1).reduce((sum, c) => sum + c.totalSpent, 0) / Math.max(customers.filter(c => c.totalSpent >= 100 && c.totalSpent <= 1000 && c.orderCount > 1).length, 1),
+          customerCount: customers.filter(c => c.totalSpent >= 100 && c.totalSpent <= 1000 && c.orders.length > 1).length,
+          averageValue: customers.filter(c => c.totalSpent >= 100 && c.totalSpent <= 1000 && c.orders.length > 1).reduce((sum, c) => sum + c.totalSpent, 0) / Math.max(customers.filter(c => c.totalSpent >= 100 && c.totalSpent <= 1000 && c.orders.length > 1).length, 1),
           churnRisk: 0.3,
         },
         {
           id: 'new',
           name: 'New Customers',
           criteria: 'First-time buyers',
-          customerCount: customers.filter(c => c.orderCount === 1).length,
-          averageValue: customers.filter(c => c.orderCount === 1).reduce((sum, c) => sum + c.totalSpent, 0) / Math.max(customers.filter(c => c.orderCount === 1).length, 1),
+          customerCount: customers.filter(c => c.orders.length === 1).length,
+          averageValue: customers.filter(c => c.orders.length === 1).reduce((sum, c) => sum + c.totalSpent, 0) / Math.max(customers.filter(c => c.orders.length === 1).length, 1),
           churnRisk: 0.6,
         },
         {
@@ -157,8 +159,9 @@ export class AIAnalyticsService {
           name: 'At Risk Customers',
           criteria: 'No orders in last 90 days',
           customerCount: customers.filter(c => {
-            if (!c.lastOrderDate) return true;
-            const daysSinceLastOrder = Math.floor((Date.now() - new Date(c.lastOrderDate).getTime()) / (1000 * 60 * 60 * 24));
+            if (!c.orders || c.orders.length === 0) return true;
+            const lastOrder = c.orders[0]; // Assuming orders are sorted by date
+            const daysSinceLastOrder = Math.floor((Date.now() - new Date(lastOrder.createdAt).getTime()) / (1000 * 60 * 60 * 24));
             return daysSinceLastOrder > 90;
           }).length,
           averageValue: 0,
@@ -292,7 +295,7 @@ export class AIAnalyticsService {
 
       // Simple route optimization - group by area
       const routes = orders.reduce((acc, order) => {
-        const area = order.customer.address?.split(',')[1]?.trim() || 'Unknown';
+        const area = order.customer.address ? order.customer.address.split(',')[1]?.trim() || 'Unknown' : 'Unknown';
         if (!acc[area]) {
           acc[area] = [];
         }
@@ -329,10 +332,12 @@ export class AIAnalyticsService {
 
       const courierMetrics = shipments.reduce((acc, shipment) => {
         const courierId = shipment.courierId;
+        if (!courierId) return acc; // Skip shipments without courier
+        
         if (!acc[courierId]) {
           acc[courierId] = {
             courierId,
-            courierName: shipment.courier.name,
+            courierName: shipment.courier?.name || 'Unknown',
             deliveries: [],
             successfulDeliveries: 0,
             totalDeliveryTime: 0,

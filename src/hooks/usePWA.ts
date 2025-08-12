@@ -9,7 +9,7 @@ interface PWAStatus {
   isSupported: boolean;
 }
 
-interface NotificationPermission {
+interface NotificationPermissionState {
   permission: NotificationPermission;
   isSupported: boolean;
 }
@@ -23,7 +23,7 @@ export function usePWA() {
     isSupported: 'serviceWorker' in navigator,
   });
 
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>({
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermissionState>({
     permission: 'default',
     isSupported: 'Notification' in window,
   });
@@ -161,7 +161,7 @@ export function usePWA() {
       const notification = new Notification(title, {
         icon: '/icons/icon-192x192.png',
         badge: '/icons/badge-72x72.png',
-        vibrate: [100, 50, 100],
+        // vibrate: [100, 50, 100], // Not supported in all browsers
         ...options,
       });
 
@@ -221,18 +221,25 @@ export function usePWA() {
 
   // Background sync
   const requestBackgroundSync = useCallback(async () => {
-    if (!('serviceWorker' in navigator) || !('sync' in (navigator.serviceWorker as any))) {
+    if (!('serviceWorker' in navigator)) {
       toast.error('Background sync not supported');
       return false;
     }
 
     try {
       const registration = await navigator.serviceWorker.ready;
-      await (registration.sync as any).register('background-sync');
-      toast.success('Background sync registered');
-      return true;
+      // Background sync is experimental and may not be available
+      if ('sync' in registration) {
+        await (registration as any).sync.register('background-sync');
+        toast.success('Background sync registered');
+        return true;
+      } else {
+        toast.error('Background sync not supported in this browser');
+        return false;
+      }
     } catch (error) {
       console.error('Error registering background sync:', error);
+      toast.error('Background sync registration failed');
       return false;
     }
   }, []);

@@ -44,20 +44,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, email, phone, vehicleType, vehicleNumber, status } = body;
+    const { name, code, apiKey, apiSecret, isActive } = body;
 
-    if (!name || !email || !phone || !vehicleType || !vehicleNumber) {
-      return NextResponse.json({ message: 'All fields are required' }, { status: 400 });
+    if (!name || !code) {
+      return NextResponse.json({ message: 'Name and code are required' }, { status: 400 });
     }
 
     const courier = await prisma.courier.create({
       data: {
         name,
-        email,
-        phone,
-        vehicleType: vehicleType as any,
-        vehicleNumber,
-        status: status || 'ACTIVE',
+        code,
+        apiKey,
+        apiSecret,
+        isActive: isActive !== undefined ? isActive : true,
         organizationId: session.user.organizationId,
       },
     });

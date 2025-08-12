@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { prisma } from '../prisma';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -13,6 +14,7 @@ export interface InventoryPrediction {
   recommendedReorderQuantity: number;
   confidence: number;
   factors: string[];
+  reorderPoint: number;
 }
 
 export interface SeasonalTrend {
@@ -30,6 +32,20 @@ export interface SupplierPerformance {
   reliabilityScore: number;
   costEffectiveness: number;
   recommendations: string[];
+}
+
+export interface PurchaseOrderRecommendation {
+  supplierId: string;
+  supplierName: string;
+  items: Array<{
+    productId: string;
+    productName: string;
+    quantity: number;
+    unitCost: number;
+  }>;
+  totalAmount: number;
+  expectedDelivery: Date;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 }
 
 export class AIInventoryService {
@@ -55,8 +71,9 @@ export class AIInventoryService {
         3. Recommended reorder quantity
         4. Confidence level (0-1)
         5. Key factors influencing the prediction
+        6. Current reorder point
         
-        Return as JSON array with fields: productId, productName, currentStock, predictedDemand, daysUntilStockout, recommendedReorderQuantity, confidence, factors
+        Return as JSON array with fields: productId, productName, currentStock, predictedDemand, daysUntilStockout, recommendedReorderQuantity, confidence, factors, reorderPoint
       `;
 
       const completion = await openai.chat.completions.create({
@@ -110,37 +127,77 @@ export class AIInventoryService {
   }
 
   /**
-   * Evaluate supplier performance
+   * Evaluate supplier performance using Prisma models
    */
   async evaluateSupplierPerformance(
-    supplierData: any[],
-    orderHistory: any[]
+    organizationId: string
   ): Promise<SupplierPerformance[]> {
     try {
-      const prompt = `
-        Evaluate supplier performance based on:
-        
-        Supplier Data: ${JSON.stringify(supplierData)}
-        Order History: ${JSON.stringify(orderHistory)}
-        
-        For each supplier, calculate:
-        1. Average delivery time
-        2. Quality score (0-100)
-        3. Reliability score (0-100)
-        4. Cost effectiveness (0-100)
-        5. Specific recommendations for improvement
-        
-        Return as JSON array with fields: supplierId, supplierName, averageDeliveryTime, qualityScore, reliabilityScore, costEffectiveness, recommendations
-      `;
-
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
+      const suppliers = await prisma.supplier.findMany({
+        where: { organizationId, isActive: true },
+        include: {
+          purchaseOrders: {
+            where: {
+              status: { in: ['CONFIRMED', 'RECEIVED'] }
+            },
+            include: {
+              items: true
+            }
+          }
+        }
       });
 
-      const response = completion.choices[0]?.message?.content;
-      return response ? JSON.parse(response) : [];
+      const supplierPerformance: SupplierPerformance[] = [];
+
+      for (const supplier of suppliers) {
+        const completedOrders = supplier.purchaseOrders.filter(po => 
+          po.status === 'RECEIVED'
+        );
+
+        if (completedOrders.length === 0) {
+          supplierPerformance.push({
+            supplierId: supplier.id,
+            supplierName: supplier.name,
+            averageDeliveryTime: 0,
+            qualityScore: supplier.rating || 0,
+            reliabilityScore: 0,
+            costEffectiveness: 0,
+            recommendations: ['No completed orders to evaluate performance']
+          });
+          continue;
+        }
+
+        // Calculate average delivery time
+        const deliveryTimes = completedOrders.map(po => {
+          const created = new Date(po.createdAt);
+          const delivered = po.expectedDelivery ? new Date(po.expectedDelivery) : new Date(po.updatedAt);
+          return Math.ceil((delivered.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+        });
+
+        const averageDeliveryTime = deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length;
+
+        // Calculate reliability score based on on-time deliveries
+        const onTimeDeliveries = deliveryTimes.filter(time => time <= (supplier.leadTime || 7));
+        const reliabilityScore = (onTimeDeliveries.length / deliveryTimes.length) * 100;
+
+        // Calculate cost effectiveness (placeholder - would need more data)
+        const costEffectiveness = 75; // Placeholder score
+
+        supplierPerformance.push({
+          supplierId: supplier.id,
+          supplierName: supplier.name,
+          averageDeliveryTime,
+          qualityScore: supplier.rating || 0,
+          reliabilityScore,
+          costEffectiveness,
+          recommendations: [
+            reliabilityScore < 80 ? 'Improve delivery reliability' : 'Maintain current performance',
+            averageDeliveryTime > (supplier.leadTime || 7) ? 'Optimize supply chain processes' : 'Good delivery performance'
+          ]
+        });
+      }
+
+      return supplierPerformance;
     } catch (error) {
       console.error('Error evaluating supplier performance:', error);
       return [];
@@ -148,39 +205,94 @@ export class AIInventoryService {
   }
 
   /**
-   * Generate automated purchase orders
+   * Generate automated purchase orders using Prisma models
    */
   async generatePurchaseOrders(
-    predictions: InventoryPrediction[],
-    supplierPerformance: SupplierPerformance[]
-  ): Promise<any[]> {
+    organizationId: string,
+    predictions: InventoryPrediction[]
+  ): Promise<PurchaseOrderRecommendation[]> {
     try {
-      const prompt = `
-        Generate automated purchase orders based on:
-        
-        Stock Predictions: ${JSON.stringify(predictions)}
-        Supplier Performance: ${JSON.stringify(supplierPerformance)}
-        
-        Create purchase orders that:
-        1. Prioritize products with high stockout risk
-        2. Consider supplier performance and reliability
-        3. Optimize for cost and delivery time
-        4. Include recommended quantities and delivery dates
-        
-        Return as JSON array with purchase order details
-      `;
-
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.2,
+      // Get active suppliers
+      const suppliers = await prisma.supplier.findMany({
+        where: { organizationId, isActive: true }
       });
 
-      const response = completion.choices[0]?.message?.content;
-      return response ? JSON.parse(response) : [];
+      if (suppliers.length === 0) {
+        return [];
+      }
+
+      // Get products that need reordering
+      const productsToReorder = predictions.filter(p => 
+        p.currentStock <= p.reorderPoint && p.daysUntilStockout < 14
+      );
+
+      if (productsToReorder.length === 0) {
+        return [];
+      }
+
+      const purchaseOrders: PurchaseOrderRecommendation[] = [];
+
+      // Group products by supplier (simplified logic - in reality would use supplier-product relationships)
+      for (const supplier of suppliers) {
+        const supplierProducts = productsToReorder.slice(0, 3); // Limit to 3 products per supplier
+        
+        if (supplierProducts.length > 0) {
+          const items = supplierProducts.map(product => ({
+            productId: product.productId,
+            productName: product.productName,
+            quantity: product.recommendedReorderQuantity,
+            unitCost: 0 // Would need to get from product cost data
+          }));
+
+          const totalAmount = items.reduce((sum, item) => sum + (item.quantity * item.unitCost), 0);
+          const expectedDelivery = new Date();
+          expectedDelivery.setDate(expectedDelivery.getDate() + (supplier.leadTime || 7));
+
+          purchaseOrders.push({
+            supplierId: supplier.id,
+            supplierName: supplier.name,
+            items,
+            totalAmount,
+            expectedDelivery,
+            priority: supplierProducts.some(p => p.daysUntilStockout < 7) ? 'URGENT' : 'HIGH'
+          });
+        }
+      }
+
+      return purchaseOrders;
     } catch (error) {
       console.error('Error generating purchase orders:', error);
       return [];
+    }
+  }
+
+  /**
+   * Get inventory data from Prisma models
+   */
+  async getInventoryData(organizationId: string): Promise<{
+    products: any[];
+    suppliers: any[];
+    purchaseOrders: any[];
+  }> {
+    try {
+      const [products, suppliers, purchaseOrders] = await Promise.all([
+        prisma.product.findMany({
+          where: { organizationId, isActive: true },
+          include: { category: true }
+        }),
+        prisma.supplier.findMany({
+          where: { organizationId, isActive: true }
+        }),
+        prisma.purchaseOrder.findMany({
+          where: { organizationId },
+          include: { supplier: true, items: true }
+        })
+      ]);
+
+      return { products, suppliers, purchaseOrders };
+    } catch (error) {
+      console.error('Error fetching inventory data:', error);
+      return { products: [], suppliers: [], purchaseOrders: [] };
     }
   }
 

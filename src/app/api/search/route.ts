@@ -160,9 +160,9 @@ export async function POST(request: NextRequest) {
           data: {
             userId: user.id,
             query: data.query,
-            type: data.type || 'global',
+            searchType: data.type || 'global',
             filters: data.filters || {},
-            resultCount: data.resultCount || 0
+            resultsCount: data.resultCount || 0
           }
         });
         return NextResponse.json({ success: true });

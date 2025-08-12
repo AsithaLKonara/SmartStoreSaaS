@@ -137,7 +137,7 @@ export class VisualSearchService {
       }
 
       // Resize to 224x224 and normalize
-      const resized = tf.image.resizeBilinear(imageTensor, [224, 224]);
+      const resized = tf.image.resizeBilinear(imageTensor as tf.Tensor3D, [224, 224]);
       const normalized = resized.div(255.0);
       const batched = normalized.expandDims(0);
 
@@ -172,11 +172,7 @@ export class VisualSearchService {
           product: { organizationId },
         },
         include: {
-          product: {
-            include: {
-              images: true,
-            },
-          },
+          product: true,
         },
       });
 
@@ -194,8 +190,8 @@ export class VisualSearchService {
             id: embedding.product.id,
             name: embedding.product.name,
             price: embedding.product.price,
-            images: embedding.product.images.map(img => img.url),
-            description: embedding.product.description,
+            images: embedding.product.images || [],
+            description: embedding.product.description || undefined,
           },
         };
       });
@@ -218,7 +214,6 @@ export class VisualSearchService {
     try {
       const products = await prisma.product.findMany({
         where: { organizationId },
-        include: { images: true },
       });
 
       console.log(`Generating embeddings for ${products.length} products...`);
@@ -229,20 +224,26 @@ export class VisualSearchService {
         try {
           // Use the first image for embedding generation
           const primaryImage = product.images[0];
-          const features = await this.extractImageFeatures(primaryImage.url);
+          const features = await this.extractImageFeatures(primaryImage);
 
           // Store or update embedding
           await prisma.productEmbedding.upsert({
-            where: { productId: product.id },
+            where: { 
+              productId_modelVersion: {
+                productId: product.id,
+                modelVersion: "v1"
+              }
+            },
             update: {
               embedding: features,
-              imageUrl: primaryImage.url,
+              imageUrl: primaryImage,
               updatedAt: new Date(),
             },
             create: {
               productId: product.id,
               embedding: features,
-              imageUrl: primaryImage.url,
+              imageUrl: primaryImage,
+              organizationId: product.organizationId,
             },
           });
 
@@ -408,7 +409,12 @@ export class VisualSearchService {
           const features = await this.extractImageFeatures(image.imageUrl);
           
           await prisma.productEmbedding.upsert({
-            where: { productId: image.productId },
+            where: { 
+              productId_modelVersion: {
+                productId: image.productId,
+                modelVersion: "v1"
+              }
+            },
             update: {
               embedding: features,
               imageUrl: image.imageUrl,
@@ -418,6 +424,7 @@ export class VisualSearchService {
               productId: image.productId,
               embedding: features,
               imageUrl: image.imageUrl,
+              organizationId,
             },
           });
         } catch (error) {
@@ -442,13 +449,22 @@ export class VisualSearchService {
   ): Promise<VisualSearchResult[]> {
     try {
       const productEmbedding = await prisma.productEmbedding.findUnique({
-        where: { productId },
+        where: { 
+          productId_modelVersion: {
+            productId,
+            modelVersion: "v1"
+          }
+        },
       });
 
       if (!productEmbedding) {
         throw new Error('Product embedding not found');
       }
 
+      if (!productEmbedding.imageUrl) {
+        throw new Error('Product embedding has no image URL');
+      }
+      
       return await this.searchByImage(
         productEmbedding.imageUrl,
         organizationId,

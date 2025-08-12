@@ -1,15 +1,17 @@
-import { prisma } from '@/lib/prisma';
+import { prisma } from '../prisma';
 import { WebSocket, WebSocketServer } from 'ws';
 import { EventEmitter } from 'events';
 import { Redis } from 'ioredis';
 
 export interface SyncEvent {
-  type: 'product' | 'order' | 'customer' | 'inventory' | 'message' | 'conflict';
+  id: string;
+  type: 'product' | 'order' | 'customer' | 'inventory' | 'message' | 'conflict' | 'voice_command_processed' | 'whatsapp_message_sent' | 'whatsapp_template_sent' | 'whatsapp_media_sent' | 'whatsapp_interactive_sent' | 'whatsapp_message_received' | 'whatsapp_message_status';
   action: 'create' | 'update' | 'delete' | 'sync' | 'conflict';
   entityId: string;
   organizationId: string;
   data?: any;
   timestamp: Date;
+  source: string;
 }
 
 export interface SyncConflict {
@@ -29,46 +31,66 @@ export interface SyncConflict {
 }
 
 export class RealTimeSyncService extends EventEmitter {
+  private redis: Redis | null = null;
   private wss: WebSocketServer | null = null;
-  private redis: Redis;
   private connections: Map<string, WebSocket> = new Map();
   private syncQueue: SyncEvent[] = [];
   private isProcessing = false;
+  private isInitialized = false;
 
   constructor() {
     super();
+    // Don't initialize WebSocket immediately - defer until needed
     this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-    this.initializeWebSocket();
     this.startSyncProcessor();
   }
 
-  private initializeWebSocket(): void {
-    if (typeof window !== 'undefined') return; // Client-side check
-
-    this.wss = new WebSocketServer({ port: 3001 });
+  private async initializeWebSocket(): Promise<void> {
+    if (this.wss || this.isInitialized) return;
     
-    this.wss.on('connection', (ws: WebSocket, request) => {
-      const organizationId = this.extractOrganizationId(request);
-      if (organizationId) {
-        this.connections.set(organizationId, ws);
+    try {
+      this.wss = new WebSocketServer({ port: 3001 });
+      this.isInitialized = true;
+
+      this.wss.on('connection', (ws: WebSocket, request) => {
+        const url = new URL(request.url || '', `http://localhost`);
+        const organizationId = url.searchParams.get('organizationId');
         
-        ws.on('message', (data) => {
-          try {
-            const event: SyncEvent = JSON.parse(data.toString());
-            this.handleIncomingEvent(event);
-          } catch (error) {
-            console.error('Error parsing sync event:', error);
-          }
-        });
+        if (!organizationId) {
+          ws.close(1008, 'Organization ID required');
+          return;
+        }
+
+        const connectionId = `${organizationId}-${Date.now()}`;
+        this.connections.set(connectionId, ws);
+
+        console.log(`WebSocket connected: ${connectionId}`);
+
+        // Send initial state
+        this.sendInitialState(organizationId, ws);
 
         ws.on('close', () => {
-          this.connections.delete(organizationId);
+          this.connections.delete(connectionId);
+          console.log(`WebSocket disconnected: ${connectionId}`);
         });
 
-        // Send initial sync state
-        this.sendInitialState(organizationId, ws);
-      }
-    });
+        ws.on('error', (error) => {
+          console.error(`WebSocket error: ${connectionId}`, error);
+          this.connections.delete(connectionId);
+        });
+      });
+
+      console.log('WebSocket server initialized on port 3001');
+    } catch (error) {
+      console.error('Failed to initialize WebSocket server:', error);
+      this.isInitialized = false;
+    }
+  }
+
+  private async ensureWebSocketInitialized(): Promise<void> {
+    if (!this.isInitialized) {
+      await this.initializeWebSocket();
+    }
   }
 
   private extractOrganizationId(request: any): string | null {
@@ -78,7 +100,7 @@ export class RealTimeSyncService extends EventEmitter {
 
   private async sendInitialState(organizationId: string, ws: WebSocket): Promise<void> {
     try {
-      const lastSync = await this.redis.get(`last_sync:${organizationId}`);
+      const lastSync = await this.redis?.get(`last_sync:${organizationId}`);
       const pendingEvents = await this.getPendingEvents(organizationId);
       
       ws.send(JSON.stringify({
@@ -109,10 +131,10 @@ export class RealTimeSyncService extends EventEmitter {
       await this.processEvent(event);
 
       // Broadcast to other connections
-      this.broadcastEvent(event);
+      await this.broadcastEvent(event);
 
       // Update last sync timestamp
-      await this.redis.set(`last_sync:${event.organizationId}`, new Date().toISOString());
+      await this.redis?.set(`last_sync:${event.organizationId}`, new Date().toISOString());
 
       this.emit('event_processed', event);
     } catch (error) {
@@ -187,7 +209,7 @@ export class RealTimeSyncService extends EventEmitter {
 
     // Notify about conflict
     this.emit('conflict_detected', conflictRecord);
-    this.broadcastEvent({
+    await this.broadcastEvent({
       ...event,
       type: 'conflict',
       data: conflictRecord
@@ -224,9 +246,7 @@ export class RealTimeSyncService extends EventEmitter {
         await prisma.product.create({
           data: {
             ...data,
-            organizationId,
-            syncedAt: new Date(),
-            syncSource: event.source
+            organizationId
           }
         });
         break;
@@ -234,9 +254,7 @@ export class RealTimeSyncService extends EventEmitter {
         await prisma.product.update({
           where: { id: data.id, organizationId },
           data: {
-            ...data,
-            syncedAt: new Date(),
-            syncSource: event.source
+            ...data
           }
         });
         break;
@@ -256,9 +274,7 @@ export class RealTimeSyncService extends EventEmitter {
         await prisma.order.create({
           data: {
             ...data,
-            organizationId,
-            syncedAt: new Date(),
-            syncSource: event.source
+            organizationId
           }
         });
         break;
@@ -266,9 +282,7 @@ export class RealTimeSyncService extends EventEmitter {
         await prisma.order.update({
           where: { id: data.id, organizationId },
           data: {
-            ...data,
-            syncedAt: new Date(),
-            syncSource: event.source
+            ...data
           }
         });
         break;
@@ -288,9 +302,7 @@ export class RealTimeSyncService extends EventEmitter {
         await prisma.customer.create({
           data: {
             ...data,
-            organizationId,
-            syncedAt: new Date(),
-            syncSource: event.source
+            organizationId
           }
         });
         break;
@@ -298,9 +310,7 @@ export class RealTimeSyncService extends EventEmitter {
         await prisma.customer.update({
           where: { id: data.id, organizationId },
           data: {
-            ...data,
-            syncedAt: new Date(),
-            syncSource: event.source
+            ...data
           }
         });
         break;
@@ -321,8 +331,7 @@ export class RealTimeSyncService extends EventEmitter {
           where: { id: data.productId, organizationId },
           data: {
             stockQuantity: data.quantity,
-            syncedAt: new Date(),
-            syncSource: event.source
+            updatedAt: new Date()
           }
         });
         break;
@@ -337,20 +346,20 @@ export class RealTimeSyncService extends EventEmitter {
         await prisma.chatMessage.create({
           data: {
             ...data,
-            organizationId,
-            syncedAt: new Date(),
-            syncSource: event.source
+            organizationId
           }
         });
         break;
     }
   }
 
-  private broadcastEvent(event: SyncEvent): void {
+  public async broadcastEvent(event: SyncEvent): Promise<void> {
+    await this.ensureWebSocketInitialized();
+    
     const message = JSON.stringify(event);
     
-    this.connections.forEach((ws, orgId) => {
-      if (orgId === event.organizationId && ws.readyState === WebSocket.OPEN) {
+    this.connections.forEach((ws, connectionId) => {
+      if (connectionId.startsWith(event.organizationId) && ws.readyState === WebSocket.OPEN) {
         ws.send(message);
       }
     });
@@ -414,8 +423,8 @@ export class RealTimeSyncService extends EventEmitter {
 
   private async getPendingEvents(organizationId: string): Promise<SyncEvent[]> {
     try {
-      const pending = await this.redis.lrange(`sync_queue:${organizationId}`, 0, -1);
-      return pending.map(p => JSON.parse(p));
+      const pending = await this.redis?.lrange(`sync_queue:${organizationId}`, 0, -1);
+      return pending?.map(p => JSON.parse(p)) || [];
     } catch (error) {
       return [];
     }
@@ -443,7 +452,6 @@ export class RealTimeSyncService extends EventEmitter {
   // Public methods
   public async queueEvent(event: SyncEvent): Promise<void> {
     this.syncQueue.push(event);
-    await this.redis.lpush(`sync_queue:${event.organizationId}`, JSON.stringify(event));
   }
 
   public async resolveConflict(conflictId: string, resolution: any): Promise<void> {
@@ -470,8 +478,8 @@ export class RealTimeSyncService extends EventEmitter {
   }
 
   public async getSyncStatus(organizationId: string): Promise<any> {
-    const lastSync = await this.redis.get(`last_sync:${organizationId}`);
-    const pendingCount = await this.redis.llen(`sync_queue:${organizationId}`);
+    const lastSync = await this.redis?.get(`last_sync:${organizationId}`);
+    const pendingCount = await this.redis?.llen(`sync_queue:${organizationId}`);
     const activeConnections = Array.from(this.connections.keys()).filter(id => id === organizationId).length;
 
     return {
@@ -492,7 +500,7 @@ export class RealTimeSyncService extends EventEmitter {
 
   public disconnect(): void {
     this.wss?.close();
-    this.redis.disconnect();
+    this.redis?.disconnect();
   }
 }
 

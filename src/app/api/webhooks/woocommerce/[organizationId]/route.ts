@@ -49,6 +49,7 @@ async function processProductCreated(product: any, organizationId: string): Prom
     id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: 'product',
     action: 'create',
+    entityId: product.id.toString(),
     data: {
       name: product.name,
       description: product.description,
@@ -71,6 +72,7 @@ async function processProductUpdated(product: any, organizationId: string): Prom
     id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: 'product',
     action: 'update',
+    entityId: product.id.toString(),
     data: {
       name: product.name,
       description: product.description,
@@ -93,6 +95,7 @@ async function processProductDeleted(product: any, organizationId: string): Prom
     id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: 'product',
     action: 'delete',
+    entityId: product.id.toString(),
     data: {
       wooCommerceId: product.id.toString(),
       organizationId
@@ -110,6 +113,7 @@ async function processOrderCreated(order: any, organizationId: string): Promise<
     id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: 'order',
     action: 'create',
+    entityId: order.id.toString(),
     data: {
       orderNumber: order.number,
       wooCommerceId: order.id.toString(),
@@ -135,6 +139,7 @@ async function processOrderUpdated(order: any, organizationId: string): Promise<
     id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: 'order',
     action: 'update',
+    entityId: order.id.toString(),
     data: {
       orderNumber: order.number,
       wooCommerceId: order.id.toString(),

@@ -14,20 +14,9 @@ export async function GET(
     }
 
     const messages = await prisma.chatMessage.findMany({
-      where: {
-        customerId: params.conversationId,
-        organizationId: session.user.organizationId,
-      },
-      include: {
-        customer: {
-          select: {
-            name: true,
-            phone: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: { timestamp: 'asc' },
+      where: { conversationId: params.conversationId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
     });
 
     return NextResponse.json({ messages });
@@ -56,22 +45,12 @@ export async function POST(
 
     const message = await prisma.chatMessage.create({
       data: {
-        content,
-        sender,
-        channel: 'whatsapp', // This would be determined by the conversation
+        content: content,
+        type: 'TEXT',
+        direction: 'INBOUND',
+        conversationId: params.conversationId,
         customerId: params.conversationId,
         organizationId: session.user.organizationId,
-        timestamp: new Date(),
-        read: sender === 'agent', // Agent messages are read by default
-      },
-      include: {
-        customer: {
-          select: {
-            name: true,
-            phone: true,
-            email: true,
-          },
-        },
       },
     });
 

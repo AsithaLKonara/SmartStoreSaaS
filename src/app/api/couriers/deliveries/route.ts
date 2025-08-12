@@ -12,40 +12,34 @@ export async function GET(request: NextRequest) {
 
     // Get orders that need delivery
     const orders = await prisma.order.findMany({
-      where: { 
+      where: {
         organizationId: session.user.organizationId,
-        status: { in: ['CONFIRMED', 'PACKED', 'SHIPPED'] }
+        status: 'OUT_FOR_DELIVERY',
       },
       include: {
         customer: true,
-        items: {
-          include: {
-            product: true,
-          },
-        },
-        courier: true,
+        items: true,
       },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
     });
 
     // Transform orders into delivery format
-    const deliveries = orders.map(order => ({
+    const deliveries = orders.map((order: any) => ({
       id: order.id,
       orderNumber: order.orderNumber,
-      customerName: order.customer.name,
-      pickupAddress: 'Warehouse Address', // This would come from warehouse settings
-      deliveryAddress: order.shippingAddress,
-      status: order.status === 'CONFIRMED' ? 'ASSIGNED' : 
-              order.status === 'PACKED' ? 'PICKED_UP' : 
-              order.status === 'SHIPPED' ? 'IN_TRANSIT' : 'ASSIGNED',
-      assignedCourierId: order.courierId,
-      assignedCourierName: order.courier?.name,
+      customerName: order.customer?.name || 'Unknown',
+      customerPhone: order.customer?.phone || '',
+      shippingAddress: order.shippingAddress || '',
+      status: order.status,
+      courierId: order.courierId || null,
+      courier: order.courier || null,
       estimatedDeliveryTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
       actualDeliveryTime: order.status === 'DELIVERED' ? order.updatedAt.toISOString() : undefined,
-      distance: Math.floor(Math.random() * 50) + 5, // Random distance 5-55 km
-      earnings: Math.floor(Math.random() * 500) + 100, // Random earnings 100-600
-      createdAt: order.createdAt.toISOString(),
+      items: order.items.map((item: any) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.total,
+      })),
     }));
 
     return NextResponse.json(deliveries);
@@ -70,23 +64,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Update order with courier assignment
-    const updatedOrder = await prisma.order.update({
-      where: { 
-        id: orderId,
-        organizationId: session.user.organizationId,
-      },
+    await prisma.order.update({
+      where: { id: orderId },
       data: {
-        courierId,
-        status: 'SHIPPED',
-        estimatedDeliveryTime: estimatedDeliveryTime ? new Date(estimatedDeliveryTime) : undefined,
-      },
-      include: {
-        customer: true,
-        courier: true,
+        status: 'OUT_FOR_DELIVERY',
       },
     });
 
-    return NextResponse.json(updatedOrder, { status: 200 });
+    return NextResponse.json({ message: 'Delivery assigned successfully' }, { status: 200 });
   } catch (error) {
     console.error('Error assigning delivery:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

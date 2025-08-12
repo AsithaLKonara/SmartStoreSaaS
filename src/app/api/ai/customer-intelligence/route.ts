@@ -1,29 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { customerIntelligenceService } from '@/lib/ai/customerIntelligenceService';
-import { prisma } from '@/lib/prisma';
+import { authOptions } from '../../../../lib/auth';
+import { customerIntelligenceService } from '../../../../lib/ai/customerIntelligenceService';
+import { prisma } from '../../../../lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user || !(session.user as any)?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const customerId = searchParams.get('customerId');
-    const organizationId = session.user.organizationId;
+    const organizationId = (session.user as any).organizationId;
+
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization ID not found' }, { status: 400 });
+    }
 
     // Get data for AI analysis
     const customers = await prisma.customer.findMany({
-      where: { organizationId },
+      where: { organizationId: organizationId || '' },
       include: { orders: true },
     });
 
     const orders = await prisma.order.findMany({
-      where: { organizationId },
+      where: { organizationId: organizationId || '' },
       include: { items: true, customer: true },
     });
 
@@ -32,11 +36,19 @@ export async function GET(request: NextRequest) {
       customerId: order.customerId,
       date: order.createdAt,
       items: order.items,
-      total: order.total,
+      total: order.totalAmount,
     }));
 
+    // Filter CustomerActivity through customer relationship
     const interactionHistory = await prisma.customerActivity.findMany({
-      where: { organizationId },
+      where: {
+        customer: {
+          organizationId: organizationId
+        }
+      },
+      include: {
+        customer: true
+      }
     });
 
     switch (type) {
@@ -73,7 +85,7 @@ export async function GET(request: NextRequest) {
 
       case 'product-recommendations':
         const productCatalog = await prisma.product.findMany({
-          where: { organizationId },
+          where: { organizationId: organizationId || '' },
         });
         const recommendations = await customerIntelligenceService.generateProductRecommendations(
           customers,
@@ -84,10 +96,10 @@ export async function GET(request: NextRequest) {
 
       case 'sentiment-analysis':
         const reviews = await prisma.review.findMany({
-          where: { organizationId },
+          where: { organizationId: organizationId || '' },
         });
         const supportTickets = await prisma.supportTicket.findMany({
-          where: { organizationId },
+          where: { organizationId: organizationId || '' },
         });
         const socialMediaData: any[] = []; // This would come from social media APIs
         const sentiment = await customerIntelligenceService.analyzeCustomerSentiment(
@@ -130,7 +142,7 @@ export async function GET(request: NextRequest) {
         const customerRecommendations = await customerIntelligenceService.generateProductRecommendations(
           [customer],
           purchaseHistory.filter((p: any) => p.customerId === customerId),
-          await prisma.product.findMany({ where: { organizationId } })
+          await prisma.product.findMany({ where: { organizationId: organizationId || '' } })
         );
 
         return NextResponse.json({
@@ -141,7 +153,7 @@ export async function GET(request: NextRequest) {
         });
 
       default:
-        return NextResponse.json({ error: 'Invalid type parameter' }, { status: 400 });
+        return NextResponse.json({ error: 'Invalid analysis type' }, { status: 400 });
     }
   } catch (error) {
     console.error('Error in customer intelligence API:', error);
@@ -155,13 +167,17 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session?.user || !(session.user as any)?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
     const { action, data } = body;
-    const organizationId = session.user.organizationId;
+    const organizationId = (session.user as any).organizationId;
+
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization ID not found' }, { status: 400 });
+    }
 
     switch (action) {
       case 'create-customer-segment':
@@ -170,7 +186,6 @@ export async function POST(request: NextRequest) {
           data: {
             ...data,
             organizationId,
-            createdBy: session.user.id,
           },
         });
         return NextResponse.json({ segment });
@@ -182,12 +197,24 @@ export async function POST(request: NextRequest) {
         // Create offer record
         const offer = await prisma.customerOffer.create({
           data: {
-            customerId,
-            offerType,
-            offerData,
+            name: `Personalized ${offerType} Offer`,
+            description: `AI-generated personalized offer for customer ${customerId}`,
+            discountType: offerData.discountType || 'percentage',
+            discountValue: offerData.discountValue || 10,
+            minOrderValue: offerData.minOrderValue || 0,
+            maxDiscount: offerData.maxDiscount,
+            validFrom: new Date(),
+            validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
             organizationId,
-            createdBy: session.user.id,
-            status: 'SENT',
+          },
+        });
+
+        // Create customer-offer relationship
+        await prisma.customerOfferCustomer.create({
+          data: {
+            customerOfferId: offer.id,
+            customerId,
+            organizationId,
           },
         });
 
@@ -211,7 +238,6 @@ export async function POST(request: NextRequest) {
           data: {
             ...data,
             organizationId,
-            createdBy: session.user.id,
             type: 'RETENTION',
           },
         });
@@ -221,9 +247,10 @@ export async function POST(request: NextRequest) {
         // Log customer interaction for AI analysis
         const interaction = await prisma.customerActivity.create({
           data: {
-            ...data,
-            organizationId,
-            userId: session.user.id,
+            type: data.type,
+            description: data.description,
+            metadata: data.metadata,
+            customerId: data.customerId,
           },
         });
         return NextResponse.json({ interaction });

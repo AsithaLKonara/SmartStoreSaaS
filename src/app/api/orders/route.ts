@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { generateOrderNumber } from '@/lib/utils';
+import { authOptions } from '../../../lib/auth';
+import { prisma } from '../../../lib/prisma';
+import { generateOrderNumber } from '../../../lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,21 +19,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const skip = (page - 1) * limit;
 
-    interface OrderWhereClause {
-      organizationId: string;
-      status?: string;
-      paymentStatus?: string;
-      OR?: Array<{
-        orderNumber?: { contains: string; mode: 'insensitive' };
-        customer?: { 
-          name?: { contains: string; mode: 'insensitive' };
-          email?: { contains: string; mode: 'insensitive' };
-          phone?: { contains: string; mode: 'insensitive' };
-        };
-      }>;
-    }
-
-    const where: OrderWhereClause = {
+    const where: any = {
       organizationId: session.user.organizationId,
     };
 
@@ -123,7 +109,7 @@ export async function POST(request: NextRequest) {
       for (const item of items) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
-          select: { id: true, price: true, stock: true, name: true }
+          select: { id: true, price: true, stockQuantity: true, name: true }
         });
         
         if (!product) {
@@ -131,8 +117,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Check stock availability
-        if (product.stock < item.quantity) {
-          throw new Error(`Insufficient stock for product ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`);
+        if (product.stockQuantity < item.quantity) {
+          throw new Error(`Insufficient stock for product ${product.name}. Available: ${product.stockQuantity}, Requested: ${item.quantity}`);
         }
 
         const itemPrice = item.price || product.price;
@@ -150,13 +136,13 @@ export async function POST(request: NextRequest) {
         data: {
           orderNumber,
           status: status || 'DRAFT',
-          total: totalAmount,
+          totalAmount: totalAmount,
           subtotal: totalAmount,
           currency: 'USD',
           notes,
-          organizationId: session.user.organizationId,
+          organizationId: session.user.organizationId!,
           customerId,
-          createdById: session.user.id,
+          createdById: session.user.id!,
           items: {
             create: validatedItems.map((item) => ({
               productId: item.productId,

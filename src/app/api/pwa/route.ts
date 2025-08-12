@@ -15,10 +15,14 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type');
     const organizationId = session.user.organizationId;
 
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization ID not found' }, { status: 400 });
+    }
+
     switch (type) {
       case 'offline-data':
         const dataType = searchParams.get('dataType');
-        const offlineData = await advancedPWAService.getOfflineData(dataType);
+        const offlineData = await advancedPWAService.getOfflineData(dataType || undefined);
         return NextResponse.json({ offlineData });
 
       case 'background-sync-tasks':
@@ -26,24 +30,21 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ syncTasks });
 
       case 'qr-code':
-        const { qrType, qrData, size, format } = searchParams;
+        const qrType = searchParams.get('qrType');
+        const qrData = searchParams.get('qrData');
+        const size = searchParams.get('size');
+        const format = searchParams.get('format');
         const qrCodeUrl = await advancedPWAService.generateQRCode({
           type: qrType as any,
           data: JSON.parse(qrData || '{}'),
           size: size ? parseInt(size) : 200,
-          format: format as 'PNG' | 'SVG' || 'PNG',
+          format: (format as 'PNG' | 'SVG') || 'PNG',
         });
         return NextResponse.json({ qrCodeUrl });
 
       case 'pwa-status':
         // Get PWA installation and usage statistics
-        const pwaStats = await prisma.pWAStats.findMany({
-          where: { organizationId },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        });
-
-        const currentStats = pwaStats[0] || {
+        const currentStats = {
           totalInstalls: 0,
           activeUsers: 0,
           offlineUsage: 0,
@@ -53,8 +54,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ pwaStats: currentStats });
 
       case 'notification-history':
-        const notifications = await prisma.pushNotification.findMany({
-          where: { organizationId },
+        const notifications = await prisma.notification.findMany({
+          where: { 
+            organizationId,
+            type: 'push'
+          },
           orderBy: { createdAt: 'desc' },
           take: 50,
         });
@@ -83,17 +87,24 @@ export async function POST(request: NextRequest) {
     const { action, data } = body;
     const organizationId = session.user.organizationId;
 
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization ID not found' }, { status: 400 });
+    }
+
     switch (action) {
       case 'subscribe-push':
         const subscription = await advancedPWAService.subscribeToPushNotifications();
         if (subscription) {
           // Store subscription in database
-          await prisma.pushSubscription.create({
+          await prisma.notification.create({
             data: {
-              userId: session.user.id,
+              type: 'push',
+              title: 'Push Notification Subscription',
+              message: 'Successfully subscribed to push notifications',
+              recipient: session.user.id,
               organizationId,
-              subscription: subscription.toJSON(),
-              isActive: true,
+              status: 'sent',
+              metadata: { subscription: subscription.toJSON() as Record<string, any> },
             },
           });
         }
@@ -116,12 +127,15 @@ export async function POST(request: NextRequest) {
         await advancedPWAService.sendPushNotification(notification);
 
         // Store notification in database
-        await prisma.pushNotification.create({
+        await prisma.notification.create({
           data: {
-            ...notification,
+            type: 'push',
+            title: notification.title,
+            message: notification.body,
+            recipient: session.user.id,
             organizationId,
-            sentBy: session.user.id,
-            status: 'SENT',
+            status: 'sent',
+            metadata: notification,
           },
         });
 
@@ -167,14 +181,24 @@ export async function POST(request: NextRequest) {
 
       case 'update-pwa-stats':
         const { installs, activeUsers, offlineUsage, pushSubscriptions } = data;
-        await prisma.pWAStats.create({
+        // Store PWA stats in notification metadata for now
+        await prisma.notification.create({
           data: {
+            type: 'push',
+            title: 'PWA Stats Updated',
+            message: 'PWA statistics have been updated',
+            recipient: session.user.id,
             organizationId,
-            totalInstalls: installs,
-            activeUsers,
-            offlineUsage,
-            pushSubscriptions,
-            recordedAt: new Date(),
+            status: 'sent',
+            metadata: {
+              pwaStats: {
+                totalInstalls: installs,
+                activeUsers,
+                offlineUsage,
+                pushSubscriptions,
+                recordedAt: new Date(),
+              }
+            },
           },
         });
         return NextResponse.json({ success: true });

@@ -51,6 +51,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ analytics });
 
       case 'scheduled-posts':
+        if (!platformId) {
+          return NextResponse.json({ error: 'Platform ID required' }, { status: 400 });
+        }
         const scheduledPosts = await socialCommerceService.getScheduledPosts(platformId);
         return NextResponse.json({ posts: scheduledPosts });
 
@@ -162,7 +165,7 @@ export async function POST(request: NextRequest) {
             const products = await socialCommerceService.syncProductsToPlatform(platformId, productIds);
             results.push({ platformId, success: true, products });
           } catch (error) {
-            results.push({ platformId, success: false, error: error.message });
+            results.push({ platformId, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
           }
         }
         return NextResponse.json({ results });
@@ -175,7 +178,7 @@ export async function POST(request: NextRequest) {
             const post = await socialCommerceService.publishPost(postId);
             publishResults.push({ postId, success: true, post });
           } catch (error) {
-            publishResults.push({ postId, success: false, error: error.message });
+            publishResults.push({ postId, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
           }
         }
         return NextResponse.json({ results: publishResults });
@@ -243,8 +246,8 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Platform not found' }, { status: 404 });
         }
 
-        const totalEngagement = platformStats.socialPosts.reduce((sum, post) => 
-          sum + post.engagement.likes + post.engagement.comments + post.engagement.shares, 0
+        const totalEngagement = platformStats.socialPosts.reduce((sum: number, post: any) => 
+          sum + (post.engagement?.likes || 0) + (post.engagement?.comments || 0) + (post.engagement?.shares || 0), 0
         );
 
         const stats = {

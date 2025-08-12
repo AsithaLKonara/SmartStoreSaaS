@@ -1,6 +1,6 @@
 services:
   mongodb:
-    image: mongo:7.0
+    image: mongo:latest
     container_name: smartstore-mongodb
     restart: unless-stopped
     environment:

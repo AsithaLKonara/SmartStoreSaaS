@@ -105,10 +105,39 @@ export class BusinessIntelligenceService {
       });
 
       const response = completion.choices[0]?.message?.content;
-      return response ? JSON.parse(response) : {};
+      if (response) {
+        try {
+          return JSON.parse(response) as RealTimeMetrics;
+        } catch (parseError) {
+          console.error('Error parsing AI response:', parseError);
+        }
+      }
+      
+      // Return default metrics if AI fails
+      return {
+        timestamp: new Date(),
+        totalSales: 0,
+        activeOrders: 0,
+        pendingDeliveries: 0,
+        onlineCustomers: 0,
+        conversionRate: 0,
+        averageOrderValue: 0,
+        topSellingProducts: [],
+        revenueByHour: []
+      };
     } catch (error) {
       console.error('Error generating real-time metrics:', error);
-      return {} as RealTimeMetrics;
+      return {
+        timestamp: new Date(),
+        totalSales: 0,
+        activeOrders: 0,
+        pendingDeliveries: 0,
+        onlineCustomers: 0,
+        conversionRate: 0,
+        averageOrderValue: 0,
+        topSellingProducts: [],
+        revenueByHour: []
+      };
     }
   }
 
