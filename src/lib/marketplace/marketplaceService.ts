@@ -221,7 +221,7 @@ export class MarketplaceService {
           website: undefined
         },
         taxInfo: {
-          taxId: vendorData.taxId,
+        taxId: vendorData.taxId,
           vatNumber: undefined
         },
         bankDetails: {

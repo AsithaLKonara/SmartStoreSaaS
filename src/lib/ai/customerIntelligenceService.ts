@@ -1,9 +1,19 @@
 import OpenAI from 'openai';
 import { prisma } from '../prisma';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization of OpenAI client to prevent build-time errors
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openai = new OpenAI({ apiKey });
+  }
+  return openai;
+}
 
 export interface CustomerLTV {
   customerId: string;
@@ -64,6 +74,8 @@ export class CustomerIntelligenceService {
     interactionHistory: any[]
   ): Promise<CustomerLTV[]> {
     try {
+      const openaiClient = getOpenAIClient();
+      
       const prompt = `
         Predict customer lifetime value based on:
         
@@ -81,7 +93,7 @@ export class CustomerIntelligenceService {
         Return as JSON array with fields: customerId, customerName, currentLTV, predictedLTV, confidence, factors, recommendations
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await openaiClient.chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -121,7 +133,7 @@ export class CustomerIntelligenceService {
         Return as JSON array with fields: customerId, customerName, churnRisk, riskLevel, factors, retentionStrategies, lastPurchaseDate, daysSinceLastPurchase
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -160,7 +172,7 @@ export class CustomerIntelligenceService {
         Return as JSON array with fields: segmentId, segmentName, customerCount, averageLTV, characteristics, recommendations, customers
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.4,
@@ -199,7 +211,7 @@ export class CustomerIntelligenceService {
         Return as JSON array with fields: customerId, productId, productName, confidence, reason, expectedPurchaseProbability
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -241,7 +253,7 @@ export class CustomerIntelligenceService {
         Return as JSON array with fields: customerId, overallSentiment, sentimentScore, keyTopics, sentimentTrend, recommendations
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -318,7 +330,7 @@ export class CustomerIntelligenceService {
         Return as JSON array with detailed pattern analysis
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,

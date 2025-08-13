@@ -1,27 +1,34 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
 
 const router = express.Router();
-const prisma = new PrismaClient();
+
+// Mock user data for development
+const mockUsers = [
+  {
+    id: 1,
+    email: 'admin@smartstore.ai',
+    name: 'Admin User',
+    role: 'ADMIN',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 2,
+    email: 'user@smartstore.ai',
+    name: 'Test User',
+    role: 'USER',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+];
 
 // Get user profile
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true
-      }
-    });
-
+    const user = mockUsers.find(u => u.id === req.user.id);
+    
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -48,30 +55,45 @@ router.put('/profile',
 
     try {
       const { name, email } = req.body;
-      const updateData = {};
+      const userIndex = mockUsers.findIndex(u => u.id === req.user.id);
       
-      if (name) updateData.name = name;
-      if (email) updateData.email = email;
+      if (userIndex === -1) {
+        return res.status(404).json({ error: 'User not found' });
+      }
 
-      const user = await prisma.user.update({
-        where: { id: req.user.id },
-        data: updateData,
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          updatedAt: true
-        }
-      });
+      if (name) mockUsers[userIndex].name = name;
+      if (email) mockUsers[userIndex].email = email;
+      mockUsers[userIndex].updatedAt = new Date().toISOString();
 
-      res.json(user);
+      res.json(mockUsers[userIndex]);
     } catch (error) {
       console.error('Error updating user profile:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   }
 );
+
+// Get all users (admin only)
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const users = mockUsers.map(user => ({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      createdAt: user.createdAt
+    }));
+
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Middleware to authenticate JWT token
 function authenticateToken(req, res, next) {
@@ -82,7 +104,7 @@ function authenticateToken(req, res, next) {
     return res.status(401).json({ error: 'Access token required' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET || 'smartstore-jwt-secret-2024', (err, user) => {
     if (err) {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }

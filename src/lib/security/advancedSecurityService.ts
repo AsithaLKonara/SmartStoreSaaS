@@ -953,10 +953,10 @@ export class AdvancedSecurityService {
   }
 
   private initializeIpLists(): void {
-    // Initialize with some default IPs
-    this.ipWhitelist.add('127.0.0.1');
-    this.ipWhitelist.add('::1');
-    
+      // Initialize with some default IPs
+      this.ipWhitelist.add('127.0.0.1');
+      this.ipWhitelist.add('::1');
+      
     // Convert Set to Array for iteration
     const whitelistArray = Array.from(this.ipWhitelist);
     const blacklistArray = Array.from(this.ipBlacklist);

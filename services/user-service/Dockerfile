@@ -14,8 +14,8 @@ RUN npm ci --only=production
 # Copy source code
 COPY . .
 
-# Generate Prisma client
-RUN npx prisma generate
+# Skip Prisma for now - basic microservice setup
+# RUN npx prisma generate
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs

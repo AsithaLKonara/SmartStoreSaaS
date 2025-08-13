@@ -41,8 +41,15 @@ export class RealTimeSyncService extends EventEmitter {
   constructor() {
     super();
     // Don't initialize WebSocket immediately - defer until needed
-    this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+    // Don't initialize Redis immediately - defer until needed
     this.startSyncProcessor();
+  }
+
+  private getRedis(): Redis {
+    if (!this.redis) {
+      this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+    }
+    return this.redis;
   }
 
   private async initializeWebSocket(): Promise<void> {
@@ -100,7 +107,7 @@ export class RealTimeSyncService extends EventEmitter {
 
   private async sendInitialState(organizationId: string, ws: WebSocket): Promise<void> {
     try {
-      const lastSync = await this.redis?.get(`last_sync:${organizationId}`);
+      const lastSync = await this.getRedis().get(`last_sync:${organizationId}`);
       const pendingEvents = await this.getPendingEvents(organizationId);
       
       ws.send(JSON.stringify({
@@ -134,7 +141,7 @@ export class RealTimeSyncService extends EventEmitter {
       await this.broadcastEvent(event);
 
       // Update last sync timestamp
-      await this.redis?.set(`last_sync:${event.organizationId}`, new Date().toISOString());
+      await this.getRedis().set(`last_sync:${event.organizationId}`, new Date().toISOString());
 
       this.emit('event_processed', event);
     } catch (error) {
@@ -423,7 +430,7 @@ export class RealTimeSyncService extends EventEmitter {
 
   private async getPendingEvents(organizationId: string): Promise<SyncEvent[]> {
     try {
-      const pending = await this.redis?.lrange(`sync_queue:${organizationId}`, 0, -1);
+      const pending = await this.getRedis().lrange(`sync_queue:${organizationId}`, 0, -1);
       return pending?.map(p => JSON.parse(p)) || [];
     } catch (error) {
       return [];
@@ -478,8 +485,8 @@ export class RealTimeSyncService extends EventEmitter {
   }
 
   public async getSyncStatus(organizationId: string): Promise<any> {
-    const lastSync = await this.redis?.get(`last_sync:${organizationId}`);
-    const pendingCount = await this.redis?.llen(`sync_queue:${organizationId}`);
+    const lastSync = await this.getRedis().get(`last_sync:${organizationId}`);
+    const pendingCount = await this.getRedis().llen(`sync_queue:${organizationId}`);
     const activeConnections = Array.from(this.connections.keys()).filter(id => id === organizationId).length;
 
     return {
@@ -500,7 +507,7 @@ export class RealTimeSyncService extends EventEmitter {
 
   public disconnect(): void {
     this.wss?.close();
-    this.redis?.disconnect();
+    this.getRedis().disconnect();
   }
 }
 

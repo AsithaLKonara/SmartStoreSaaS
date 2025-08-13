@@ -283,7 +283,7 @@ export class PWAService {
           organizationId: 'default-org', // You'll need to get this from context
           metadata: {
             ...notification.data,
-            sent: true,
+          sent: true,
             sentAt: new Date().toISOString()
           }
         }

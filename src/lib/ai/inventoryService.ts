@@ -1,9 +1,19 @@
 import OpenAI from 'openai';
 import { prisma } from '../prisma';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization of OpenAI client to prevent build-time errors
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openai = new OpenAI({ apiKey });
+  }
+  return openai;
+}
 
 export interface InventoryPrediction {
   productId: string;
@@ -76,7 +86,7 @@ export class AIInventoryService {
         Return as JSON array with fields: productId, productName, currentStock, predictedDemand, daysUntilStockout, recommendedReorderQuantity, confidence, factors, reorderPoint
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -112,7 +122,7 @@ export class AIInventoryService {
         Return as JSON array with fields: productId, season, demandMultiplier, confidence
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.2,
@@ -321,7 +331,7 @@ export class AIInventoryService {
         Return as JSON array with optimized pricing recommendations
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,

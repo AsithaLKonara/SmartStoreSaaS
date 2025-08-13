@@ -1,16 +1,33 @@
 import { NextAuthOptions } from 'next-auth';
-import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import * as bcrypt from 'bcryptjs';
-import { prisma } from './prisma';
+
+// Mock user data for development
+const mockUsers = [
+  {
+    id: '1',
+    email: 'admin@smartstore.ai',
+    password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uO.G', // admin123
+    name: 'Admin User',
+    role: 'ADMIN',
+    organizationId: 'org-1',
+  },
+  {
+    id: '2',
+    email: 'user@smartstore.ai',
+    password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uO.G', // user123
+    name: 'Test User',
+    role: 'USER',
+    organizationId: 'org-1',
+  },
+];
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.GOOGLE_CLIENT_ID || 'mock-google-client-id',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'mock-google-client-secret',
     }),
     CredentialsProvider({
       name: 'credentials',
@@ -23,11 +40,8 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
-        });
+        // Find user in mock data
+        const user = mockUsers.find(u => u.email === credentials.email);
 
         if (!user || !user.password) {
           return null;
@@ -76,5 +90,6 @@ export const authOptions: NextAuthOptions = {
     signIn: '/auth/signin',
     error: '/auth/error',
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || 'smartstore-nextauth-secret-key-2024',
+  debug: process.env.NODE_ENV === 'development',
 }; 

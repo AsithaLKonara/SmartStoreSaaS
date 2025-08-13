@@ -445,7 +445,7 @@ export class AdvancedPaymentService {
     if (paymentMethod) {
       // Detach from Stripe only if stripePaymentMethodId exists
       if (paymentMethod.stripePaymentMethodId) {
-        await this.stripe.paymentMethods.detach(paymentMethod.stripePaymentMethodId);
+      await this.stripe.paymentMethods.detach(paymentMethod.stripePaymentMethodId);
       }
 
       // Delete from database

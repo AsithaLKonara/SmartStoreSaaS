@@ -44,12 +44,21 @@ interface CourierMetrics {
 }
 
 export class AIAnalyticsService {
-  private openai: OpenAI;
+  private openai: OpenAI | null = null;
 
   constructor() {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    // OpenAI client will be initialized lazily when needed
+  }
+
+  private getOpenAIClient(): OpenAI {
+    if (!this.openai) {
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        throw new Error('OPENAI_API_KEY environment variable is not set');
+      }
+      this.openai = new OpenAI({ apiKey });
+    }
+    return this.openai;
   }
 
   // Customer Analytics
@@ -201,7 +210,7 @@ export class AIAnalyticsService {
         - factors: string[] (factors affecting prediction)
       `;
 
-      const response = await this.openai.chat.completions.create({
+      const response = await this.getOpenAIClient().chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
@@ -466,7 +475,7 @@ export class AIAnalyticsService {
         Return JSON array of recommendation strings.
       `;
 
-      const response = await this.openai.chat.completions.create({
+      const response = await this.getOpenAIClient().chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.4,

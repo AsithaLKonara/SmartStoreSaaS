@@ -45,14 +45,22 @@ interface ChatConversationData {
 }
 
 export class AIChatService {
-  private openai: OpenAI;
+  private openai: OpenAI | null = null;
   private ollamaBaseUrl: string;
 
   constructor() {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
     this.ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+  }
+
+  private getOpenAIClient(): OpenAI {
+    if (!this.openai) {
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        throw new Error('OPENAI_API_KEY environment variable is not set');
+      }
+      this.openai = new OpenAI({ apiKey });
+    }
+    return this.openai;
   }
 
   // Product Discovery
@@ -70,7 +78,7 @@ export class AIChatService {
         - reason: string
       `;
 
-      const response = await this.openai.chat.completions.create({
+      const response = await this.getOpenAIClient().chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
@@ -117,7 +125,7 @@ export class AIChatService {
         Return JSON array with product recommendations.
       `;
 
-      const response = await this.openai.chat.completions.create({
+      const response = await this.getOpenAIClient().chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.4,
@@ -149,7 +157,7 @@ export class AIChatService {
         - notes: string (optional)
       `;
 
-      const response = await this.openai.chat.completions.create({
+      const response = await this.getOpenAIClient().chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.2,
@@ -188,7 +196,7 @@ export class AIChatService {
         Provide a helpful, accurate response. If the question isn't covered in FAQs, say so politely.
       `;
 
-      const response = await this.openai.chat.completions.create({
+      const response = await this.getOpenAIClient().chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
@@ -235,7 +243,7 @@ export class AIChatService {
         Be helpful and informative.
       `;
 
-      const response = await this.openai.chat.completions.create({
+      const response = await this.getOpenAIClient().chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.4,
@@ -261,7 +269,7 @@ export class AIChatService {
         - overall: "positive" | "negative" | "neutral"
       `;
 
-      const response = await this.openai.chat.completions.create({
+      const response = await this.getOpenAIClient().chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
@@ -297,7 +305,7 @@ export class AIChatService {
         - reason: string
       `;
 
-      const response = await this.openai.chat.completions.create({
+      const response = await this.getOpenAIClient().chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.2,

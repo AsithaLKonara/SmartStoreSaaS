@@ -169,7 +169,7 @@ export class PayPalService {
 
       // At this point, order.id is guaranteed to be a string
       const orderIdString = order.id;
-
+      
       // Store PayPal order ID in database
       await prisma.order.updateMany({
         where: { id: orderId },
