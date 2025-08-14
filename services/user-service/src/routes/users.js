@@ -28,7 +28,7 @@ const mockUsers = [
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
     const user = mockUsers.find(u => u.id === req.user.id);
-    
+
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }

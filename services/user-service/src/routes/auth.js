@@ -54,9 +54,9 @@ router.post('/register',
       // Create user
       const newUser = {
         id: mockUsers.length + 1,
-        email,
-        password: hashedPassword,
-        name,
+          email,
+          password: hashedPassword,
+          name,
         role: 'USER',
         createdAt: new Date().toISOString()
       };
