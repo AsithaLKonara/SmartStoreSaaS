@@ -1,14 +1,13 @@
 import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import * as bcrypt from 'bcryptjs';
 
-// Mock user data for development
+// Mock user data for development (using plain text for now)
 const mockUsers = [
   {
     id: '1',
     email: 'admin@smartstore.ai',
-    password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uO.G', // admin123
+    password: 'admin123', // Plain text for testing
     name: 'Admin User',
     role: 'ADMIN',
     organizationId: 'org-1',
@@ -16,7 +15,7 @@ const mockUsers = [
   {
     id: '2',
     email: 'user@smartstore.ai',
-    password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uO.G', // user123
+    password: 'user123', // Plain text for testing
     name: 'Test User',
     role: 'USER',
     organizationId: 'org-1',
@@ -36,26 +35,32 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        console.log('🔐 Auth attempt:', { email: credentials?.email, hasPassword: !!credentials?.password });
+        
         if (!credentials?.email || !credentials?.password) {
+          console.log('❌ Missing credentials');
           return null;
         }
 
         // Find user in mock data
         const user = mockUsers.find(u => u.email === credentials.email);
+        console.log('👤 User found:', !!user);
 
-        if (!user || !user.password) {
+        if (!user) {
+          console.log('❌ User not found');
           return null;
         }
 
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
+        // Simple password comparison for testing
+        const isPasswordValid = credentials.password === user.password;
+        console.log('🔑 Password valid:', isPasswordValid);
 
         if (!isPasswordValid) {
+          console.log('❌ Invalid password');
           return null;
         }
 
+        console.log('✅ Authentication successful for:', user.email);
         return {
           id: user.id,
           email: user.email,
@@ -91,5 +96,5 @@ export const authOptions: NextAuthOptions = {
     error: '/auth/error',
   },
   secret: process.env.NEXTAUTH_SECRET || 'smartstore-nextauth-secret-key-2024',
-  debug: process.env.NODE_ENV === 'development',
+  debug: true, // Enable debugging
 }; 
