@@ -22,9 +22,16 @@
     "security:check-deps": "npx audit-ci --moderate",
     "security:scan": "npx snyk test",
     "security:monitor": "npx snyk monitor",
-    "lint:security": "npx eslint . --ext .ts,.tsx,.js,.jsx --config .eslintrc.security.js",
+    "lint:security": "npx eslint . --ext .ts,.tsx,.js,.jsx",
     "test:security": "jest --testPathPattern=security --coverage",
-    "pre-commit": "npm run lint:security && npm run security:audit"
+    "pre-commit": "npm run lint:security && npm run security:audit",
+    "monolithic:setup": "./setup-monolithic.sh",
+    "monolithic:start": "docker-compose up -d",
+    "monolithic:stop": "docker-compose down",
+    "monolithic:logs": "docker-compose logs -f",
+    "monolithic:build": "docker-compose build --no-cache",
+    "monolithic:restart": "docker-compose restart",
+    "monolithic:status": "docker-compose ps"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",

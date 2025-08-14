@@ -7,15 +7,19 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
-# Copy package files and locally installed node_modules
+# Copy package files and install dependencies
 COPY package.json package-lock.json* ./
-COPY node_modules ./node_modules
+RUN npm ci --only=production
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 RUN apk add --no-cache openssl
+
+# Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code (excluding problematic files via .dockerignore)
 COPY . .
 
 # Set required environment variables for build process
