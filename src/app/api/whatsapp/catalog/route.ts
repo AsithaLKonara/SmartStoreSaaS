@@ -18,10 +18,6 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
     }
 
-<<<<<<< HEAD
-    // TODO: Implement updateCatalog method in WhatsAppService
-    // await whatsAppService.updateCatalog(organizationId);
-=======
     // Check if catalog exists, create if it doesn't
     const existingCatalog = await prisma.whatsAppCatalog.findUnique({
       where: { organizationId }
@@ -29,8 +25,10 @@ export async function POST(_request: NextRequest) {
 
     if (!existingCatalog) {
       await whatsAppService.createCatalog('Main Catalog', organizationId);
+    } else {
+      // Update existing catalog with latest products
+      await whatsAppService.updateCatalog(organizationId);
     }
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     
     return NextResponse.json({ 
       success: true, 

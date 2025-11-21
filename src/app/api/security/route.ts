@@ -52,17 +52,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ auditLogs });
 
       case 'security-alerts':
-<<<<<<< HEAD
         // Security alerts stored in SecurityEvent model
         const alerts = await prisma.securityEvent.findMany({
           where: { organizationId: organizationId || '' },
           orderBy: { createdAt: 'desc' },
           take: 50,
         });
-=======
-        // Security alerts not implemented yet
-        const alerts: any[] = [];
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         return NextResponse.json({ alerts });
 
       case 'user-permissions':
@@ -70,15 +65,8 @@ export async function GET(request: NextRequest) {
           where: { id: session.user.id },
         });
         
-<<<<<<< HEAD
-        // UserRole enum doesn't have permissions - return based on role
-        const permissions: string[] = [];
-        if (user?.role === 'ADMIN') {
-          permissions.push('all');
-=======
         if (!user?.role) {
           return NextResponse.json({ permissions: [], role: null });
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         }
 
         // Define permissions based on role
@@ -86,11 +74,7 @@ export async function GET(request: NextRequest) {
         
         return NextResponse.json({ 
           permissions,
-<<<<<<< HEAD
-          role: user?.role,
-=======
           role: user.role,
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         });
 
       case 'mfa-status':
@@ -109,10 +93,24 @@ export async function GET(request: NextRequest) {
           where: { organizationId },
         });
 
-        // MFA users count would require checking user preferences
-        const mfaEnabledUsers = 0; // TODO: Implement proper MFA count
+        // MFA users count - check user preferences for MFA enabled flag
+        const usersWithMFA = await prisma.userPreference.findMany({
+          where: {
+            user: {
+              organizationId: organizationId || '',
+            },
+          },
+          select: {
+            userId: true,
+            notifications: true,
+          },
+        });
+        
+        const mfaEnabledUsers = usersWithMFA.filter((pref) => {
+          const notifications = pref.notifications as any;
+          return notifications?.mfaEnabled === true;
+        }).length;
 
-<<<<<<< HEAD
         const recentSecurityEvents = await prisma.securityEvent.findMany({
           where: { organizationId: organizationId || '' },
           orderBy: { createdAt: 'desc' },
@@ -125,13 +123,6 @@ export async function GET(request: NextRequest) {
             resolved: false,
           },
         });
-=======
-        // Security audit not implemented yet
-        const recentSecurityEvents: any[] = [];
-
-        // Security alerts not implemented yet
-        const activeAlerts = 0;
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
         return NextResponse.json({
           totalUsers,

@@ -505,6 +505,101 @@ export class WhatsAppService extends EventEmitter {
   }
 
   /**
+   * Update catalog with latest products from organization
+   */
+  async updateCatalog(organizationId: string): Promise<WhatsAppCatalog> {
+    try {
+      // Get existing catalog
+      const existingCatalog = await prisma.whatsAppCatalog.findUnique({
+        where: { organizationId },
+      });
+
+      if (!existingCatalog) {
+        throw new Error('Catalog not found. Create catalog first.');
+      }
+
+      // Get all active products for the organization
+      const products = await prisma.product.findMany({
+        where: {
+          organizationId,
+          isActive: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          images: true,
+          stockQuantity: true,
+          category: {
+            select: {
+              name: true,
+            },
+          },
+        },
+        take: 100, // Limit to 100 products for WhatsApp catalog
+      });
+
+      // Transform products to WhatsApp format
+      const whatsappProducts: WhatsAppProduct[] = products.map((product) => ({
+        id: product.id,
+        name: product.name,
+        description: product.description || undefined,
+        price: product.price || 0,
+        currency: 'USD',
+        images: (product.images as string[]) || [],
+        category: product.category?.name,
+        availability: product.stockQuantity > 0 ? 'in_stock' : 'out_of_stock',
+        retailer_id: product.id,
+      }));
+
+      // Update catalog in database
+      const updatedCatalog = await prisma.whatsAppCatalog.update({
+        where: { organizationId },
+        data: {
+          products: whatsappProducts as any,
+          lastUpdated: new Date(),
+        },
+      });
+
+      // Sync to WhatsApp API if catalog ID exists
+      if (existingCatalog.id) {
+        // Update products in WhatsApp catalog
+        for (const product of whatsappProducts) {
+          try {
+            await this.addProductToCatalog(existingCatalog.id, {
+              name: product.name,
+              description: product.description,
+              price: product.price,
+              currency: product.currency,
+              images: product.images,
+              category: product.category,
+              availability: product.availability,
+              retailer_id: product.retailer_id,
+            });
+          } catch (error) {
+            // Continue if individual product fails
+            console.warn(`Failed to sync product ${product.id} to WhatsApp:`, error);
+          }
+        }
+      }
+
+      return {
+        id: updatedCatalog.id,
+        name: updatedCatalog.name,
+        description: updatedCatalog.description || undefined,
+        products: whatsappProducts,
+        organizationId: updatedCatalog.organizationId,
+        isActive: updatedCatalog.isActive,
+        lastUpdated: updatedCatalog.lastUpdated,
+      };
+    } catch (error) {
+      console.error('Error updating WhatsApp catalog:', error);
+      throw new Error('Failed to update WhatsApp catalog');
+    }
+  }
+
+  /**
    * Add product to catalog
    */
   async addProductToCatalog(
