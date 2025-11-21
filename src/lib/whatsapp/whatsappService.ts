@@ -167,10 +167,9 @@ export class WhatsAppService extends EventEmitter {
       await this.storeMessage(whatsappMessage);
 
       // Emit sync event
-      await realTimeSyncService.broadcastEvent({
-        type: 'whatsapp_message_sent',
+      await realTimeSyncService.queueEvent({
+        type: 'message',
         entityId: whatsappMessage.id,
-        entityType: 'whatsapp_message',
         organizationId,
         data: whatsappMessage,
         timestamp: new Date(),
@@ -223,10 +222,9 @@ export class WhatsAppService extends EventEmitter {
 
       await this.storeMessage(whatsappMessage);
 
-      await realTimeSyncService.broadcastEvent({
-        type: 'whatsapp_template_sent',
+      await realTimeSyncService.queueEvent({
+        type: 'message',
         entityId: whatsappMessage.id,
-        entityType: 'whatsapp_message',
         organizationId,
         data: whatsappMessage,
         timestamp: new Date(),
@@ -284,10 +282,9 @@ export class WhatsAppService extends EventEmitter {
 
       await this.storeMessage(whatsappMessage);
 
-      await realTimeSyncService.broadcastEvent({
-        type: 'whatsapp_media_sent',
+      await realTimeSyncService.queueEvent({
+        type: 'message',
         entityId: whatsappMessage.id,
-        entityType: 'whatsapp_message',
         organizationId,
         data: whatsappMessage,
         timestamp: new Date(),
@@ -331,10 +328,9 @@ export class WhatsAppService extends EventEmitter {
 
       await this.storeMessage(whatsappMessage);
 
-      await realTimeSyncService.broadcastEvent({
-        type: 'whatsapp_interactive_sent',
+      await realTimeSyncService.queueEvent({
+        type: 'message',
         entityId: whatsappMessage.id,
-        entityType: 'whatsapp_message',
         organizationId,
         data: whatsappMessage,
         timestamp: new Date(),
@@ -357,7 +353,7 @@ export class WhatsAppService extends EventEmitter {
   ): Promise<string> {
     try {
       const formData = new FormData();
-      formData.append('file', new Blob([mediaBuffer]), filename);
+      formData.append('file', new Blob([Buffer.from(mediaBuffer)]), filename);
       formData.append('type', mediaType);
       formData.append('messaging_product', 'whatsapp');
 
@@ -398,7 +394,10 @@ export class WhatsAppService extends EventEmitter {
   /**
    * Create message template
    */
-  async createMessageTemplate(template: Omit<WhatsAppTemplate, 'status'>): Promise<WhatsAppTemplate> {
+  async createMessageTemplate(
+    organizationId: string,
+    template: Omit<WhatsAppTemplate, 'status'>
+  ): Promise<WhatsAppTemplate> {
     try {
       const payload = {
         name: template.name,
@@ -414,15 +413,30 @@ export class WhatsAppService extends EventEmitter {
         status: 'PENDING',
       };
 
-      // Store template in database
-      await prisma.whatsAppTemplate.create({
+      // Store template in Organization metadata
+      const organization = await prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { settings: true },
+      });
+
+      const settings = (organization?.settings as any) || {};
+      const whatsappTemplates = settings.whatsappTemplates || [];
+      
+      // Add template with ID from API response
+      whatsappTemplates.push({
+        ...createdTemplate,
+        templateId: response.data.id,
+        createdAt: new Date(),
+      });
+
+      // Update organization metadata
+      await prisma.organization.update({
+        where: { id: organizationId },
         data: {
-          name: template.name,
-          language: template.language,
-          category: template.category,
-          components: template.components,
-          status: 'PENDING',
-          templateId: response.data.id,
+          settings: {
+            ...settings,
+            whatsappTemplates,
+          } as any,
         },
       });
 
@@ -475,9 +489,9 @@ export class WhatsAppService extends EventEmitter {
       // Store catalog in database
       await prisma.whatsAppCatalog.create({
         data: {
-          catalogId: catalog.id,
           name: catalog.name,
           description: catalog.description,
+          products: catalog.products || [], // Store products as JSON
           organizationId: catalog.organizationId,
           isActive: catalog.isActive,
         },
@@ -637,10 +651,10 @@ export class WhatsAppService extends EventEmitter {
     try {
       // Update message status in database
       await prisma.whatsAppMessage.updateMany({
-        where: { messageId: status.id },
+        where: { id: status.id }, // Use id instead of messageId
         data: { 
           status: status.status,
-          statusTimestamp: new Date(parseInt(status.timestamp) * 1000),
+          timestamp: new Date(parseInt(status.timestamp) * 1000), // Use timestamp instead of statusTimestamp
         },
       });
 
@@ -758,7 +772,7 @@ export class WhatsAppService extends EventEmitter {
     const helpMessage = `
 🛍️ *SmartStore AI Help*
 
-Here's what I can help you with:
+Here&apos;s what I can help you with:
 • Type "catalog" to see our products
 • Type "order" to check order status
 • Type "support" for customer service
@@ -773,7 +787,7 @@ For immediate assistance, visit our website or call customer service.
     try {
     await prisma.whatsAppMessage.create({
       data: {
-          messageId: message.id,
+          // messageId: message.id, // Not in schema - store in metadata
         from: message.from,
         to: message.to,
         type: message.type,
@@ -783,8 +797,11 @@ For immediate assistance, visit our website or call customer service.
         organizationId: message.organizationId,
         customerId: message.customerId,
         orderId: message.orderId,
-          templateName: message.templateName,
-          mediaId: message.mediaId,
+          // templateName and mediaId not in schema - store in metadata
+          metadata: {
+            templateName: message.templateName,
+            mediaId: message.mediaId,
+          } as any,
         },
       });
     } catch (error) {
@@ -794,10 +811,10 @@ For immediate assistance, visit our website or call customer service.
 
   private async handleIncomingMessage(message: WhatsAppMessage): Promise<void> {
     // Broadcast to real-time sync
-    await realTimeSyncService.broadcastEvent({
-      type: 'whatsapp_message_received',
+    await realTimeSyncService.queueEvent({
+      type: 'message',
+      action: 'create',
       entityId: message.id,
-      entityType: 'whatsapp_message',
       organizationId: message.organizationId,
       data: message,
       timestamp: new Date(),
@@ -806,10 +823,10 @@ For immediate assistance, visit our website or call customer service.
 
   private async handleMessageStatus(status: any): Promise<void> {
     // Broadcast status update
-    await realTimeSyncService.broadcastEvent({
-      type: 'whatsapp_message_status',
+    await realTimeSyncService.queueEvent({
+      type: 'message',
+      action: 'update',
       entityId: status.id,
-      entityType: 'whatsapp_message',
       organizationId: '', // Will need to be determined
       data: status,
       timestamp: new Date(),
@@ -837,7 +854,7 @@ For immediate assistance, visit our website or call customer service.
           type: 'body',
           parameters: [
             { type: 'text', text: order.id },
-            { type: 'text', text: order.total.toString() },
+            { type: 'text', text: order.totalAmount.toString() },
           ],
         },
       ]
@@ -887,7 +904,7 @@ For immediate assistance, visit our website or call customer service.
           type: 'body',
           parameters: [
             { type: 'text', text: order.id },
-            { type: 'text', text: order.total.toString() },
+            { type: 'text', text: order.totalAmount.toString() },
           ],
         },
       ]

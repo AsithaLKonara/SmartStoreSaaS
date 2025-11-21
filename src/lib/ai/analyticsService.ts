@@ -94,12 +94,19 @@ export class AIAnalyticsService {
 
       if (!customer) return 0.5;
 
-      const daysSinceLastOrder = customer.lastOrderDate
-        ? Math.floor((Date.now() - new Date(customer.lastOrderDate).getTime()) / (1000 * 60 * 60 * 24))
+      // Get last order date from orders
+      const lastOrder = customer.orders.length > 0 
+        ? customer.orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0]
+        : null;
+      const lastOrderDate = lastOrder?.createdAt;
+
+      const daysSinceLastOrder = lastOrderDate
+        ? Math.floor((Date.now() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24))
         : 365;
 
       const orderFrequency = customer.orders.length / 12; // orders per month
-      const averageOrderValue = customer.totalSpent / Math.max(customer.orders.length, 1);
+      const totalSpent = customer.orders.reduce((sum, order) => sum + order.totalAmount, 0);
+      const averageOrderValue = totalSpent / Math.max(customer.orders.length, 1);
 
       // Simple churn prediction model
       let churnRisk = 0.1; // Base risk
@@ -132,24 +139,48 @@ export class AIAnalyticsService {
           id: 'high-value',
           name: 'High Value Customers',
           criteria: 'Total spent > $1000',
-          customerCount: customers.filter(c => c.totalSpent > 1000).length,
-          averageValue: customers.filter(c => c.totalSpent > 1000).reduce((sum, c) => sum + c.totalSpent, 0) / Math.max(customers.filter(c => c.totalSpent > 1000).length, 1),
+          customerCount: customers.filter(c => {
+            const total = c.orders.reduce((sum, o) => sum + o.totalAmount, 0);
+            return total > 1000;
+          }).length,
+          averageValue: customers
+            .filter(c => {
+              const total = c.orders.reduce((sum, o) => sum + o.totalAmount, 0);
+              return total > 1000;
+            })
+            .reduce((sum, c) => sum + c.orders.reduce((s, o) => s + o.totalAmount, 0), 0) / Math.max(customers.filter(c => {
+              const total = c.orders.reduce((sum, o) => sum + o.totalAmount, 0);
+              return total > 1000;
+            }).length, 1),
           churnRisk: 0.1,
         },
         {
           id: 'regular',
           name: 'Regular Customers',
           criteria: 'Total spent $100-$1000, multiple orders',
-          customerCount: customers.filter(c => c.totalSpent >= 100 && c.totalSpent <= 1000 && c.orderCount > 1).length,
-          averageValue: customers.filter(c => c.totalSpent >= 100 && c.totalSpent <= 1000 && c.orderCount > 1).reduce((sum, c) => sum + c.totalSpent, 0) / Math.max(customers.filter(c => c.totalSpent >= 100 && c.totalSpent <= 1000 && c.orderCount > 1).length, 1),
+          customerCount: customers.filter(c => {
+            const total = c.orders.reduce((sum, o) => sum + o.totalAmount, 0);
+            return total >= 100 && total <= 1000 && c.orders.length > 1;
+          }).length,
+          averageValue: customers
+            .filter(c => {
+              const total = c.orders.reduce((sum, o) => sum + o.totalAmount, 0);
+              return total >= 100 && total <= 1000 && c.orders.length > 1;
+            })
+            .reduce((sum, c) => sum + c.orders.reduce((s, o) => s + o.totalAmount, 0), 0) / Math.max(customers.filter(c => {
+              const total = c.orders.reduce((sum, o) => sum + o.totalAmount, 0);
+              return total >= 100 && total <= 1000 && c.orders.length > 1;
+            }).length, 1),
           churnRisk: 0.3,
         },
         {
           id: 'new',
           name: 'New Customers',
           criteria: 'First-time buyers',
-          customerCount: customers.filter(c => c.orderCount === 1).length,
-          averageValue: customers.filter(c => c.orderCount === 1).reduce((sum, c) => sum + c.totalSpent, 0) / Math.max(customers.filter(c => c.orderCount === 1).length, 1),
+          customerCount: customers.filter(c => c.orders.length === 1).length,
+          averageValue: customers
+            .filter(c => c.orders.length === 1)
+            .reduce((sum, c) => sum + c.orders.reduce((s, o) => s + o.totalAmount, 0), 0) / Math.max(customers.filter(c => c.orders.length === 1).length, 1),
           churnRisk: 0.6,
         },
         {
@@ -157,8 +188,9 @@ export class AIAnalyticsService {
           name: 'At Risk Customers',
           criteria: 'No orders in last 90 days',
           customerCount: customers.filter(c => {
-            if (!c.lastOrderDate) return true;
-            const daysSinceLastOrder = Math.floor((Date.now() - new Date(c.lastOrderDate).getTime()) / (1000 * 60 * 60 * 24));
+            if (c.orders.length === 0) return true;
+            const lastOrder = c.orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+            const daysSinceLastOrder = Math.floor((Date.now() - lastOrder.createdAt.getTime()) / (1000 * 60 * 60 * 24));
             return daysSinceLastOrder > 90;
           }).length,
           averageValue: 0,
@@ -292,7 +324,9 @@ export class AIAnalyticsService {
 
       // Simple route optimization - group by area
       const routes = orders.reduce((acc, order) => {
-        const area = order.customer.address?.split(',')[1]?.trim() || 'Unknown';
+        // Get address from Order metadata or shippingAddress
+        const address = (order.metadata as any)?.shippingAddress || (order.metadata as any)?.address || '';
+        const area = address ? address.split(',')[1]?.trim() || 'Unknown' : 'Unknown';
         if (!acc[area]) {
           acc[area] = [];
         }
@@ -308,7 +342,7 @@ export class AIAnalyticsService {
           id: order.id,
           orderNumber: order.orderNumber,
           customerName: order.customer.name,
-          address: order.customer.address,
+          address: (order.metadata as any)?.shippingAddress || (order.metadata as any)?.address || '',
         })),
       }));
     } catch (error) {
@@ -319,20 +353,30 @@ export class AIAnalyticsService {
 
   async analyzeCourierPerformance(organizationId: string): Promise<CourierMetrics[]> {
     try {
-      const shipments = await prisma.shipment.findMany({
+      // Get shipments via orders (Shipment doesn't have organizationId directly)
+      const orders = await prisma.order.findMany({
         where: { organizationId },
+        select: { id: true },
+      });
+      const orderIds = orders.map(o => o.id);
+      
+      const shipments = await prisma.shipment.findMany({
+        where: { orderId: { in: orderIds } },
         include: {
-          courier: true,
           order: true,
         },
       });
 
       const courierMetrics = shipments.reduce((acc, shipment) => {
         const courierId = shipment.courierId;
+        if (!courierId) return acc; // Skip shipments without courier
+        
         if (!acc[courierId]) {
+          // Fetch courier name if available
+          const courierName = courierId || 'Unknown'; // TODO: Fetch from CourierDelivery or metadata
           acc[courierId] = {
             courierId,
-            courierName: shipment.courier.name,
+            courierName,
             deliveries: [],
             successfulDeliveries: 0,
             totalDeliveryTime: 0,

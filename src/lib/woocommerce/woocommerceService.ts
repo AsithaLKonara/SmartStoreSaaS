@@ -129,7 +129,12 @@ export class WooCommerceService extends EventEmitter {
         
         await prisma.product.update({
           where: { id: product.id },
-          data: { wooCommerceId: response.id.toString() }
+          data: { 
+            dimensions: {
+              ...(product.dimensions as any || {}),
+              wooCommerceId: response.id.toString(),
+            } as any,
+          }
         });
       }
 
@@ -158,13 +163,12 @@ export class WooCommerceService extends EventEmitter {
 
   private async syncProductEvent(product: any, action: string, organizationId: string): Promise<void> {
     const syncEvent: SyncEvent = {
-      id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'product',
       action: action as any,
+      entityId: product.id || '',
+      organizationId,
       data: product,
-      source: 'woocommerce',
       timestamp: new Date(),
-      organizationId
     };
 
     await realTimeSyncService.queueEvent(syncEvent);

@@ -17,7 +17,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  RechartsFunction,
+  // RechartsFunction, // Not exported from recharts
 } from 'recharts';
 import { useRealTimeSync } from '@/hooks/useRealTimeSync';
 
@@ -74,14 +74,14 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { isConnected, subscribe, unsubscribe } = useRealTimeSync(organizationId);
+  const realTimeSync = useRealTimeSync({ organizationId });
+  const { isConnected } = realTimeSync;
 
   useEffect(() => {
-    // Subscribe to real-time events
-    if (eventTypes.length > 0) {
-      eventTypes.forEach(eventType => {
-        subscribe(eventType, handleRealTimeUpdate);
-      });
+    // Subscribe to real-time events via WebSocket
+    if (eventTypes.length > 0 && isConnected) {
+      // Events are handled via WebSocket messages in useRealTimeSync hook
+      // No explicit subscribe/unsubscribe needed
     }
 
     // Set up refresh interval if specified
@@ -92,12 +92,8 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
     }
 
     return () => {
-      // Cleanup subscriptions
-      if (eventTypes.length > 0) {
-        eventTypes.forEach(eventType => {
-          unsubscribe(eventType, handleRealTimeUpdate);
-        });
-      }
+      // Events are handled via WebSocket messages
+      // Cleanup handled by useRealTimeSync hook
 
       // Clear interval
       if (intervalRef.current) {

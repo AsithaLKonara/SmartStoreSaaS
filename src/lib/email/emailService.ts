@@ -21,6 +21,7 @@ export interface EmailTemplate {
   htmlContent: string;
   textContent: string;
   variables: string[];
+  organizationId?: string;
 }
 
 export interface EmailOptions {
@@ -221,15 +222,35 @@ export class EmailService {
    */
   async createTemplate(template: Omit<EmailTemplate, 'id'>): Promise<EmailTemplate> {
     try {
-      const createdTemplate = await prisma.emailTemplate.create({
+      // Store email template in Organization settings
+      if (!template.organizationId) {
+        throw new Error('Organization ID is required');
+      }
+      const organization = await prisma.organization.findUnique({
+        where: { id: template.organizationId },
+      });
+      if (!organization) {
+        throw new Error('Organization not found');
+      }
+      const settings = (organization.settings as any) || {};
+      const emailTemplates = settings.emailTemplates || [];
+      const templateData = {
+        id: `template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        ...template,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      emailTemplates.push(templateData);
+      await prisma.organization.update({
+        where: { id: organization.id },
         data: {
-          name: template.name,
-          subject: template.subject,
-          htmlContent: template.htmlContent,
-          textContent: template.textContent,
-          variables: template.variables,
+          settings: {
+            ...settings,
+            emailTemplates,
+          } as any,
         },
       });
+      const createdTemplate = templateData;
 
       // Create template in email service provider
       if (this.provider === 'sendgrid') {
@@ -300,7 +321,7 @@ export class EmailService {
     const templateData = {
       customerName: order.customer.name,
       orderId: order.id,
-      orderTotal: order.total,
+      orderTotal: order.totalAmount,
       orderItems: order.items.map(item => ({
         name: item.product.name,
         quantity: item.quantity,
@@ -387,7 +408,7 @@ export class EmailService {
       templateData: {
         customerName: order.customer.name,
         orderId: order.id,
-        orderTotal: order.total,
+        orderTotal: order.totalAmount,
       },
       attachments: [{
         filename: `invoice-${order.id}.pdf`,
@@ -427,25 +448,39 @@ export class EmailService {
    */
   async addToMailingList(email: string, listId: string, customFields?: Record<string, any>): Promise<void> {
     try {
-      await prisma.emailSubscription.upsert({
-        where: {
-          email_listId: {
-            email,
-            listId,
-          },
-        },
-        update: {
-          isActive: true,
-          customFields,
-          updatedAt: new Date(),
-        },
-        create: {
+      // Store email subscription in UserPreference metadata
+      const user = await prisma.user.findFirst({
+        where: { email },
+      });
+      if (user) {
+        const userPref = await prisma.userPreference.findUnique({
+          where: { userId: user.id },
+        });
+        const emailSubscriptions = (userPref?.notifications as any)?.emailSubscriptions || {};
+        emailSubscriptions[listId] = {
           email,
           listId,
           isActive: true,
           customFields,
-        },
-      });
+          subscribedAt: new Date(),
+        };
+        await prisma.userPreference.upsert({
+          where: { userId: user.id },
+          update: {
+            notifications: {
+              ...(userPref?.notifications as any || {}),
+              emailSubscriptions,
+            } as any,
+          },
+          create: {
+            userId: user.id,
+            notifications: {
+              emailSubscriptions,
+            } as any,
+          },
+        });
+      }
+      // TODO: Also store in a separate list for non-user emails
     } catch (error) {
       console.error('Error adding to mailing list:', error);
       throw new Error('Failed to add to mailing list');
@@ -454,10 +489,31 @@ export class EmailService {
 
   async removeFromMailingList(email: string, listId: string): Promise<void> {
     try {
-      await prisma.emailSubscription.updateMany({
-        where: { email, listId },
-        data: { isActive: false },
+      // Remove email subscription from UserPreference metadata
+      const user = await prisma.user.findFirst({
+        where: { email },
       });
+      if (user) {
+        const userPref = await prisma.userPreference.findUnique({
+          where: { userId: user.id },
+        });
+        if (userPref) {
+          const emailSubscriptions = (userPref.notifications as any)?.emailSubscriptions || {};
+          if (emailSubscriptions[listId]) {
+            emailSubscriptions[listId].isActive = false;
+            emailSubscriptions[listId].unsubscribedAt = new Date();
+            await prisma.userPreference.update({
+              where: { userId: user.id },
+              data: {
+                notifications: {
+                  ...(userPref.notifications as any || {}),
+                  emailSubscriptions,
+                } as any,
+              },
+            });
+          }
+        }
+      }
     } catch (error) {
       console.error('Error removing from mailing list:', error);
       throw new Error('Failed to remove from mailing list');
@@ -467,35 +523,52 @@ export class EmailService {
   /**
    * Send marketing campaigns
    */
-  async sendCampaign(campaignId: string): Promise<{ success: boolean; recipientCount: number }> {
+  async sendCampaign(campaignId: string, organizationId: string): Promise<{ success: boolean; recipientCount: number }> {
     try {
-      const campaign = await prisma.emailCampaign.findUnique({
-        where: { id: campaignId },
-        include: {
-          template: true,
-          segments: {
-            include: {
-              subscriptions: {
-                where: { isActive: true },
-              },
-            },
-          },
-        },
+      // Get campaign from Organization settings
+      const organization = await prisma.organization.findUnique({
+        where: { id: organizationId },
       });
+      if (!organization) {
+        throw new Error('Organization not found');
+      }
+      const settings = (organization.settings as any) || {};
+      const emailCampaigns = settings.emailCampaigns || [];
+      const campaign = emailCampaigns.find((c: any) => c.id === campaignId);
 
       if (!campaign) {
         throw new Error('Campaign not found');
       }
 
-      const recipients = campaign.segments.flatMap(segment => 
-        segment.subscriptions.map(sub => ({
-          email: sub.email,
-          templateData: sub.customFields || {},
-        }))
-      );
+      // Get template
+      const emailTemplates = settings.emailTemplates || [];
+      const template = emailTemplates.find((t: any) => t.id === campaign.templateId);
+      if (!template) {
+        throw new Error('Template not found');
+      }
+
+      // Get recipients from UserPreference emailSubscriptions
+      const users = await prisma.user.findMany({
+        where: { organizationId },
+        include: {
+          userPreference: true,
+        },
+      });
+
+      const recipients = users
+        .filter(user => {
+          const emailSubscriptions = (user.userPreference?.notifications as any)?.emailSubscriptions || {};
+          return campaign.segmentIds?.some((segmentId: string) => 
+            emailSubscriptions[segmentId]?.isActive
+          );
+        })
+        .map(user => ({
+          email: user.email,
+          templateData: ((user.userPreference?.notifications as any)?.emailSubscriptions || {})[campaign.segmentIds?.[0]]?.customFields || {},
+        }));
 
       const result = await this.sendBulkEmail({
-        templateId: campaign.template.id,
+        templateId: template.id,
         from: {
           email: process.env.FROM_EMAIL!,
           name: process.env.FROM_NAME || 'SmartStore AI',
@@ -504,13 +577,19 @@ export class EmailService {
         subject: campaign.subject,
       });
 
-      // Update campaign status
-      await prisma.emailCampaign.update({
-        where: { id: campaignId },
+      // Update campaign status in Organization settings
+      const updatedCampaigns = emailCampaigns.map((c: any) => 
+        c.id === campaignId 
+          ? { ...c, status: 'SENT', sentAt: new Date(), recipientCount: recipients.length }
+          : c
+      );
+      await prisma.organization.update({
+        where: { id: organizationId },
         data: {
-          status: 'SENT',
-          sentAt: new Date(),
-          recipientCount: recipients.length,
+          settings: {
+            ...settings,
+            emailCampaigns: updatedCampaigns,
+          } as any,
         },
       });
 

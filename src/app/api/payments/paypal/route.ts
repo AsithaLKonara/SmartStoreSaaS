@@ -73,7 +73,10 @@ async function captureOrder(data: any, userId: string) {
   // Verify user owns this order
   const order = await prisma.order.findFirst({
     where: {
-      paypalOrderId,
+      metadata: {
+        path: ['paypalOrderId'],
+        equals: paypalOrderId,
+      } as any,
       organizationId: userId,
     },
   });
@@ -92,7 +95,10 @@ async function getOrder(data: any, userId: string) {
   // Verify user owns this order
   const order = await prisma.order.findFirst({
     where: {
-      paypalOrderId,
+      metadata: {
+        path: ['paypalOrderId'],
+        equals: paypalOrderId,
+      } as any,
       organizationId: userId,
     },
   });
@@ -111,7 +117,10 @@ async function createRefund(data: any, userId: string) {
   // Verify user owns this payment
   const order = await prisma.order.findFirst({
     where: {
-      paypalPaymentId: paymentId,
+        metadata: {
+          path: ['paypalPaymentId'],
+          equals: paymentId,
+        } as any,
       organizationId: userId,
     },
   });

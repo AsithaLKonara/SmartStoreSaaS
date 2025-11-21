@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { realTimeSyncService } from '@/lib/sync/realTimeSyncService';
 import { emailService } from '@/lib/email/emailService';
+import { randomUUID } from 'crypto';
 
 export interface Achievement {
   id: string;
@@ -156,32 +157,46 @@ export class GamificationService {
    */
   async initializeUserGamification(userId: string): Promise<UserStats> {
     try {
-      // Check if user already has gamification profile
-      const existingProfile = await prisma.userGamification.findUnique({
+      // Check if user already has gamification profile in UserPreference
+      const userPref = await prisma.userPreference.findUnique({
         where: { userId },
       });
 
-      if (existingProfile) {
+      const gamificationData = (userPref?.notifications as any)?.gamification;
+      if (gamificationData) {
         return this.getUserStats(userId);
       }
 
-      // Create new gamification profile
-      const profile = await prisma.userGamification.create({
-        data: {
+      // Create new gamification profile in UserPreference metadata
+      const defaultGamification = {
+        totalPoints: 0,
+        currentLevel: 1,
+        currentStreak: 0,
+        longestStreak: 0,
+        badges: [],
+        lifetimeStats: {
+          totalPurchases: 0,
+          totalSpent: 0,
+          reviewsWritten: 0,
+          referralsMade: 0,
+          daysActive: 0,
+        },
+        recentActivity: [],
+      };
+
+      await prisma.userPreference.upsert({
+        where: { userId },
+        update: {
+          notifications: {
+            ...(userPref?.notifications as any || {}),
+            gamification: defaultGamification,
+          } as any,
+        },
+        create: {
           userId,
-          totalPoints: 0,
-          currentLevel: 1,
-          currentStreak: 0,
-          longestStreak: 0,
-          badges: [],
-          lifetimeStats: {
-            totalPurchases: 0,
-            totalSpent: 0,
-            reviewsWritten: 0,
-            referralsMade: 0,
-            daysActive: 0,
-          },
-          recentActivity: [],
+          notifications: {
+            gamification: defaultGamification,
+          } as any,
         },
       });
 
@@ -192,8 +207,8 @@ export class GamificationService {
       await this.startQuestLine(userId, 'onboarding');
 
       return this.getUserStats(userId);
-    } catch (error) {
-      console.error('Error initializing user gamification:', error);
+     } catch {
+       console.error('Error initializing user gamification');
       throw new Error('Failed to initialize gamification profile');
     }
   }
@@ -213,35 +228,46 @@ export class GamificationService {
     achievements?: string[];
   }> {
     try {
-      const profile = await prisma.userGamification.findUnique({
+      const userPref = await prisma.userPreference.findUnique({
         where: { userId },
       });
 
-      if (!profile) {
+      const gamificationData = (userPref?.notifications as any)?.gamification || null;
+
+      if (!gamificationData) {
         await this.initializeUserGamification(userId);
         return this.awardPoints(userId, points, reason, metadata);
       }
 
-      const oldPoints = profile.totalPoints;
+      const oldPoints = gamificationData.totalPoints || 0;
       const newTotal = oldPoints + points;
-      const oldLevel = profile.currentLevel;
+      const oldLevel = gamificationData.currentLevel || 1;
       const newLevel = this.calculateLevel(newTotal);
       const levelUp = newLevel > oldLevel;
 
-      // Update profile
-      await prisma.userGamification.update({
+      // Update profile in UserPreference metadata
+      const updatedGamification = {
+        ...gamificationData,
+        totalPoints: newTotal,
+        currentLevel: newLevel,
+        recentActivity: [
+          ...(gamificationData.recentActivity || []),
+          {
+            type: 'points',
+            description: reason,
+            points,
+            timestamp: new Date(),
+          },
+        ].slice(-50), // Keep last 50 activities
+      };
+
+      await prisma.userPreference.update({
         where: { userId },
         data: {
-          totalPoints: newTotal,
-          currentLevel: newLevel,
-          recentActivity: {
-            push: {
-              type: 'points',
-              description: reason,
-              points,
-              timestamp: new Date(),
-            },
-          },
+          notifications: {
+            ...(userPref?.notifications as any || {}),
+            gamification: updatedGamification,
+          } as any,
         },
       });
 
@@ -254,11 +280,15 @@ export class GamificationService {
       }
 
       // Broadcast event
-      await realTimeSyncService.broadcastEvent({
-        type: 'points_awarded',
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { organizationId: true },
+      });
+      await realTimeSyncService.queueEvent({
+        type: 'message',
+        action: 'update',
         entityId: userId,
-        entityType: 'user_gamification',
-        organizationId: 'gamification',
+        organizationId: user?.organizationId || '',
         data: { userId, points, reason, newTotal, levelUp, newLevel },
         timestamp: new Date(),
       });
@@ -269,8 +299,8 @@ export class GamificationService {
         newLevel: levelUp ? newLevel : undefined,
         achievements: newAchievements,
       };
-    } catch (error) {
-      console.error('Error awarding points:', error);
+     } catch {
+       console.error('Error awarding points');
       throw new Error('Failed to award points');
     }
   }
@@ -310,29 +340,29 @@ export class GamificationService {
         data: {
           userId,
           achievementId,
-          earnedAt: new Date(),
-          isNotified: false,
+          unlockedAt: new Date(),
         },
       });
 
-      // Award points and badges
-      await this.awardPoints(userId, achievement.rewards.points, `Achievement: ${achievement.name}`);
+      // Award points and badges - rewards stored in criteria metadata
+      const rewards = (achievement.criteria as any)?.rewards || { points: achievement.points || 0, badges: [], discounts: [] };
+      await this.awardPoints(userId, rewards.points || achievement.points || 0, `Achievement: ${achievement.name}`);
 
-      if (achievement.rewards.badges.length > 0) {
-        await this.awardBadges(userId, achievement.rewards.badges);
+      if (rewards.badges && rewards.badges.length > 0) {
+        await this.awardBadges(userId, rewards.badges);
       }
 
       // Apply discounts if any
-      if (achievement.rewards.discounts) {
-        await this.applyAchievementDiscounts(userId, achievement.rewards.discounts);
+      if (rewards.discounts && rewards.discounts.length > 0) {
+        await this.applyAchievementDiscounts(userId, rewards.discounts);
       }
 
       // Send notification
       await this.sendAchievementNotification(userId, achievement);
 
       return true;
-    } catch (error) {
-      console.error('Error checking achievement:', error);
+     } catch {
+       console.error('Error checking achievement');
       return false;
     }
   }
@@ -352,48 +382,62 @@ export class GamificationService {
       for (const leaderboard of leaderboards) {
         await this.updateLeaderboardEntry(leaderboard.id, userId, value);
       }
-    } catch (error) {
-      console.error('Error updating leaderboards:', error);
+     } catch {
+       console.error('Error updating leaderboards');
     }
   }
 
   /**
    * Create challenge
    */
-  async createChallenge(challengeData: Omit<Challenge, 'id' | 'participants' | 'winners' | 'status'>): Promise<Challenge> {
+  async createChallenge(
+    organizationId: string,
+    challengeData: Omit<Challenge, 'id' | 'participants' | 'winners' | 'status'>
+  ): Promise<Challenge> {
     try {
-      const challenge = await prisma.challenge.create({
+      // Store challenge in Organization metadata
+      const challengeId = randomUUID();
+      const challenge: Challenge = {
+        id: challengeId,
+        name: challengeData.name,
+        description: challengeData.description,
+        type: challengeData.type,
+        category: challengeData.category,
+        startDate: challengeData.startDate,
+        endDate: challengeData.endDate,
+        requirements: challengeData.requirements,
+        rewards: challengeData.rewards,
+        participants: [],
+        winners: [],
+        status: challengeData.startDate > new Date() ? 'upcoming' : 'active',
+      };
+
+      // Get organization and update metadata with challenges
+      const organization = await prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { settings: true },
+      });
+
+      const settings = (organization?.settings as any) || {};
+      const challenges = settings.challenges || [];
+      
+      // Add new challenge to the list
+      challenges.push(challenge);
+
+      // Update organization metadata
+      await prisma.organization.update({
+        where: { id: organizationId },
         data: {
-          name: challengeData.name,
-          description: challengeData.description,
-          type: challengeData.type,
-          category: challengeData.category,
-          startDate: challengeData.startDate,
-          endDate: challengeData.endDate,
-          requirements: challengeData.requirements,
-          rewards: challengeData.rewards,
-          participants: [],
-          winners: [],
-          status: challengeData.startDate > new Date() ? 'upcoming' : 'active',
+          settings: {
+            ...settings,
+            challenges,
+          } as any,
         },
       });
 
-      return {
-        id: challenge.id,
-        name: challenge.name,
-        description: challenge.description,
-        type: challenge.type as Challenge['type'],
-        category: challenge.category as Challenge['category'],
-        startDate: challenge.startDate,
-        endDate: challenge.endDate,
-        requirements: challenge.requirements as Challenge['requirements'],
-        rewards: challenge.rewards as Challenge['rewards'],
-        participants: challenge.participants as string[],
-        winners: challenge.winners as string[],
-        status: challenge.status as Challenge['status'],
-      };
-    } catch (error) {
-      console.error('Error creating challenge:', error);
+      return challenge;
+     } catch (error) {
+       console.error('Error creating challenge:', error);
       throw new Error('Failed to create challenge');
     }
   }
@@ -401,32 +445,52 @@ export class GamificationService {
   /**
    * Join challenge
    */
-  async joinChallenge(userId: string, challengeId: string): Promise<boolean> {
+  async joinChallenge(userId: string, challengeId: string, organizationId: string): Promise<boolean> {
     try {
-      const challenge = await prisma.challenge.findUnique({
-        where: { id: challengeId },
+      // Retrieve challenge from Organization metadata
+      const organization = await prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { settings: true },
       });
 
-      if (!challenge || challenge.status !== 'active') {
-        return false;
-      }
-
-      const participants = challenge.participants as string[];
+      const settings = (organization?.settings as any) || {};
+      const challenges: Challenge[] = settings.challenges || [];
       
-      if (participants.includes(userId)) {
+      const challengeIndex = challenges.findIndex((c: Challenge) => c.id === challengeId);
+      if (challengeIndex === -1) {
         return false;
       }
 
-      await prisma.challenge.update({
-        where: { id: challengeId },
+      const challenge = challenges[challengeIndex];
+      if (challenge.status !== 'active') {
+        return false;
+      }
+
+      // Check if user is already a participant
+      if (challenge.participants.includes(userId)) {
+        return false;
+      }
+
+      // Add user to participants
+      challenges[challengeIndex] = {
+        ...challenge,
+        participants: [...challenge.participants, userId],
+      };
+
+      // Update organization metadata
+      await prisma.organization.update({
+        where: { id: organizationId },
         data: {
-          participants: [...participants, userId],
+          settings: {
+            ...settings,
+            challenges,
+          } as any,
         },
       });
 
       return true;
-    } catch (error) {
-      console.error('Error joining challenge:', error);
+     } catch (error) {
+       console.error('Error joining challenge:', error);
       return false;
     }
   }
@@ -436,16 +500,18 @@ export class GamificationService {
    */
   async getUserStats(userId: string): Promise<UserStats> {
     try {
-      const profile = await prisma.userGamification.findUnique({
+      const userPref = await prisma.userPreference.findUnique({
         where: { userId },
       });
 
-      if (!profile) {
+      const gamificationData = (userPref?.notifications as any)?.gamification;
+
+      if (!gamificationData) {
         return await this.initializeUserGamification(userId);
       }
 
-      const currentLevel = profile.currentLevel;
-      const pointsToNextLevel = this.getPointsForLevel(currentLevel + 1) - profile.totalPoints;
+      const currentLevel = gamificationData.currentLevel || 1;
+      const pointsToNextLevel = this.getPointsForLevel(currentLevel + 1) - (gamificationData.totalPoints || 0);
       
       // Get user rank
       const rank = await this.getUserRank(userId);
@@ -457,19 +523,25 @@ export class GamificationService {
 
       return {
         userId,
-        totalPoints: profile.totalPoints,
+        totalPoints: gamificationData.totalPoints || 0,
         currentLevel,
         pointsToNextLevel: Math.max(0, pointsToNextLevel),
         totalAchievements: achievementsCount,
-        currentStreak: profile.currentStreak,
-        longestStreak: profile.longestStreak,
-        badges: profile.badges as string[],
+        currentStreak: gamificationData.currentStreak || 0,
+        longestStreak: gamificationData.longestStreak || 0,
+        badges: (gamificationData.badges || []) as string[],
         rank,
-        lifetimeStats: profile.lifetimeStats as UserStats['lifetimeStats'],
-        recentActivity: (profile.recentActivity as UserStats['recentActivity']).slice(-10),
+        lifetimeStats: (gamificationData.lifetimeStats || {
+          totalPurchases: 0,
+          totalSpent: 0,
+          reviewsWritten: 0,
+          referralsMade: 0,
+          daysActive: 0,
+        }) as UserStats['lifetimeStats'],
+        recentActivity: ((gamificationData.recentActivity || []) as UserStats['recentActivity']).slice(-10),
       };
-    } catch (error) {
-      console.error('Error getting user stats:', error);
+     } catch {
+       console.error('Error getting user stats');
       throw new Error('Failed to get user stats');
     }
   }
@@ -491,21 +563,21 @@ export class GamificationService {
         throw new Error('Leaderboard not found');
       }
 
-      const entries = await this.calculateLeaderboardEntries(type, period, limit);
+      const entries = await this.calculateLeaderboardEntries(leaderboard.type, period, limit);
 
       return {
         id: leaderboard.id,
         name: leaderboard.name,
-        description: leaderboard.description,
-        type: leaderboard.type,
-        period: leaderboard.period,
-        maxEntries: leaderboard.maxEntries,
+        description: (leaderboard.entries as any)?.description || '', // Store description in entries metadata
+        type: leaderboard.type as 'streak' | 'referrals' | 'points' | 'purchases' | 'reviews',
+        period: leaderboard.period as 'daily' | 'weekly' | 'monthly' | 'yearly' | 'all_time',
+        maxEntries: (leaderboard.entries as any)?.maxEntries || 50, // Store maxEntries in entries metadata
         isActive: leaderboard.isActive,
         entries,
         lastUpdated: new Date(),
       };
-    } catch (error) {
-      console.error('Error getting leaderboard:', error);
+     } catch {
+       console.error('Error getting leaderboard');
       throw new Error('Failed to get leaderboard');
     }
   }
@@ -536,13 +608,13 @@ export class GamificationService {
       case 'total_spent':
         const totalSpent = await prisma.order.aggregate({
           where: { customerId: userId, status: 'COMPLETED' },
-          _sum: { total: true },
+          _sum: { totalAmount: true },
         });
-        return (totalSpent._sum.total || 0) >= requirements.value;
+        return (totalSpent._sum.totalAmount || 0) >= requirements.value;
       
       case 'reviews_written':
         const reviewCount = await prisma.review.count({
-          where: { userId },
+          where: { customerId: userId },
         });
         return reviewCount >= requirements.value;
       
@@ -572,17 +644,31 @@ export class GamificationService {
     // Award level up points
     const bonusPoints = newLevel * 10;
     
-    await prisma.userGamification.update({
+    const userPref = await prisma.userPreference.findUnique({
+      where: { userId },
+    });
+
+    const gamificationData = (userPref?.notifications as any)?.gamification || {};
+    const updatedGamification = {
+      ...gamificationData,
+      recentActivity: [
+        ...(gamificationData.recentActivity || []),
+        {
+          type: 'level_up',
+          description: `Reached level ${newLevel}!`,
+          points: bonusPoints,
+          timestamp: new Date(),
+        },
+      ].slice(-50),
+    };
+
+    await prisma.userPreference.update({
       where: { userId },
       data: {
-        recentActivity: {
-          push: {
-            type: 'level_up',
-            description: `Reached level ${newLevel}!`,
-            points: bonusPoints,
-            timestamp: new Date(),
-          },
-        },
+        notifications: {
+          ...(userPref?.notifications as any || {}),
+          gamification: updatedGamification,
+        } as any,
       },
     });
 
@@ -591,35 +677,56 @@ export class GamificationService {
   }
 
   private async awardBadges(userId: string, badges: string[]): Promise<void> {
-    const profile = await prisma.userGamification.findUnique({
+    const userPref = await prisma.userPreference.findUnique({
       where: { userId },
     });
 
-    if (profile) {
-      const currentBadges = profile.badges as string[];
-      const newBadges = [...new Set([...currentBadges, ...badges])];
+    if (userPref) {
+      const gamificationData = (userPref.notifications as any)?.gamification || {};
+      const currentBadges = (gamificationData.badges || []) as string[];
+      const newBadges = Array.from(new Set([...currentBadges, ...badges]));
 
-      await prisma.userGamification.update({
+      await prisma.userPreference.update({
         where: { userId },
-        data: { badges: newBadges },
+        data: {
+          notifications: {
+            ...(userPref.notifications as any || {}),
+            gamification: {
+              ...gamificationData,
+              badges: newBadges,
+            },
+          } as any,
+        },
       });
     }
   }
 
   private async applyAchievementDiscounts(userId: string, discounts: any[]): Promise<void> {
-    // Apply achievement-based discounts
-    for (const discount of discounts) {
-      await prisma.userDiscount.create({
-        data: {
-          userId,
-          type: discount.type,
-          value: discount.value,
-          minPurchase: discount.minPurchase,
-          validUntil: discount.validUntil,
-          source: 'achievement',
-        },
-      });
-    }
+    // Apply achievement-based discounts - store in UserPreference metadata
+    const userPref = await prisma.userPreference.findUnique({
+      where: { userId },
+    });
+
+    const existingDiscounts = (userPref?.notifications as any)?.discounts || [];
+    const newDiscounts = discounts.map(d => ({
+      userId,
+      type: d.type,
+      value: d.value,
+      minPurchase: d.minPurchase,
+      validUntil: d.validUntil,
+      source: 'achievement',
+      createdAt: new Date(),
+    }));
+
+    await prisma.userPreference.update({
+      where: { userId },
+      data: {
+        notifications: {
+          ...(userPref?.notifications as any || {}),
+          discounts: [...existingDiscounts, ...newDiscounts],
+        } as any,
+      },
+    });
   }
 
   private async sendAchievementNotification(userId: string, achievement: any): Promise<void> {
@@ -658,19 +765,27 @@ export class GamificationService {
   }
 
   private async getUserRank(userId: string): Promise<number> {
-    const profile = await prisma.userGamification.findUnique({
+    const userPref = await prisma.userPreference.findUnique({
       where: { userId },
     });
 
-    if (!profile) return 0;
+    const gamificationData = (userPref?.notifications as any)?.gamification;
+    if (!gamificationData) return 0;
 
-    const rank = await prisma.userGamification.count({
+    const userPoints = gamificationData.totalPoints || 0;
+
+    // Count users with more points (stored in UserPreference metadata)
+    // Note: This is a simplified ranking - for better performance, consider caching leaderboards
+    const allUserPrefs = await prisma.userPreference.findMany({
       where: {
-        totalPoints: { gt: profile.totalPoints },
+        notifications: {
+          path: ['gamification', 'totalPoints'],
+          gt: userPoints,
+        } as any,
       },
     });
 
-    return rank + 1;
+    return allUserPrefs.length + 1;
   }
 
   private async updateLeaderboardEntry(leaderboardId: string, userId: string, score: number): Promise<void> {
@@ -680,23 +795,33 @@ export class GamificationService {
 
   private async calculateLeaderboardEntries(type: string, period: string, limit: number): Promise<LeaderboardEntry[]> {
     // Calculate leaderboard entries based on type and period
+    // Note: This is a simplified implementation - for production, consider caching leaderboards
     const entries: LeaderboardEntry[] = [];
     
-    const profiles = await prisma.userGamification.findMany({
-      take: limit,
-      orderBy: { totalPoints: 'desc' },
+    // Get all user preferences with gamification data
+    const allUserPrefs = await prisma.userPreference.findMany({
       include: { user: true },
     });
 
+    // Extract and sort by points
+    const profiles = allUserPrefs
+      .map(up => ({
+        user: up.user,
+        gamification: (up.notifications as any)?.gamification,
+      }))
+      .filter(p => p.gamification?.totalPoints !== undefined)
+      .sort((a, b) => (b.gamification?.totalPoints || 0) - (a.gamification?.totalPoints || 0))
+      .slice(0, limit);
+
     profiles.forEach((profile, index) => {
       entries.push({
-        userId: profile.userId,
+        userId: profile.user.id,
         userName: profile.user.name || 'Anonymous',
-        userAvatar: profile.user.image,
-        score: profile.totalPoints,
+        userAvatar: profile.user.image || undefined,
+        score: profile.gamification?.totalPoints || 0,
         rank: index + 1,
         change: 0, // Would calculate based on previous period
-        badges: profile.badges as string[],
+        badges: (profile.gamification?.badges || []) as string[],
       });
     });
 

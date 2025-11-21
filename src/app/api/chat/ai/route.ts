@@ -4,14 +4,14 @@ import { authOptions } from '@/lib/auth';
 import { aiChatService } from '@/lib/ai/chatService';
 import { prisma } from '@/lib/prisma';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { message, conversationId, customerId } = body;
 
     if (!message || !conversationId) {
@@ -19,15 +19,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Get conversation context
-    const conversation = await prisma.chatConversation.findUnique({
+    const conversation = await prisma.customerConversation.findUnique({
       where: { id: conversationId },
       include: {
         messages: {
-          orderBy: { createdAt: 'asc' },
+          orderBy: { timestamp: 'asc' },
           take: 10, // Last 10 messages for context
         },
         customer: true,
       },
+    });
+    
+    // Get chat messages for context
+    const chatMessages = await prisma.chatMessage.findMany({
+      where: { customerId: conversation?.customerId },
+      orderBy: { createdAt: 'asc' },
+      take: 10,
     });
 
     if (!conversation) {
@@ -89,8 +96,8 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // General conversation - use AI to generate contextual response
-      const context = conversation.messages
-        .map((msg: any) => `${msg.role}: ${msg.content}`)
+      const context = chatMessages
+        .map((msg) => `${msg.direction}: ${msg.content}`)
         .join('\n');
 
       aiResponse = await generateContextualResponse(message, context, session.user.organizationId);
@@ -99,15 +106,18 @@ export async function POST(request: NextRequest) {
     // Save AI response to conversation
     const aiMessage = await prisma.chatMessage.create({
       data: {
-        conversationId,
-        role: 'assistant',
         content: aiResponse,
+        direction: 'OUTBOUND',
+        type: 'TEXT',
+        status: 'SENT',
+        customerId: conversation?.customerId || '',
+        organizationId: session.user.organizationId,
         metadata: {
-          sentiment,
+          sentiment: sentiment as any,
           isUrgent,
           confidence: 0.9,
           aiGenerated: true,
-        },
+        } as any,
       },
     });
 
@@ -117,11 +127,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Update conversation
-    await prisma.chatConversation.update({
+    await prisma.customerConversation.update({
       where: { id: conversationId },
       data: {
-        lastMessageAt: new Date(),
-        status: isUrgent ? 'URGENT' : 'ACTIVE',
+        updatedAt: new Date(),
+        status: isUrgent ? 'urgent' : 'active',
       },
     });
 
@@ -131,8 +141,8 @@ export async function POST(request: NextRequest) {
       sentiment,
       isUrgent,
     });
-  } catch (error) {
-    console.error('Error in AI chat:', error);
+  } catch {
+    console.error('Error in AI chat');
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
@@ -157,8 +167,8 @@ async function generateContextualResponse(message: string, context: string, orga
     // This would use the AI service to generate a response
     // For now, returning a generic helpful response
     return "Thank you for your message! I'm here to help you with any questions about our products, orders, or services. How can I assist you today?";
-  } catch (error) {
-    console.error('Error generating contextual response:', error);
+  } catch {
+    console.error('Error generating contextual response');
     return "I apologize, but I'm having trouble processing your request right now. Please try again or contact our support team for immediate assistance.";
   }
 }
@@ -167,12 +177,14 @@ async function generateContextualResponse(message: string, context: string, orga
 async function createUrgentIssueNotification(conversation: any, message: string, organizationId: string): Promise<void> {
   try {
     // Create notification for urgent issues
+    // Create notification for urgent issues
     await prisma.notification.create({
       data: {
         type: 'URGENT_CHAT',
         title: 'Urgent Customer Issue',
         message: `Urgent issue in conversation #${conversation.id}: ${message.substring(0, 100)}...`,
         organizationId,
+        priority: 'HIGH',
         metadata: {
           conversationId: conversation.id,
           customerId: conversation.customerId,
@@ -188,8 +200,8 @@ async function createUrgentIssueNotification(conversation: any, message: string,
     //   template: 'urgent-issue',
     //   data: { conversation, message },
     // });
-  } catch (error) {
-    console.error('Error creating urgent issue notification:', error);
+  } catch {
+    console.error('Error creating urgent issue notification');
   }
 }
 
@@ -225,8 +237,8 @@ export async function GET(request: NextRequest) {
       default:
         return NextResponse.json({ message: 'Invalid action' }, { status: 400 });
     }
-  } catch (error) {
-    console.error('Error in AI chat GET:', error);
+  } catch {
+    console.error('Error in AI chat GET');
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
@@ -236,20 +248,20 @@ async function getAIChatStats(organizationId: string): Promise<any> {
   try {
     const totalMessages = await prisma.chatMessage.count({
       where: {
-        conversation: { organizationId },
-        role: 'assistant',
-        metadata: { path: ['aiGenerated'], equals: true },
+        organizationId,
+        direction: 'OUTBOUND',
+        metadata: { equals: { aiGenerated: true } },
       },
     });
 
     const urgentIssues = await prisma.chatMessage.count({
       where: {
-        conversation: { organizationId },
-        metadata: { path: ['isUrgent'], equals: true },
+        organizationId,
+        metadata: { equals: { isUrgent: true } },
       },
     });
 
-    const conversations = await prisma.chatConversation.count({
+    const conversations = await prisma.customerConversation.count({
       where: { organizationId },
     });
 
@@ -262,8 +274,8 @@ async function getAIChatStats(organizationId: string): Promise<any> {
       averageResponseTime: avgResponseTime,
       aiUtilizationRate: conversations > 0 ? (totalMessages / conversations) : 0,
     };
-  } catch (error) {
-    console.error('Error getting AI chat stats:', error);
+  } catch {
+    console.error('Error getting AI chat stats');
     return {};
   }
 }
@@ -273,9 +285,9 @@ async function calculateAverageResponseTime(organizationId: string): Promise<num
   try {
     const messages = await prisma.chatMessage.findMany({
       where: {
-        conversation: { organizationId },
-        role: 'assistant',
-        metadata: { path: ['aiGenerated'], equals: true },
+        organizationId,
+        direction: 'OUTBOUND',
+        metadata: { equals: { aiGenerated: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -287,7 +299,7 @@ async function calculateAverageResponseTime(organizationId: string): Promise<num
       const currentMessage = messages[i];
       const previousMessage = messages[i - 1];
 
-      if (currentMessage.role === 'assistant' && previousMessage.role === 'user') {
+      if (currentMessage.direction === 'OUTBOUND' && previousMessage.direction === 'INBOUND') {
         const responseTime = currentMessage.createdAt.getTime() - previousMessage.createdAt.getTime();
         totalResponseTime += responseTime;
         responseCount++;
@@ -295,8 +307,8 @@ async function calculateAverageResponseTime(organizationId: string): Promise<num
     }
 
     return responseCount > 0 ? totalResponseTime / responseCount : 0;
-  } catch (error) {
-    console.error('Error calculating average response time:', error);
+  } catch {
+    console.error('Error calculating average response time');
     return 0;
   }
 } 

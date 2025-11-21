@@ -27,7 +27,7 @@ export async function GET(
           },
         },
       },
-      orderBy: { timestamp: 'asc' },
+      orderBy: { createdAt: 'asc' },
     });
 
     return NextResponse.json({ messages });
@@ -38,7 +38,7 @@ export async function GET(
 }
 
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { conversationId: string } }
 ) {
   try {
@@ -47,7 +47,7 @@ export async function POST(
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { content, sender } = body;
 
     if (!content || !sender) {
@@ -57,12 +57,15 @@ export async function POST(
     const message = await prisma.chatMessage.create({
       data: {
         content,
-        sender,
-        channel: 'whatsapp', // This would be determined by the conversation
+        direction: sender === 'agent' ? 'OUTBOUND' : 'INBOUND',
+        type: 'TEXT',
+        status: 'SENT',
         customerId: params.conversationId,
         organizationId: session.user.organizationId,
-        timestamp: new Date(),
-        read: sender === 'agent', // Agent messages are read by default
+        metadata: {
+          channel: 'whatsapp',
+          sender,
+        },
       },
       include: {
         customer: {

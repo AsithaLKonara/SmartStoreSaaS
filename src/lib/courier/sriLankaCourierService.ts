@@ -738,18 +738,17 @@ export class SriLankaCourierService extends EventEmitter {
   // Sync Methods
   private async syncTrackingEvent(trackingInfo: TrackingInfo): Promise<void> {
     const syncEvent: SyncEvent = {
-      id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'order',
       action: 'update',
+      entityId: trackingInfo.trackingNumber || '',
+      organizationId: trackingInfo.organizationId || '',
       data: {
         trackingNumber: trackingInfo.trackingNumber,
         status: trackingInfo.status,
         location: trackingInfo.location,
         estimatedDelivery: trackingInfo.estimatedDelivery
       },
-      source: 'courier',
       timestamp: new Date(),
-      organizationId: trackingInfo.organizationId || ''
     };
 
     await realTimeSyncService.queueEvent(syncEvent);
@@ -757,13 +756,12 @@ export class SriLankaCourierService extends EventEmitter {
 
   private async syncShipmentEvent(shipment: ShipmentResponse, action: string, organizationId: string): Promise<void> {
     const syncEvent: SyncEvent = {
-      id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'order',
       action: action as any,
+      entityId: shipment.id || '',
+      organizationId,
       data: shipment,
-      source: 'courier',
       timestamp: new Date(),
-      organizationId
     };
 
     await realTimeSyncService.queueEvent(syncEvent);

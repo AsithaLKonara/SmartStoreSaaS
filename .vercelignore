@@ -1,0 +1,77 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Testing
+coverage
+.nyc_output
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__
+*.test.js
+*.test.jsx
+*.spec.js
+*.spec.jsx
+
+# Development
+.env.local
+.env.development
+.env.test
+
+# Docker
+Dockerfile
+docker-compose.yml
+docker-compose.microservices.yml
+docker-build.sh
+entrypoint.sh
+
+# Documentation
+*.md
+!README.md
+DEPLOYMENT_*.md
+IMPLEMENTATION_*.md
+TESTING_*.md
+MOCKS_*.md
+DATABASE_*.md
+FINAL_*.md
+
+# Scripts
+scripts/
+test-all-services.sh
+test-all-services.ps1
+
+# Services (microservices)
+services/
+
+# Prisma migrations (keep schema, ignore migrations folder if exists)
+prisma/migrations/
+
+# Build outputs
+.next
+out
+dist
+build
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Misc
+.cache
+.temp
+tmp
+

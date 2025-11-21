@@ -16,6 +16,9 @@ export async function GET(request: NextRequest) {
     const organizationId = session.user.organizationId;
 
     // Get data for AI analysis
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
+    }
     const products = await prisma.product.findMany({
       where: { organizationId },
       include: { category: true },
@@ -54,11 +57,22 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ trends });
 
       case 'supplier-performance':
+        if (!organizationId) {
+          return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
+        }
         const suppliers = await prisma.supplier.findMany({
           where: { organizationId },
         });
         const supplierPerformance = await aiInventoryService.evaluateSupplierPerformance(
-          suppliers,
+          suppliers.map(s => ({
+            supplierId: s.id,
+            supplierName: s.name,
+            averageDeliveryTime: 0,
+            qualityScore: s.rating || 0,
+            reliabilityScore: s.rating || 0,
+            costEffectiveness: 0,
+            recommendations: [],
+          })),
           orders
         );
         return NextResponse.json({ supplierPerformance });
@@ -67,14 +81,25 @@ export async function GET(request: NextRequest) {
         const predictionsForPO = await aiInventoryService.predictStockoutRisk(
           products,
           salesHistory,
-          products.map((p: any) => ({ productId: p.id, currentStock: p.stock }))
+          products.map((p: any) => ({ productId: p.id, currentStock: p.stockQuantity }))
         );
+        if (!organizationId) {
+          return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
+        }
         const suppliersForPO = await prisma.supplier.findMany({
           where: { organizationId },
         });
         const purchaseOrders = await aiInventoryService.generatePurchaseOrders(
           predictionsForPO,
-          suppliersForPO
+          suppliersForPO.map(s => ({
+            supplierId: s.id,
+            supplierName: s.name,
+            averageDeliveryTime: 0,
+            qualityScore: s.rating || 0,
+            reliabilityScore: s.rating || 0,
+            costEffectiveness: 0,
+            recommendations: [],
+          }))
         );
         return NextResponse.json({ purchaseOrders });
 
@@ -90,8 +115,8 @@ export async function GET(request: NextRequest) {
       default:
         return NextResponse.json({ error: 'Invalid type parameter' }, { status: 400 });
     }
-  } catch (error) {
-    console.error('Error in AI inventory API:', error);
+  } catch {
+    console.error('Error in AI inventory API');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -99,25 +124,28 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { action, data } = body;
     const organizationId = session.user.organizationId;
 
     switch (action) {
       case 'generate-purchase-order':
-        // Generate and save purchase order based on AI recommendations
         const purchaseOrder = await prisma.purchaseOrder.create({
           data: {
             ...data,
             organizationId,
+            supplierId: data.supplierId,
+            orderNumber: `PO-${Date.now()}`,
             status: 'DRAFT',
+            totalAmount: data.totalAmount || 0,
+            items: data.items || [],
             createdBy: session.user.id,
           },
         });
@@ -126,6 +154,9 @@ export async function POST(request: NextRequest) {
       case 'update-pricing':
         // Update product pricing based on AI recommendations
         const { productId, newPrice } = data;
+        if (!organizationId) {
+          return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
+        }
         const updatedProduct = await prisma.product.update({
           where: { id: productId, organizationId },
           data: { price: newPrice },
@@ -135,17 +166,20 @@ export async function POST(request: NextRequest) {
       case 'set-reorder-points':
         // Set reorder points based on AI predictions
         const { productId: productIdForReorder, reorderPoint } = data;
+        if (!organizationId) {
+          return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
+        }
         const product = await prisma.product.update({
           where: { id: productIdForReorder, organizationId },
-          data: { reorderPoint },
+          data: { lowStockThreshold: reorderPoint },
         });
         return NextResponse.json({ product });
 
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
-  } catch (error) {
-    console.error('Error in AI inventory API POST:', error);
+  } catch {
+    console.error('Error in AI inventory API POST');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

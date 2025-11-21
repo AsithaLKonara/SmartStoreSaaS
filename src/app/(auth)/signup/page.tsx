@@ -66,7 +66,7 @@ export default function SignUpPage() {
     setIsLoading(true);
     try {
       await signIn('google', { callbackUrl: '/dashboard' });
-    } catch (error) {
+    } catch {
       toast.error('An error occurred during Google sign up');
       setIsLoading(false);
     }

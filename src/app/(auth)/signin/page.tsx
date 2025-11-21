@@ -34,7 +34,7 @@ export default function SignInPage() {
         toast.success('Signed in successfully');
         router.push('/dashboard');
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred during sign in');
     } finally {
       setIsLoading(false);
@@ -45,7 +45,7 @@ export default function SignInPage() {
     setIsLoading(true);
     try {
       await signIn('google', { callbackUrl: '/dashboard' });
-    } catch (error) {
+    } catch {
       toast.error('An error occurred during Google sign in');
       setIsLoading(false);
     }
@@ -210,7 +210,7 @@ export default function SignInPage() {
         {/* Sign Up Link */}
         <div className="text-center">
           <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link
               href="/auth/signup"
               className="font-medium text-blue-600 hover:text-blue-500"

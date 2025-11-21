@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   Send, 
   Search, 
-  Filter, 
   MoreVertical,
   Phone,
   Mail,
@@ -22,7 +21,7 @@ import {
   Smile
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { formatDate, formatTime } from '@/lib/utils';
+import { formatTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface ChatMessage {

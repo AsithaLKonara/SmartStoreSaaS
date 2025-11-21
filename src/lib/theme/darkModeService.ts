@@ -45,7 +45,7 @@ export class DarkModeService {
     try {
       const stored = localStorage.getItem('smartstore-theme');
       return stored as Theme || null;
-    } catch {
+    } catch (error) {
       return null;
     }
   }
@@ -55,7 +55,7 @@ export class DarkModeService {
     
     try {
       localStorage.setItem('smartstore-theme', theme);
-    } catch {
+    } catch (error) {
       // Handle localStorage errors
     }
   }
@@ -317,7 +317,7 @@ export class DarkModeService {
         this.setTheme(config.theme);
         return true;
       }
-    } catch {
+    } catch (error) {
       // Invalid JSON
     }
     return false;

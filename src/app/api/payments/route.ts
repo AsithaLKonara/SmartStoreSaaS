@@ -58,16 +58,16 @@ export async function GET(request: NextRequest) {
     const transformedPayments = payments.map(payment => ({
       id: payment.id,
       orderId: payment.orderId,
-      orderNumber: payment.order.orderNumber,
-      customer: payment.order.customer,
+      orderNumber: payment.order?.orderNumber || '',
+      customer: payment.order?.customer || null,
       amount: payment.amount,
       method: payment.method,
       status: payment.status,
-      transactionId: payment.transactionId,
+      transactionId: (payment.metadata as any)?.transactionId || null,
       gateway: payment.gateway,
       createdAt: payment.createdAt,
       updatedAt: payment.updatedAt,
-      paidAt: payment.paidAt,
+      paidAt: payment.order?.updatedAt || null,
     }));
 
     return NextResponse.json({ payments: transformedPayments });
@@ -77,14 +77,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const {
       orderId,
       amount,
@@ -130,10 +130,11 @@ export async function POST(request: NextRequest) {
         amount,
         method,
         status: status || 'PENDING',
-        transactionId: transactionId || `TXN_${Date.now()}`,
+        metadata: {
+          transactionId: transactionId || `TXN_${Date.now()}`,
+        },
         gateway: gateway || method,
         organizationId: session.user.organizationId,
-        paidAt: status === 'PAID' ? new Date() : null,
       },
       include: {
         order: {

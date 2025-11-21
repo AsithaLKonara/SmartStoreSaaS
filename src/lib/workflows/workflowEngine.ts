@@ -405,16 +405,16 @@ export class WorkflowEngine {
         to: order.customer.email,
         subject: `Order Confirmation #${order.orderNumber}`,
         templateId: 'order-confirmation',
-        data: { order },
+        templateData: { order },
       });
     }
 
     // Send WhatsApp confirmation only if customer has phone
     if (order.customer.phone) {
-      await whatsappService.sendMessage({
-        to: order.customer.phone,
-        message: `Your order #${order.orderNumber} has been confirmed! Total: $${order.totalAmount}`,
-      });
+      await whatsappService.sendTextMessage(
+        order.customer.phone,
+        `Your order #${order.orderNumber} has been confirmed! Total: $${order.totalAmount}`
+      );
     }
   }
 
@@ -489,16 +489,16 @@ export class WorkflowEngine {
         to: customer.email,
         subject: 'Welcome to SmartStore AI!',
         templateId: 'welcome',
-        data: { customer },
+        templateData: { customer },
       });
     }
 
     // Send welcome WhatsApp message only if customer has phone
     if (customer.phone) {
-      await whatsappService.sendMessage({
-        to: customer.phone,
-        message: `Welcome to SmartStore AI! We're excited to have you as a customer.`,
-      });
+      await whatsappService.sendTextMessage(
+        customer.phone,
+        `Welcome to SmartStore AI! We're excited to have you as a customer.`
+      );
     }
   }
 
@@ -537,7 +537,7 @@ export class WorkflowEngine {
         to: order.customer.email,
         subject: `Receipt for Order #${order.orderNumber}`,
         templateId: 'receipt',
-        data: { order },
+        templateData: { order },
       });
     }
   }

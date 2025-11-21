@@ -103,14 +103,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { action, ...data } = body;
 
     const user = await prisma.user.findUnique({
@@ -160,9 +160,9 @@ export async function POST(request: NextRequest) {
           data: {
             userId: user.id,
             query: data.query,
-            type: data.type || 'global',
+            searchType: data.type || 'global',
             filters: data.filters || {},
-            resultCount: data.resultCount || 0
+            resultsCount: data.resultCount || 0
           }
         });
         return NextResponse.json({ success: true });

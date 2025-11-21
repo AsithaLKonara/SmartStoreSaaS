@@ -11,81 +11,36 @@ import {
   MessageSquare,
   Truck
 } from 'lucide-react';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 
-// Mock data - replace with real API calls
-const mockStats = {
-  totalRevenue: 125000,
-  totalOrders: 1247,
-  totalCustomers: 892,
-  totalProducts: 156,
-  revenueChange: 12.5,
-  ordersChange: 8.2,
-  customersChange: 15.3,
-  productsChange: -2.1,
-};
+interface DashboardStats {
+  totalRevenue: number;
+  totalOrders: number;
+  totalCustomers: number;
+  totalProducts: number;
+  revenueChange: number;
+  ordersChange: number;
+  customersChange: number;
+  productsChange: number;
+}
 
-const mockRecentOrders = [
-  {
-    id: '1',
-    orderNumber: 'ORD-123456',
-    customer: 'John Doe',
-    amount: 299.99,
-    status: 'confirmed',
-    date: '2024-01-15T10:30:00Z',
-  },
-  {
-    id: '2',
-    orderNumber: 'ORD-123457',
-    customer: 'Jane Smith',
-    amount: 149.50,
-    status: 'packed',
-    date: '2024-01-15T09:15:00Z',
-  },
-  {
-    id: '3',
-    orderNumber: 'ORD-123458',
-    customer: 'Mike Johnson',
-    amount: 89.99,
-    status: 'delivered',
-    date: '2024-01-15T08:45:00Z',
-  },
-  {
-    id: '4',
-    orderNumber: 'ORD-123459',
-    customer: 'Sarah Wilson',
-    amount: 199.99,
-    status: 'out_for_delivery',
-    date: '2024-01-15T08:00:00Z',
-  },
-];
+interface RecentOrder {
+  id: string;
+  orderNumber: string;
+  customer: string;
+  amount: number;
+  status: string;
+  date: string;
+}
 
-const mockRecentChats = [
-  {
-    id: '1',
-    customer: 'Alice Brown',
-    message: 'I need help with my order #ORD-123456',
-    channel: 'whatsapp',
-    time: '2 minutes ago',
-    unread: true,
-  },
-  {
-    id: '2',
-    customer: 'Bob Davis',
-    message: 'Do you have red mugs in stock?',
-    channel: 'facebook',
-    time: '5 minutes ago',
-    unread: false,
-  },
-  {
-    id: '3',
-    customer: 'Carol Evans',
-    message: 'When will my order be delivered?',
-    channel: 'instagram',
-    time: '10 minutes ago',
-    unread: true,
-  },
-];
+interface RecentChat {
+  id: string;
+  customer: string;
+  message: string;
+  channel: string;
+  time: string;
+  unread: boolean;
+}
 
 const getStatusColor = (status: string) => {
   const colors = {
@@ -112,11 +67,45 @@ const getChannelIcon = (channel: string) => {
 
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [recentChats, setRecentChats] = useState<RecentChat[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setIsLoading(false), 1000);
-    return () => clearTimeout(timer);
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Fetch all data in parallel
+        const [statsRes, ordersRes, chatsRes] = await Promise.all([
+          fetch('/api/analytics/dashboard-stats'),
+          fetch('/api/orders/recent?limit=4'),
+          fetch('/api/chat/recent?limit=3'),
+        ]);
+
+        if (!statsRes.ok || !ordersRes.ok || !chatsRes.ok) {
+          throw new Error('Failed to fetch dashboard data');
+        }
+
+        const [statsData, ordersData, chatsData] = await Promise.all([
+          statsRes.json(),
+          ordersRes.json(),
+          chatsRes.json(),
+        ]);
+
+        setStats(statsData);
+        setRecentOrders(ordersData);
+        setRecentChats(chatsData);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
 
   if (isLoading) {
@@ -127,13 +116,29 @@ export default function DashboardPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-red-600">Error: {error}</div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">No data available</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Page Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="mt-2 text-gray-600">
-          Welcome back! Here's what's happening with your business today.
+          Welcome back! Here&apos;s what&apos;s happening with your business today.
         </p>
       </div>
 
@@ -144,17 +149,17 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="dashboard-label">Total Revenue</p>
-              <p className="dashboard-stat">{formatCurrency(mockStats.totalRevenue)}</p>
+              <p className="dashboard-stat">{formatCurrency(stats.totalRevenue)}</p>
               <div className="flex items-center mt-2">
-                {mockStats.revenueChange > 0 ? (
+                {stats.revenueChange > 0 ? (
                   <TrendingUp className="w-4 h-4 text-success-600 mr-1" />
                 ) : (
                   <TrendingDown className="w-4 h-4 text-danger-600 mr-1" />
                 )}
                 <span className={`dashboard-change ${
-                  mockStats.revenueChange > 0 ? 'dashboard-change-positive' : 'dashboard-change-negative'
+                  stats.revenueChange > 0 ? 'dashboard-change-positive' : 'dashboard-change-negative'
                 }`}>
-                  {mockStats.revenueChange > 0 ? '+' : ''}{mockStats.revenueChange}%
+                  {stats.revenueChange > 0 ? '+' : ''}{stats.revenueChange}%
                 </span>
                 <span className="text-gray-500 text-sm ml-1">vs last month</span>
               </div>
@@ -170,17 +175,17 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="dashboard-label">Total Orders</p>
-              <p className="dashboard-stat">{mockStats.totalOrders.toLocaleString()}</p>
+              <p className="dashboard-stat">{stats.totalOrders.toLocaleString()}</p>
               <div className="flex items-center mt-2">
-                {mockStats.ordersChange > 0 ? (
+                {stats.ordersChange > 0 ? (
                   <TrendingUp className="w-4 h-4 text-success-600 mr-1" />
                 ) : (
                   <TrendingDown className="w-4 h-4 text-danger-600 mr-1" />
                 )}
                 <span className={`dashboard-change ${
-                  mockStats.ordersChange > 0 ? 'dashboard-change-positive' : 'dashboard-change-negative'
+                  stats.ordersChange > 0 ? 'dashboard-change-positive' : 'dashboard-change-negative'
                 }`}>
-                  {mockStats.ordersChange > 0 ? '+' : ''}{mockStats.ordersChange}%
+                  {stats.ordersChange > 0 ? '+' : ''}{stats.ordersChange}%
                 </span>
                 <span className="text-gray-500 text-sm ml-1">vs last month</span>
               </div>
@@ -196,17 +201,17 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="dashboard-label">Total Customers</p>
-              <p className="dashboard-stat">{mockStats.totalCustomers.toLocaleString()}</p>
+              <p className="dashboard-stat">{stats.totalCustomers.toLocaleString()}</p>
               <div className="flex items-center mt-2">
-                {mockStats.customersChange > 0 ? (
+                {stats.customersChange > 0 ? (
                   <TrendingUp className="w-4 h-4 text-success-600 mr-1" />
                 ) : (
                   <TrendingDown className="w-4 h-4 text-danger-600 mr-1" />
                 )}
                 <span className={`dashboard-change ${
-                  mockStats.customersChange > 0 ? 'dashboard-change-positive' : 'dashboard-change-negative'
+                  stats.customersChange > 0 ? 'dashboard-change-positive' : 'dashboard-change-negative'
                 }`}>
-                  {mockStats.customersChange > 0 ? '+' : ''}{mockStats.customersChange}%
+                  {stats.customersChange > 0 ? '+' : ''}{stats.customersChange}%
                 </span>
                 <span className="text-gray-500 text-sm ml-1">vs last month</span>
               </div>
@@ -222,17 +227,17 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="dashboard-label">Total Products</p>
-              <p className="dashboard-stat">{mockStats.totalProducts}</p>
+              <p className="dashboard-stat">{stats.totalProducts}</p>
               <div className="flex items-center mt-2">
-                {mockStats.productsChange > 0 ? (
+                {stats.productsChange > 0 ? (
                   <TrendingUp className="w-4 h-4 text-success-600 mr-1" />
                 ) : (
                   <TrendingDown className="w-4 h-4 text-danger-600 mr-1" />
                 )}
                 <span className={`dashboard-change ${
-                  mockStats.productsChange > 0 ? 'dashboard-change-positive' : 'dashboard-change-negative'
+                  stats.productsChange > 0 ? 'dashboard-change-positive' : 'dashboard-change-negative'
                 }`}>
-                  {mockStats.productsChange > 0 ? '+' : ''}{mockStats.productsChange}%
+                  {stats.productsChange > 0 ? '+' : ''}{stats.productsChange}%
                 </span>
                 <span className="text-gray-500 text-sm ml-1">vs last month</span>
               </div>
@@ -258,7 +263,10 @@ export default function DashboardPage() {
           </div>
           <div className="card-body">
             <div className="space-y-4">
-              {mockRecentOrders.map((order) => (
+              {recentOrders.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No recent orders</p>
+              ) : (
+                recentOrders.map((order) => (
                 <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
@@ -276,7 +284,8 @@ export default function DashboardPage() {
                     </span>
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -293,7 +302,10 @@ export default function DashboardPage() {
           </div>
           <div className="card-body">
             <div className="space-y-4">
-              {mockRecentChats.map((chat) => (
+              {recentChats.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No recent chats</p>
+              ) : (
+                recentChats.map((chat) => (
                 <div key={chat.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -314,7 +326,8 @@ export default function DashboardPage() {
                     <p className="text-xs text-gray-500">{chat.time}</p>
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>

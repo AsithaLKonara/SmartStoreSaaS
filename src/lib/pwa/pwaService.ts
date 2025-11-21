@@ -105,8 +105,8 @@ export class PWAService {
       // Initialize offline storage
       await this.initializeOfflineStorage();
 
-    } catch (error) {
-      console.error('Error initializing PWA:', error);
+     } catch {
+       console.error('Error initializing PWA');
     }
   }
 
@@ -204,8 +204,8 @@ export class PWAService {
         console.log('User dismissed the install prompt');
         return false;
       }
-    } catch (error) {
-      console.error('Error during installation:', error);
+     } catch {
+       console.error('Error during installation');
       return false;
     }
   }
@@ -236,8 +236,8 @@ export class PWAService {
         await this.sendSubscriptionToServer(subscription);
         
         console.log('Push notifications initialized');
-      } catch (error) {
-        console.error('Error initializing push notifications:', error);
+       } catch {
+         console.error('Error initializing push notifications');
       }
     }
   }
@@ -268,7 +268,7 @@ export class PWAService {
       console.log('Sending push notification:', payload);
 
       // Store notification in database
-      await prisma.pushNotification.create({
+      await prisma.notification.create({
         data: {
           userId,
           title: notification.title,
@@ -280,8 +280,8 @@ export class PWAService {
       });
 
       return true;
-    } catch (error) {
-      console.error('Error sending push notification:', error);
+     } catch {
+       console.error('Error sending push notification');
       return false;
     }
   }
@@ -329,8 +329,8 @@ export class PWAService {
           syncStore.createIndex('syncStatus', 'syncStatus');
         }
       };
-    } catch (error) {
-      console.error('Error initializing offline storage:', error);
+     } catch {
+       console.error('Error initializing offline storage');
     }
   }
 
@@ -352,8 +352,8 @@ export class PWAService {
           console.log(`Stored ${type} data offline:`, data.id);
         };
       };
-    } catch (error) {
-      console.error('Error storing offline data:', error);
+     } catch {
+       console.error('Error storing offline data');
     }
   }
 
@@ -382,8 +382,8 @@ export class PWAService {
         };
         
         request.onerror = () => reject(request.error);
-      } catch (error) {
-        reject(error);
+       } catch (err) {
+         reject(err);
       }
     });
   }
@@ -409,8 +409,8 @@ export class PWAService {
         
         console.log('Added to sync queue:', action);
       };
-    } catch (error) {
-      console.error('Error adding to sync queue:', error);
+     } catch {
+       console.error('Error adding to sync queue');
     }
   }
 
@@ -434,13 +434,13 @@ export class PWAService {
           await this.updateSyncStatus(action.id, 'synced');
           
           console.log('Synced action:', action.action);
-        } catch (error) {
-          console.error('Error syncing action:', error);
+         } catch {
+           console.error('Error syncing action');
           await this.updateSyncStatus(action.id, 'error');
         }
       }
-    } catch (error) {
-      console.error('Error syncing offline data:', error);
+     } catch {
+       console.error('Error syncing offline data');
     }
   }
 

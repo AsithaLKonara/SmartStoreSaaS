@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -16,6 +15,9 @@ import {
   ShoppingCart,
   Truck
 } from 'lucide-react';
+import { ShopifyIntegration } from './ShopifyIntegration';
+import { FacebookIntegration } from './FacebookIntegration';
+import { InstagramIntegration } from './InstagramIntegration';
 
 interface IntegrationStatus {
   whatsapp: {
@@ -183,7 +185,7 @@ export function IntegrationManager({ organizationId }: IntegrationManagerProps) 
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="whatsapp" className="flex items-center gap-2">
             <MessageCircle className="h-4 w-4" />
             WhatsApp
@@ -191,6 +193,18 @@ export function IntegrationManager({ organizationId }: IntegrationManagerProps) 
           <TabsTrigger value="woocommerce" className="flex items-center gap-2">
             <ShoppingCart className="h-4 w-4" />
             WooCommerce
+          </TabsTrigger>
+          <TabsTrigger value="shopify" className="flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4" />
+            Shopify
+          </TabsTrigger>
+          <TabsTrigger value="facebook" className="flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4" />
+            Facebook
+          </TabsTrigger>
+          <TabsTrigger value="instagram" className="flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4" />
+            Instagram
           </TabsTrigger>
           <TabsTrigger value="couriers" className="flex items-center gap-2">
             <Truck className="h-4 w-4" />
@@ -408,6 +422,18 @@ export function IntegrationManager({ organizationId }: IntegrationManagerProps) 
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="shopify" className="space-y-4">
+          <ShopifyIntegration organizationId={organizationId} />
+        </TabsContent>
+
+        <TabsContent value="facebook" className="space-y-4">
+          <FacebookIntegration organizationId={organizationId} />
+        </TabsContent>
+
+        <TabsContent value="instagram" className="space-y-4">
+          <InstagramIntegration organizationId={organizationId} />
         </TabsContent>
       </Tabs>
     </div>

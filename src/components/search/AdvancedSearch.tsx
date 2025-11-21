@@ -18,6 +18,10 @@ interface SearchFilters {
   category?: string;
   brand?: string;
   priceRange?: { min: number; max: number };
+  minPrice?: number;
+  maxPrice?: number;
+  startDate?: Date;
+  endDate?: Date;
   status?: string;
   dateRange?: { start: Date; end: Date };
   tags?: string[];
@@ -219,7 +223,7 @@ export function AdvancedSearch({
         <div className="absolute inset-y-0 right-0 flex items-center">
           <select
             value={searchType}
-            onChange={(e) => setSearchType(e.target.value)}
+            onChange={(e) => setSearchType(e.target.value as 'global' | 'products' | 'customers' | 'orders')}
             className="h-full px-3 py-2 text-sm border-l border-gray-300 dark:border-gray-600 bg-transparent text-gray-700 dark:text-gray-300 focus:outline-none"
           >
             <option value="global">All</option>

@@ -122,7 +122,7 @@ export function useRealTimeSync({
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       const syncEvent: SyncEvent = {
         ...event,
-        id: `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        // id removed - not in SyncEvent interface
         timestamp: new Date()
       };
       

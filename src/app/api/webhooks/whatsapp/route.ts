@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { whatsAppService } from '@/lib/whatsapp/whatsappService';
 import { prisma } from '@/lib/prisma';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await _request.json();
     
     // Verify webhook signature (implement proper verification)
-    const signature = request.headers.get('x-hub-signature-256');
+    const signature = _request.headers.get('x-hub-signature-256');
     if (!signature) {
       return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
     }
@@ -129,7 +129,7 @@ async function processMessageContent(message: any, customer: any): Promise<void>
   } else if (content.includes('help') || content.includes('support')) {
     await handleSupportQuery(message, customer);
   } else {
-    await whatsAppService.sendMessage(
+    await whatsAppService.sendTextMessage(
       message.from,
       'Thank you for your message! How can I help you today? You can ask about:\n- Order status\n- Products\n- Support',
       'text',
@@ -146,7 +146,7 @@ async function handleOrderQuery(message: any, customer: any): Promise<void> {
   });
 
   if (orders.length === 0) {
-    await whatsAppService.sendMessage(
+    await whatsAppService.sendTextMessage(
       message.from,
       'You don\'t have any orders yet. Would you like to browse our products?',
       'text',
@@ -159,7 +159,7 @@ async function handleOrderQuery(message: any, customer: any): Promise<void> {
     `Order #${order.orderNumber}: ${order.status} - $${order.totalAmount}`
   ).join('\n');
 
-  await whatsAppService.sendMessage(
+    await whatsAppService.sendTextMessage(
     message.from,
     `Here are your recent orders:\n\n${orderList}`,
     'text',
@@ -178,7 +178,7 @@ async function handleProductQuery(message: any, customer: any): Promise<void> {
   });
 
   if (products.length === 0) {
-    await whatsAppService.sendMessage(
+    await whatsAppService.sendTextMessage(
       message.from,
       'No products available at the moment.',
       'text',
@@ -191,7 +191,7 @@ async function handleProductQuery(message: any, customer: any): Promise<void> {
     `${product.name} - $${product.price} (${product.stockQuantity} in stock)`
   ).join('\n');
 
-  await whatsAppService.sendMessage(
+    await whatsAppService.sendTextMessage(
     message.from,
     `Here are some of our products:\n\n${productList}\n\nVisit our website to see more!`,
     'text',
@@ -200,7 +200,7 @@ async function handleProductQuery(message: any, customer: any): Promise<void> {
 }
 
 async function handleSupportQuery(message: any, customer: any): Promise<void> {
-  await whatsAppService.sendMessage(
+    await whatsAppService.sendTextMessage(
     message.from,
     'Our support team is here to help! Please provide your order number or describe your issue, and we\'ll get back to you soon.',
     'text',

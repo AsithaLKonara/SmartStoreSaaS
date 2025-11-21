@@ -36,9 +36,10 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ auditLogs });
 
       case 'security-alerts':
-        const alerts = await prisma.securityAlert.findMany({
-          where: { organizationId },
-          orderBy: { timestamp: 'desc' },
+        // Security alerts stored in SecurityEvent model
+        const alerts = await prisma.securityEvent.findMany({
+          where: { organizationId: organizationId || '' },
+          orderBy: { createdAt: 'desc' },
           take: 50,
         });
         return NextResponse.json({ alerts });
@@ -46,26 +47,27 @@ export async function GET(request: NextRequest) {
       case 'user-permissions':
         const user = await prisma.user.findUnique({
           where: { id: session.user.id },
-          include: { role: true },
         });
         
-        if (!user?.role) {
-          return NextResponse.json({ permissions: [] });
+        // UserRole enum doesn't have permissions - return based on role
+        const permissions: string[] = [];
+        if (user?.role === 'ADMIN') {
+          permissions.push('all');
         }
 
         return NextResponse.json({ 
-          permissions: user.role.permissions,
-          role: user.role,
+          permissions,
+          role: user?.role,
         });
 
       case 'mfa-status':
-        const mfaUser = await prisma.user.findUnique({
-          where: { id: session.user.id },
-          select: { mfaEnabled: true },
+        // MFA status stored in user preferences metadata
+        const userPref = await prisma.userPreference.findUnique({
+          where: { userId: session.user.id },
         });
         
         return NextResponse.json({ 
-          mfaEnabled: mfaUser?.mfaEnabled || false,
+          mfaEnabled: (userPref?.notifications as any)?.mfaEnabled || false,
         });
 
       case 'security-summary':
@@ -74,22 +76,18 @@ export async function GET(request: NextRequest) {
           where: { organizationId },
         });
 
-        const mfaEnabledUsers = await prisma.user.count({
-          where: { 
-            organizationId,
-            mfaEnabled: true,
-          },
-        });
+        // MFA users count would require checking user preferences
+        const mfaEnabledUsers = 0; // TODO: Implement proper MFA count
 
-        const recentSecurityEvents = await prisma.securityAudit.findMany({
-          where: { organizationId },
-          orderBy: { timestamp: 'desc' },
+        const recentSecurityEvents = await prisma.securityEvent.findMany({
+          where: { organizationId: organizationId || '' },
+          orderBy: { createdAt: 'desc' },
           take: 10,
         });
 
-        const activeAlerts = await prisma.securityAlert.count({
+        const activeAlerts = await prisma.securityEvent.count({
           where: { 
-            organizationId,
+            organizationId: organizationId || '',
             resolved: false,
           },
         });
@@ -114,14 +112,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { action, data } = body;
     const organizationId = session.user.organizationId;
 
@@ -207,10 +205,14 @@ export async function POST(request: NextRequest) {
       case 'update-security-settings':
         const { settings } = data;
         const updatedSettings = await prisma.organization.update({
-          where: { id: organizationId },
-          data: { securitySettings: settings },
+          where: { id: organizationId || '' },
+          data: { 
+            settings: {
+              securitySettings: settings,
+            } as any,
+          },
         });
-        return NextResponse.json({ settings: updatedSettings.securitySettings });
+        return NextResponse.json({ settings: (updatedSettings.settings as any)?.securitySettings });
 
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

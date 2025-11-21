@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     switch (type) {
       case 'offline-data':
         const dataType = searchParams.get('dataType');
-        const offlineData = await advancedPWAService.getOfflineData(dataType);
+        const offlineData = await advancedPWAService.getOfflineData(dataType || undefined);
         return NextResponse.json({ offlineData });
 
       case 'background-sync-tasks':
@@ -26,7 +26,10 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ syncTasks });
 
       case 'qr-code':
-        const { qrType, qrData, size, format } = searchParams;
+        const qrType = searchParams.get('qrType');
+        const qrData = searchParams.get('qrData');
+        const size = searchParams.get('size');
+        const format = searchParams.get('format');
         const qrCodeUrl = await advancedPWAService.generateQRCode({
           type: qrType as any,
           data: JSON.parse(qrData || '{}'),
@@ -36,14 +39,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ qrCodeUrl });
 
       case 'pwa-status':
-        // Get PWA installation and usage statistics
-        const pwaStats = await prisma.pWAStats.findMany({
-          where: { organizationId },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
+        // Get PWA installation and usage statistics from organization metadata
+        const org = await prisma.organization.findUnique({
+          where: { id: organizationId || '' },
+          select: { settings: true },
         });
-
-        const currentStats = pwaStats[0] || {
+        const currentStats = (org?.settings as any)?.pwaStats || {
           totalInstalls: 0,
           activeUsers: 0,
           offlineUsage: 0,
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ pwaStats: currentStats });
 
       case 'notification-history':
-        const notifications = await prisma.pushNotification.findMany({
+        const notifications = await prisma.notification.findMany({
           where: { organizationId },
           orderBy: { createdAt: 'desc' },
           take: 50,
@@ -63,8 +64,8 @@ export async function GET(request: NextRequest) {
       default:
         return NextResponse.json({ error: 'Invalid type parameter' }, { status: 400 });
     }
-  } catch (error) {
-    console.error('Error in PWA API:', error);
+  } catch {
+    console.error('Error in PWA API');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -72,14 +73,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { action, data } = body;
     const organizationId = session.user.organizationId;
 
@@ -88,12 +89,19 @@ export async function POST(request: NextRequest) {
         const subscription = await advancedPWAService.subscribeToPushNotifications();
         if (subscription) {
           // Store subscription in database
-          await prisma.pushSubscription.create({
+          // Store push subscription in Notification metadata
+          await prisma.notification.create({
             data: {
+              organizationId: organizationId || null,
               userId: session.user.id,
-              organizationId,
-              subscription: subscription.toJSON(),
-              isActive: true,
+              type: 'SYSTEM',
+              title: 'Push Subscription',
+              message: 'Push subscription registered',
+              priority: 'LOW',
+              metadata: {
+                subscription: subscription.toJSON(),
+                isActive: true,
+              } as any,
             },
           });
         }
@@ -116,12 +124,15 @@ export async function POST(request: NextRequest) {
         await advancedPWAService.sendPushNotification(notification);
 
         // Store notification in database
-        await prisma.pushNotification.create({
+        await prisma.notification.create({
           data: {
-            ...notification,
-            organizationId,
-            sentBy: session.user.id,
-            status: 'SENT',
+            organizationId: organizationId || undefined,
+            userId: session.user.id,
+            type: 'SYSTEM',
+            title: title || 'Notification',
+            message: body || '',
+            priority: 'MEDIUM',
+            metadata: notificationData || {},
           },
         });
 
@@ -167,14 +178,19 @@ export async function POST(request: NextRequest) {
 
       case 'update-pwa-stats':
         const { installs, activeUsers, offlineUsage, pushSubscriptions } = data;
-        await prisma.pWAStats.create({
+        // Store PWA stats in organization metadata
+        await prisma.organization.update({
+          where: { id: organizationId || '' },
           data: {
-            organizationId,
-            totalInstalls: installs,
-            activeUsers,
-            offlineUsage,
-            pushSubscriptions,
-            recordedAt: new Date(),
+            settings: {
+              pwaStats: {
+                totalInstalls: installs,
+                activeUsers,
+                offlineUsage,
+                pushSubscriptions,
+                recordedAt: new Date(),
+              },
+            } as any,
           },
         });
         return NextResponse.json({ success: true });
@@ -217,8 +233,8 @@ export async function POST(request: NextRequest) {
                 console.log('Syncing data:', item.data);
                 break;
             }
-          } catch (error) {
-            console.error('Error syncing offline data:', error);
+           } catch {
+             console.error('Error syncing offline data');
           }
         }
 
@@ -233,8 +249,8 @@ export async function POST(request: NextRequest) {
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
-  } catch (error) {
-    console.error('Error in PWA API POST:', error);
+  } catch {
+    console.error('Error in PWA API POST');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

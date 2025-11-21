@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ analytics });
 
       case 'scheduled-posts':
-        const scheduledPosts = await socialCommerceService.getScheduledPosts(platformId);
+        const scheduledPosts = await socialCommerceService.getScheduledPosts(platformId || undefined);
         return NextResponse.json({ posts: scheduledPosts });
 
       case 'social-products':
@@ -90,14 +90,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { action, ...data } = body;
 
     switch (action) {
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
             const products = await socialCommerceService.syncProductsToPlatform(platformId, productIds);
             results.push({ platformId, success: true, products });
           } catch (error) {
-            results.push({ platformId, success: false, error: error.message });
+            results.push({ platformId, success: false, error: error instanceof Error ? error.message : String(error) });
           }
         }
         return NextResponse.json({ results });
@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
             const post = await socialCommerceService.publishPost(postId);
             publishResults.push({ postId, success: true, post });
           } catch (error) {
-            publishResults.push({ postId, success: false, error: error.message });
+            publishResults.push({ postId, success: false, error: error instanceof Error ? error.message : String(error) });
           }
         }
         return NextResponse.json({ results: publishResults });
@@ -243,9 +243,10 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Platform not found' }, { status: 404 });
         }
 
-        const totalEngagement = platformStats.socialPosts.reduce((sum, post) => 
-          sum + post.engagement.likes + post.engagement.comments + post.engagement.shares, 0
-        );
+        const totalEngagement = platformStats.socialPosts.reduce((sum, post) => {
+          const engagement = post.engagement as any;
+          return sum + (engagement?.likes || 0) + (engagement?.comments || 0) + (engagement?.shares || 0);
+        }, 0);
 
         const stats = {
           productCount: platformStats._count.socialProducts,

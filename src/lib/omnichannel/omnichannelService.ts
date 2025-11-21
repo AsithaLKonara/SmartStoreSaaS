@@ -321,8 +321,29 @@ export class OmnichannelService {
   }
 
   private async sendInstagramMessage(customerId: string, message: string): Promise<any> {
-    // Instagram DM API implementation
-    return { status: 'sent', messageId: `ig_${Date.now()}` };
+    const integration = await prisma.instagramIntegration.findFirst({
+      where: { organizationId: customerId }, // This needs to be updated to get organizationId properly
+    });
+
+    if (!integration || !integration.isActive) {
+      throw new Error('Instagram integration not found or inactive');
+    }
+
+    const axios = (await import('axios')).default;
+    const response = await axios.post(
+      `https://graph.facebook.com/v18.0/${integration.businessAccountId}/messages`,
+      {
+        recipient: { id: customerId },
+        message: { text: message },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${integration.accessToken}`,
+        },
+      }
+    );
+
+    return response.data;
   }
 
   private async sendEmailMessage(customerId: string, message: string): Promise<any> {
@@ -346,7 +367,29 @@ export class OmnichannelService {
   }
 
   private async fetchInstagramMessages(config: any): Promise<any[]> {
-    // Instagram DM API message fetching
-    return [];
+    const integration = await prisma.instagramIntegration.findFirst({
+      where: { organizationId: config.organizationId },
+    });
+
+    if (!integration || !integration.isActive) {
+      return [];
+    }
+
+    try {
+      const axios = (await import('axios')).default;
+      const response = await axios.get(
+        `https://graph.facebook.com/v18.0/${integration.businessAccountId}/conversations`,
+        {
+          headers: {
+            Authorization: `Bearer ${integration.accessToken}`,
+          },
+        }
+      );
+
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Error fetching Instagram messages:', error);
+      return [];
+    }
   }
 } 

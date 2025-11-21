@@ -23,8 +23,8 @@ export function usePWA() {
     isSupported: 'serviceWorker' in navigator,
   });
 
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>({
-    permission: 'default',
+  const [notificationPermission, setNotificationPermission] = useState<{ permission: NotificationPermission; isSupported: boolean }>({
+    permission: 'default' as unknown as NotificationPermission,
     isSupported: 'Notification' in window,
   });
 
@@ -135,7 +135,7 @@ export function usePWA() {
 
     try {
       const permission = await Notification.requestPermission();
-      setNotificationPermission(prev => ({ ...prev, permission }));
+      setNotificationPermission(prev => ({ ...prev, permission: permission as unknown as NotificationPermission }));
       
       if (permission === 'granted') {
         toast.success('Notifications enabled!');
@@ -152,7 +152,7 @@ export function usePWA() {
 
   // Send push notification
   const sendPushNotification = useCallback(async (title: string, options?: NotificationOptions) => {
-    if (notificationPermission.permission !== 'granted') {
+    if (notificationPermission.permission !== ('granted' as unknown as NotificationPermission)) {
       const granted = await requestNotificationPermission();
       if (!granted) return false;
     }
@@ -161,7 +161,7 @@ export function usePWA() {
       const notification = new Notification(title, {
         icon: '/icons/icon-192x192.png',
         badge: '/icons/badge-72x72.png',
-        vibrate: [100, 50, 100],
+        // vibrate: [100, 50, 100], // Not in standard NotificationOptions
         ...options,
       });
 
@@ -228,7 +228,10 @@ export function usePWA() {
 
     try {
       const registration = await navigator.serviceWorker.ready;
-      await (registration.sync as any).register('background-sync');
+      // Background sync API may not be available
+      if ('sync' in registration) {
+        await (registration.sync as any).register('background-sync');
+      }
       toast.success('Background sync registered');
       return true;
     } catch (error) {

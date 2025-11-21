@@ -99,14 +99,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const {
       name,
       description,
@@ -139,26 +139,29 @@ export async function POST(request: NextRequest) {
     }
 
     // Create product with variants
+    const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     const product = await prisma.product.create({
       data: {
         name,
-        description,
-        price,
-        costPrice,
-        sku,
-        stockQuantity,
-        lowStockThreshold,
-        isActive,
-        images,
+        slug,
+        description: description || null,
+        price: parseFloat(price),
+        costPrice: costPrice ? parseFloat(costPrice) : null,
+        sku: sku || null,
+        stockQuantity: stockQuantity ? parseInt(stockQuantity) : 0,
+        lowStockThreshold: lowStockThreshold ? parseInt(lowStockThreshold) : 0,
+        isActive: isActive !== false,
+        images: images || [],
         organizationId: session.user.organizationId,
-        categoryId,
+        categoryId: categoryId || null,
+        createdById: session.user.id,
         variants: {
           create: variants?.map((variant: any) => ({
             name: variant.name,
-            price: variant.price,
-            costPrice: variant.costPrice,
-            stockQuantity: variant.stockQuantity,
-            sku: variant.sku,
+            price: variant.price ? parseFloat(variant.price) : null,
+            costPrice: variant.costPrice ? parseFloat(variant.costPrice) : null,
+            stockQuantity: variant.stockQuantity ? parseInt(variant.stockQuantity) : 0,
+            sku: variant.sku || null,
           })) || [],
         },
       },

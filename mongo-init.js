@@ -28,6 +28,14 @@ db.createCollection('warehouses');
 db.createCollection('campaigns');
 db.createCollection('expenses');
 db.createCollection('chat_messages');
+db.createCollection('reports');
+db.createCollection('report_templates');
+db.createCollection('campaign_templates');
+db.createCollection('campaign_metrics');
+db.createCollection('bulk_operation_templates');
+db.createCollection('inventory_movements');
+db.createCollection('courier_deliveries');
+db.createCollection('courier_ratings');
 
 // Create indexes for better performance
 db.users.createIndex({ "email": 1 }, { unique: true });
@@ -60,6 +68,34 @@ db.expenses.createIndex({ "organizationId": 1 });
 
 db.chat_messages.createIndex({ "organizationId": 1 });
 db.chat_messages.createIndex({ "customerId": 1 });
+
+// Indexes for new collections
+db.reports.createIndex({ "organizationId": 1 });
+db.reports.createIndex({ "type": 1 });
+db.reports.createIndex({ "status": 1 });
+
+db.report_templates.createIndex({ "organizationId": 1 });
+db.report_templates.createIndex({ "type": 1 });
+
+db.campaign_templates.createIndex({ "organizationId": 1 });
+db.campaign_templates.createIndex({ "type": 1 });
+
+db.campaign_metrics.createIndex({ "campaignId": 1 }, { unique: true });
+
+db.bulk_operation_templates.createIndex({ "organizationId": 1 });
+db.bulk_operation_templates.createIndex({ "type": 1, "entity": 1 });
+
+db.inventory_movements.createIndex({ "productId": 1 });
+db.inventory_movements.createIndex({ "warehouseId": 1 });
+db.inventory_movements.createIndex({ "orderId": 1 });
+db.inventory_movements.createIndex({ "createdAt": -1 });
+
+db.courier_deliveries.createIndex({ "courierId": 1 });
+db.courier_deliveries.createIndex({ "orderId": 1 });
+db.courier_deliveries.createIndex({ "status": 1 });
+
+db.courier_ratings.createIndex({ "courierId": 1 });
+db.courier_ratings.createIndex({ "deliveryId": 1 });
 
 // Insert a default organization for testing
 db.organizations.insertOne({

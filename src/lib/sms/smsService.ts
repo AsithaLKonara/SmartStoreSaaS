@@ -65,18 +65,6 @@ export class SMSService {
    */
   async sendSMS(options: SMSOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-      // Log SMS in database
-      const smsLog = await prisma.smsLog.create({
-        data: {
-          to: options.to,
-          message: options.message,
-          from: options.from || process.env.SMS_FROM_NUMBER!,
-          status: 'PENDING',
-          campaignId: options.campaignId,
-          scheduledTime: options.scheduledTime,
-        },
-      });
-
       let result;
       if (this.provider === 'twilio') {
         result = await this.sendWithTwilio(options);
@@ -84,14 +72,26 @@ export class SMSService {
         result = await this.sendWithAWSSNS(options);
       }
 
-      // Update SMS log with result
-      await prisma.smsLog.update({
-        where: { id: smsLog.id },
+      // Log SMS in Notification (smsLog model doesn't exist)
+      await prisma.notification.create({
         data: {
-          status: result.success ? 'SENT' : 'FAILED',
-          messageId: result.messageId,
-          error: result.error,
-          sentAt: result.success ? new Date() : undefined,
+          type: 'SYSTEM',
+          title: 'SMS Sent',
+          message: `SMS sent to ${options.to}`,
+          organizationId: '', // Will need to be determined from context
+          metadata: {
+            smsLog: {
+              to: options.to,
+              message: options.message,
+              from: options.from || process.env.SMS_FROM_NUMBER,
+              status: result.success ? 'SENT' : 'FAILED',
+              messageId: result.messageId,
+              error: result.error,
+              sentAt: result.success ? new Date() : undefined,
+              campaignId: options.campaignId,
+              scheduledTime: options.scheduledTime,
+            },
+          } as any,
         },
       });
 
@@ -367,15 +367,23 @@ export class SMSService {
    */
   async handleIncomingMessage(from: string, body: string, messageId: string): Promise<void> {
     try {
-      // Log incoming message
-      await prisma.smsLog.create({
+      // Log incoming message in Notification (smsLog model doesn't exist)
+      await prisma.notification.create({
         data: {
-          to: process.env.TWILIO_PHONE_NUMBER!,
-          from,
-          message: body,
-          messageId,
-          status: 'RECEIVED',
-          receivedAt: new Date(),
+          type: 'SYSTEM',
+          title: 'SMS Received',
+          message: `SMS received from ${from}`,
+          organizationId: '', // Will need to be determined from context
+          metadata: {
+            smsLog: {
+              to: process.env.TWILIO_PHONE_NUMBER,
+              from,
+              message: body,
+              messageId,
+              status: 'RECEIVED',
+              receivedAt: new Date(),
+            },
+          } as any,
         },
       });
 
@@ -439,14 +447,21 @@ export class SMSService {
    */
   async getAnalytics(startDate: Date, endDate: Date): Promise<SMSAnalytics> {
     try {
-      const logs = await prisma.smsLog.findMany({
+      // Get SMS logs from Notification metadata (smsLog model doesn't exist)
+      const notifications = await prisma.notification.findMany({
         where: {
-          sentAt: {
+          type: 'SYSTEM',
+          title: { in: ['SMS Sent', 'SMS Received'] },
+          createdAt: {
             gte: startDate,
             lte: endDate,
           },
         },
       });
+
+      const logs = notifications
+        .map(n => (n.metadata as any)?.smsLog)
+        .filter((log): log is NonNullable<typeof log> => !!log);
 
       const sent = logs.filter(log => log.status === 'SENT').length;
       const delivered = logs.filter(log => log.status === 'DELIVERED').length;

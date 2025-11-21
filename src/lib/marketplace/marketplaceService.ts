@@ -196,10 +196,9 @@ export class MarketplaceService {
       await this.createStripeConnectAccount(vendor.id);
 
       // Broadcast event
-      await realTimeSyncService.broadcastEvent({
-        type: 'vendor_registered',
+      await realTimeSyncService.queueEvent({
+        type: 'message',
         entityId: vendor.id,
-        entityType: 'vendor',
         organizationId: 'marketplace',
         data: vendor,
         timestamp: new Date(),
@@ -232,10 +231,9 @@ export class MarketplaceService {
       await this.enableStripeConnectAccount(vendorId);
 
       // Broadcast event
-      await realTimeSyncService.broadcastEvent({
-        type: 'vendor_approved',
+      await realTimeSyncService.queueEvent({
+        type: 'message',
         entityId: vendorId,
-        entityType: 'vendor',
         organizationId: 'marketplace',
         data: { vendorId, approvedBy: adminId },
         timestamp: new Date(),

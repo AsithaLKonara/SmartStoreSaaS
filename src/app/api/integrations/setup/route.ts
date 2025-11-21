@@ -6,14 +6,14 @@ import { whatsAppService } from '@/lib/whatsapp/whatsappService';
 import { wooCommerceService } from '@/lib/woocommerce/woocommerceService';
 import { sriLankaCourierService } from '@/lib/courier/sriLankaCourierService';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { type, config, organizationId } = body;
 
     if (!organizationId) {
@@ -90,24 +90,31 @@ async function setupWhatsAppIntegration(config: any, organizationId: string) {
     }
 
     // Save or update integration
-    const integration = await prisma.whatsAppIntegration.upsert({
+    const existing = await prisma.whatsAppIntegration.findFirst({
       where: { organizationId },
-      update: {
-        phoneNumberId: config.phoneNumberId,
-        accessToken: config.accessToken,
-        webhookSecret: config.webhookSecret,
-        isActive: true,
-        settings: config.settings || {}
-      },
-      create: {
-        organizationId,
-        phoneNumberId: config.phoneNumberId,
-        accessToken: config.accessToken,
-        webhookSecret: config.webhookSecret,
-        isActive: true,
-        settings: config.settings || {}
-      }
     });
+    
+    const integration = existing 
+      ? await prisma.whatsAppIntegration.update({
+          where: { id: existing.id },
+          data: {
+            phoneNumberId: config.phoneNumberId,
+            accessToken: config.accessToken,
+            webhookSecret: config.webhookSecret,
+            isActive: true,
+            settings: config.settings || {}
+          }
+        })
+      : await prisma.whatsAppIntegration.create({
+          data: {
+            organizationId,
+            phoneNumberId: config.phoneNumberId,
+            accessToken: config.accessToken,
+            webhookSecret: config.webhookSecret,
+            isActive: true,
+            settings: config.settings || {}
+          }
+        });
 
     // Setup webhooks
     await setupWhatsAppWebhooks(config.phoneNumberId, config.accessToken);

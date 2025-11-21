@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { PaymentStatus } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
@@ -146,7 +147,7 @@ export async function GET(request: NextRequest) {
       where: {
         organizationId: session.user.organizationId,
         createdAt: { gte: startDate },
-        status: 'PAID',
+        status: PaymentStatus.COMPLETED,
       },
     });
 

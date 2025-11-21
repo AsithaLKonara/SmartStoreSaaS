@@ -8,7 +8,7 @@ interface OrderWithRelations {
   id: string;
   createdAt: Date;
   updatedAt: Date;
-  total: number;
+  totalAmount: number;
   status: string;
   customerId: string;
   organizationId: string;
@@ -50,6 +50,10 @@ export async function GET(request: NextRequest) {
     const organizationId = session.user.organizationId;
 
     // Get data for BI analysis
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
+    }
+
     const orders = await prisma.order.findMany({
       where: { organizationId },
       include: { items: true, customer: true },
@@ -61,28 +65,29 @@ export async function GET(request: NextRequest) {
 
     const customers = await prisma.customer.findMany({
       where: { organizationId },
+      include: { orders: true },
     });
 
-    const salesData = orders.map((order: OrderWithRelations) => ({
+    const salesData = orders.map((order) => ({
       orderId: order.id,
       date: order.createdAt,
-      total: order.total,
+      total: order.totalAmount,
       customerId: order.customerId,
       items: order.items,
     }));
 
-    const orderData = orders.map((order: OrderWithRelations) => ({
+    const orderData = orders.map((order) => ({
       orderId: order.id,
       status: order.status,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
-      total: order.total,
+      total: order.totalAmount,
     }));
 
-    const customerData = customers.map((customer: CustomerData) => ({
+    const customerData = customers.map((customer) => ({
       customerId: customer.id,
-      name: customer.name,
-      email: customer.email,
+      name: customer.name || '',
+      email: customer.email || '',
       totalSpent: customer.totalSpent,
       orderCount: customer.orders?.length || 0,
     }));
@@ -115,18 +120,21 @@ export async function GET(request: NextRequest) {
 
         // Get historical data (last 30 days)
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        if (!organizationId) {
+          return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
+        }
         const historicalOrders = await prisma.order.findMany({
           where: {
-            organizationId,
+            organizationId: organizationId!,
             createdAt: { gte: thirtyDaysAgo },
           },
         });
 
         const historicalData = {
-          sales: historicalOrders.map((order: OrderWithRelations) => ({
+          sales: historicalOrders.map((order) => ({
             orderId: order.id,
             date: order.createdAt,
-            total: order.total,
+            total: order.totalAmount,
           })),
         };
 
@@ -230,18 +238,21 @@ export async function GET(request: NextRequest) {
         const thirtyDaysAgoSummary = new Date();
         thirtyDaysAgoSummary.setDate(thirtyDaysAgoSummary.getDate() - 30);
 
+        if (!organizationId) {
+          return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
+        }
         const historicalOrdersSummary = await prisma.order.findMany({
           where: {
-            organizationId,
+            organizationId: organizationId!,
             createdAt: { gte: thirtyDaysAgoSummary },
           },
         });
 
         const historicalDataSummary = {
-          sales: historicalOrdersSummary.map((order: OrderWithRelations) => ({
+          sales: historicalOrdersSummary.map((order) => ({
             orderId: order.id,
             date: order.createdAt,
-            total: order.total,
+            total: order.totalAmount,
           })),
         };
 
@@ -284,8 +295,8 @@ export async function GET(request: NextRequest) {
       default:
         return NextResponse.json({ error: 'Invalid type parameter' }, { status: 400 });
     }
-  } catch (error) {
-    console.error('Error in business intelligence API:', error);
+  } catch {
+    console.error('Error in business intelligence API');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -293,52 +304,57 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { action, data } = body;
     const organizationId = session.user.organizationId;
 
     switch (action) {
       case 'create-custom-report':
         // Create a custom business report
-        const report = await prisma.businessReport.create({
+        const report = await prisma.report.create({
           data: {
-            ...data,
-            organizationId,
-            createdBy: session.user.id,
-            status: 'DRAFT',
+            name: data.name || 'Custom Report',
+            type: data.type || 'OPERATIONAL',
+            status: 'READY',
+            format: data.format || 'PDF',
+            parameters: data as any,
+            organizationId: organizationId!,
           },
         });
         return NextResponse.json({ report });
 
       case 'set-kpi-targets':
         // Set KPI targets for the organization
-        const { kpiName, targetValue, period } = data;
+        const { kpiName, targetValue, period, startDate, endDate } = data;
         const kpiTarget = await prisma.kpiTarget.create({
           data: {
             kpiName,
             targetValue,
             period,
-            organizationId,
+            startDate: startDate ? new Date(startDate) : new Date(),
+            endDate: endDate ? new Date(endDate) : null,
+            organizationId: organizationId!,
             createdBy: session.user.id,
           },
         });
         return NextResponse.json({ kpiTarget });
 
       case 'create-alert':
-        // Create business alert based on KPI thresholds
-        const alert = await prisma.businessAlert.create({
+        // Create business alert based on KPI thresholds (using SecurityEvent model)
+        const alert = await prisma.securityEvent.create({
           data: {
-            ...data,
-            organizationId,
-            createdBy: session.user.id,
-            status: 'ACTIVE',
+            organizationId: organizationId!,
+            type: 'business_alert',
+            severity: (data?.severity as string) || 'medium',
+            details: data as any,
+            resolved: false,
           },
         });
         return NextResponse.json({ alert });
@@ -352,7 +368,7 @@ export async function POST(request: NextRequest) {
           case 'sales':
             exportData = await prisma.order.findMany({
               where: {
-                organizationId,
+                organizationId: organizationId!,
                 createdAt: {
                   gte: dateRange.start,
                   lte: dateRange.end,
@@ -362,14 +378,20 @@ export async function POST(request: NextRequest) {
             });
             break;
           case 'customers':
+            if (!organizationId) {
+              return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
+            }
             exportData = await prisma.customer.findMany({
-              where: { organizationId },
+              where: { organizationId: organizationId! },
               include: { orders: true },
             });
             break;
           case 'products':
+            if (!organizationId) {
+              return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
+            }
             exportData = await prisma.product.findMany({
-              where: { organizationId },
+              where: { organizationId: organizationId! },
               include: { category: true },
             });
             break;
@@ -387,10 +409,15 @@ export async function POST(request: NextRequest) {
         // Schedule automated report generation
         const scheduledReport = await prisma.scheduledReport.create({
           data: {
-            ...data,
-            organizationId,
+            name: data.name,
+            type: data.type || 'OPERATIONAL',
+            schedule: data.schedule || 'MONTHLY',
+            cronExpression: data.cronExpression,
+            format: data.format || 'PDF',
+            recipients: data.recipients || [],
+            parameters: data.parameters || {},
+            organizationId: organizationId!,
             createdBy: session.user.id,
-            status: 'ACTIVE',
           },
         });
         return NextResponse.json({ scheduledReport });
@@ -398,8 +425,8 @@ export async function POST(request: NextRequest) {
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
-  } catch (error) {
-    console.error('Error in business intelligence API POST:', error);
+  } catch {
+    console.error('Error in business intelligence API POST');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

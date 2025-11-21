@@ -5,22 +5,19 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { 
   Download, 
-  Calendar,
   TrendingUp,
-  TrendingDown,
   DollarSign,
   Users,
   Package,
   ShoppingCart,
   BarChart3,
   PieChart,
-  Activity,
   Target,
   ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface AnalyticsData {

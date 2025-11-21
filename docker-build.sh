@@ -89,6 +89,16 @@ fi
 print_status "Waiting for services to be ready..."
 sleep 30
 
+# Run database migrations
+print_status "Running database migrations..."
+if docker-compose exec -T app npx prisma migrate deploy > /dev/null 2>&1; then
+    print_success "Database migrations applied!"
+elif docker-compose exec -T app npx prisma db push > /dev/null 2>&1; then
+    print_success "Database schema pushed!"
+else
+    print_warning "Migration failed, but continuing. Check logs if issues occur."
+fi
+
 # Check service health
 print_status "Checking service health..."
 

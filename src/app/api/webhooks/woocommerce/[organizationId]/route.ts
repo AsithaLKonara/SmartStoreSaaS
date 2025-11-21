@@ -46,9 +46,9 @@ export async function POST(
 
 async function processProductCreated(product: any, organizationId: string): Promise<void> {
   const syncEvent: SyncEvent = {
-    id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: 'product',
     action: 'create',
+    entityId: product.id.toString(),
     data: {
       name: product.name,
       description: product.description,
@@ -58,7 +58,6 @@ async function processProductCreated(product: any, organizationId: string): Prom
       wooCommerceId: product.id.toString(),
       organizationId
     },
-    source: 'woocommerce',
     timestamp: new Date(),
     organizationId
   };
@@ -68,9 +67,9 @@ async function processProductCreated(product: any, organizationId: string): Prom
 
 async function processProductUpdated(product: any, organizationId: string): Promise<void> {
   const syncEvent: SyncEvent = {
-    id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: 'product',
     action: 'update',
+    entityId: product.id.toString(),
     data: {
       name: product.name,
       description: product.description,
@@ -80,7 +79,6 @@ async function processProductUpdated(product: any, organizationId: string): Prom
       wooCommerceId: product.id.toString(),
       organizationId
     },
-    source: 'woocommerce',
     timestamp: new Date(),
     organizationId
   };
@@ -90,14 +88,13 @@ async function processProductUpdated(product: any, organizationId: string): Prom
 
 async function processProductDeleted(product: any, organizationId: string): Promise<void> {
   const syncEvent: SyncEvent = {
-    id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: 'product',
     action: 'delete',
+    entityId: product.id.toString(),
     data: {
       wooCommerceId: product.id.toString(),
       organizationId
     },
-    source: 'woocommerce',
     timestamp: new Date(),
     organizationId
   };
@@ -107,9 +104,9 @@ async function processProductDeleted(product: any, organizationId: string): Prom
 
 async function processOrderCreated(order: any, organizationId: string): Promise<void> {
   const syncEvent: SyncEvent = {
-    id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: 'order',
     action: 'create',
+    entityId: order.id.toString(),
     data: {
       orderNumber: order.number,
       wooCommerceId: order.id.toString(),
@@ -122,7 +119,6 @@ async function processOrderCreated(order: any, organizationId: string): Promise<
         phone: order.billing.phone
       }
     },
-    source: 'woocommerce',
     timestamp: new Date(),
     organizationId
   };
@@ -132,9 +128,9 @@ async function processOrderCreated(order: any, organizationId: string): Promise<
 
 async function processOrderUpdated(order: any, organizationId: string): Promise<void> {
   const syncEvent: SyncEvent = {
-    id: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     type: 'order',
     action: 'update',
+    entityId: order.id.toString(),
     data: {
       orderNumber: order.number,
       wooCommerceId: order.id.toString(),
@@ -142,7 +138,6 @@ async function processOrderUpdated(order: any, organizationId: string): Promise<
       totalAmount: parseFloat(order.total),
       organizationId
     },
-    source: 'woocommerce',
     timestamp: new Date(),
     organizationId
   };

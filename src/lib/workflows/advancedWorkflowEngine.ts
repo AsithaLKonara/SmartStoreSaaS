@@ -84,7 +84,7 @@ export class AdvancedWorkflowEngine {
           name: definition.name,
           description: definition.description,
           version: definition.version,
-          nodes: definition.nodes,
+          nodes: definition.nodes as any, // Store as JSON
           connections: definition.connections as any,
           triggers: definition.triggers,
           isActive: definition.isActive,

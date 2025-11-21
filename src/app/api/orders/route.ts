@@ -19,21 +19,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const skip = (page - 1) * limit;
 
-    interface OrderWhereClause {
-      organizationId: string;
-      status?: string;
-      paymentStatus?: string;
-      OR?: Array<{
-        orderNumber?: { contains: string; mode: 'insensitive' };
-        customer?: { 
-          name?: { contains: string; mode: 'insensitive' };
-          email?: { contains: string; mode: 'insensitive' };
-          phone?: { contains: string; mode: 'insensitive' };
-        };
-      }>;
-    }
-
-    const where: OrderWhereClause = {
+    const where: any = {
       organizationId: session.user.organizationId,
     };
 
@@ -55,10 +41,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count for pagination
-    const total = await prisma.order.count({ where });
+    const total = await prisma.order.count({ where: where as any });
 
     const orders = await prisma.order.findMany({
-      where,
+      where: where as any,
       include: {
         customer: true,
         items: {
@@ -89,14 +75,16 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session?.user?.organizationId || session.user.organizationId === null) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
+    
+    const organizationId = session.user.organizationId;
 
-    const body = await request.json();
+    const body = await _request.json();
     const {
       customerId,
       items,
@@ -123,7 +111,7 @@ export async function POST(request: NextRequest) {
       for (const item of items) {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
-          select: { id: true, price: true, stock: true, name: true }
+          select: { id: true, price: true, stockQuantity: true, name: true }
         });
         
         if (!product) {
@@ -131,8 +119,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Check stock availability
-        if (product.stock < item.quantity) {
-          throw new Error(`Insufficient stock for product ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`);
+        if (product.stockQuantity < item.quantity) {
+          throw new Error(`Insufficient stock for product ${product.name}. Available: ${product.stockQuantity}, Requested: ${item.quantity}`);
         }
 
         const itemPrice = item.price || product.price;
@@ -150,11 +138,11 @@ export async function POST(request: NextRequest) {
         data: {
           orderNumber,
           status: status || 'DRAFT',
-          total: totalAmount,
+          totalAmount: totalAmount,
           subtotal: totalAmount,
           currency: 'USD',
-          notes,
-          organizationId: session.user.organizationId,
+          notes: notes ? (typeof notes === 'string' ? notes : String(notes)) : null,
+          organizationId: organizationId,
           customerId,
           createdById: session.user.id,
           items: {

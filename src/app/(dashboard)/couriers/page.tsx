@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
-  Truck, MapPin, Clock, User, Phone, Mail, Plus, Search, Filter,
+  Truck, Clock, User, Phone, Mail, Plus, Search,
   Download, Upload, AlertTriangle, CheckCircle, XCircle, TrendingUp,
   BarChart3, Settings, Edit, Trash2, Eye, Navigation, Route, Package,
-  DollarSign, Star, Calendar, Map, Wifi, WifiOff, Battery
+  DollarSign, Star, Wifi, WifiOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
+import { formatCurrency, formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface Courier {

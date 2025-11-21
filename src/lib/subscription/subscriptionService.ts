@@ -2,6 +2,11 @@ import { prisma } from '@/lib/prisma';
 import { stripeService } from '@/lib/payments/stripeService';
 import { emailService } from '@/lib/email/emailService';
 import { realTimeSyncService } from '@/lib/sync/realTimeSyncService';
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2023-10-16',
+});
 
 export interface SubscriptionPlan {
   id: string;
@@ -25,6 +30,7 @@ export interface SubscriptionPlan {
   isPopular?: boolean;
   stripePriceId?: string;
   paypalPlanId?: string;
+  organizationId?: string;
 }
 
 export interface Subscription {
@@ -121,51 +127,67 @@ export class SubscriptionService {
       // Create Stripe price
       let stripePriceId;
       try {
-        const stripePrice = await stripeService.createPrice({
-          amount: plan.price * 100, // Convert to cents
+        // Use Stripe API directly since createPrice doesn't exist in StripeService
+        const stripePrice = await stripe.prices.create({
+          unit_amount: plan.price * 100, // Convert to cents
           currency: plan.currency,
-          interval: plan.interval,
-          intervalCount: plan.intervalCount,
-          productName: plan.name,
-          productDescription: plan.description,
+          recurring: {
+            interval: plan.interval as 'month' | 'year' | 'week' | 'day',
+            interval_count: plan.intervalCount,
+          },
+          product_data: {
+            name: plan.name,
+            description: plan.description,
+          },
         });
         stripePriceId = stripePrice.id;
       } catch (error) {
         console.warn('Failed to create Stripe price:', error);
       }
 
-      // Create database record
-      const createdPlan = await prisma.subscriptionPlan.create({
+      // Store plan in Organization settings instead of separate model
+      if (!plan.organizationId) {
+        throw new Error('Organization ID is required');
+      }
+      const organization = await prisma.organization.findUnique({
+        where: { id: plan.organizationId },
+      });
+      if (!organization) {
+        throw new Error('Organization not found');
+      }
+      const settings = (organization.settings as any) || {};
+      const subscriptionPlans = settings.subscriptionPlans || [];
+      const planData = {
+        id: `plan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        ...plan,
+        stripePriceId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      subscriptionPlans.push(planData);
+      await prisma.organization.update({
+        where: { id: organization.id },
         data: {
-          name: plan.name,
-          description: plan.description,
-          price: plan.price,
-          currency: plan.currency,
-          interval: plan.interval,
-          intervalCount: plan.intervalCount,
-          trialPeriodDays: plan.trialPeriodDays,
-          features: plan.features,
-          limits: plan.limits,
-          isActive: plan.isActive,
-          isPopular: plan.isPopular,
-          stripePriceId,
+          settings: {
+            ...settings,
+            subscriptionPlans,
+          } as any,
         },
       });
-
       return {
-        id: createdPlan.id,
-        name: createdPlan.name,
-        description: createdPlan.description,
-        price: createdPlan.price,
-        currency: createdPlan.currency,
-        interval: createdPlan.interval as 'month' | 'year' | 'week' | 'day',
-        intervalCount: createdPlan.intervalCount,
-        trialPeriodDays: createdPlan.trialPeriodDays,
-        features: createdPlan.features as string[],
-        limits: createdPlan.limits as any,
-        isActive: createdPlan.isActive,
-        isPopular: createdPlan.isPopular,
-        stripePriceId: createdPlan.stripePriceId,
+        id: planData.id,
+        name: planData.name,
+        description: planData.description,
+        price: planData.price,
+        currency: planData.currency,
+        interval: planData.interval as 'month' | 'year' | 'week' | 'day',
+        intervalCount: planData.intervalCount,
+        trialPeriodDays: planData.trialPeriodDays,
+        features: planData.features,
+        limits: planData.limits,
+        isActive: planData.isActive,
+        isPopular: planData.isPopular,
+        stripePriceId: planData.stripePriceId,
       };
     } catch (error) {
       console.error('Error creating subscription plan:', error);
@@ -183,29 +205,63 @@ export class SubscriptionService {
     trialDays?: number
   ): Promise<Subscription> {
     try {
-      const plan = await prisma.subscriptionPlan.findUnique({
-        where: { id: planId },
+      // Get user and organization
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
       });
+
+      if (!user || !user.organizationId) {
+        throw new Error('User not found or has no organization');
+      }
+
+      // Get plan from Organization settings
+      const organization = await prisma.organization.findUnique({
+        where: { id: user.organizationId },
+      });
+      if (!organization) {
+        throw new Error('Organization not found');
+      }
+      const settings = (organization.settings as any) || {};
+      const subscriptionPlans = settings.subscriptionPlans || [];
+      const plan = subscriptionPlans.find((p: any) => p.id === planId);
 
       if (!plan || !plan.isActive) {
         throw new Error('Plan not found or inactive');
       }
 
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
+      // Get or create customer for this user
+      let customer = await prisma.customer.findFirst({
+        where: {
+          organizationId: user.organizationId,
+          email: user.email,
+        },
       });
 
-      if (!user) {
-        throw new Error('User not found');
+      if (!customer) {
+        // Create customer for user
+        customer = await prisma.customer.create({
+          data: {
+            organizationId: user.organizationId,
+            email: user.email,
+            name: user.name,
+            isActive: true,
+          },
+        });
       }
+
+      // Get stripeCustomerId from UserPreference
+      const userPref = await prisma.userPreference.findUnique({
+        where: { userId },
+      });
+      const stripeCustomerId = (userPref?.notifications as any)?.stripeCustomerId;
 
       let stripeSubscriptionId;
       let paypalSubscriptionId;
 
-      if (paymentMethod === 'stripe' && plan.stripePriceId) {
+      if (paymentMethod === 'stripe' && plan.stripePriceId && stripeCustomerId) {
         // Create Stripe subscription
         const stripeSubscription = await stripeService.createSubscription(
-          user.stripeCustomerId!,
+          stripeCustomerId,
           plan.stripePriceId,
           {
             userId,
@@ -228,28 +284,37 @@ export class SubscriptionService {
       // Create subscription record
       const subscription = await prisma.subscription.create({
         data: {
-          userId,
-          planId,
+          customerId: customer.id,
           status: trialDays ? 'trialing' : 'active',
           currentPeriodStart: periodStart,
           currentPeriodEnd: periodEnd,
-          trialStart: trialDays ? now : undefined,
-          trialEnd: trialEnd,
           stripeSubscriptionId,
-          paypalSubscriptionId,
           metadata: {
+            userId,
+            planId,
+            trialStart: trialDays ? now.toISOString() : undefined,
+            trialEnd: trialEnd?.toISOString(),
+            paypalSubscriptionId,
             createdVia: paymentMethod,
             originalPlan: plan.name,
-          },
+          } as any,
         },
       });
 
-      // Update user's subscription status
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          subscriptionId: subscription.id,
-          subscriptionStatus: subscription.status,
+      // Store subscriptionId in UserPreference
+      await prisma.userPreference.upsert({
+        where: { userId },
+        update: {
+          notifications: {
+            ...(userPref?.notifications as any || {}),
+            subscriptionId: subscription.id,
+          } as any,
+        },
+        create: {
+          userId,
+          notifications: {
+            subscriptionId: subscription.id,
+          } as any,
         },
       });
 
@@ -257,26 +322,27 @@ export class SubscriptionService {
       await this.sendSubscriptionWelcomeEmail(userId, plan);
 
       // Broadcast event
-      await realTimeSyncService.broadcastEvent({
-        type: 'subscription_created',
+      await realTimeSyncService.queueEvent({
+        type: 'message',
+        action: 'create',
         entityId: subscription.id,
-        entityType: 'subscription',
-        organizationId: user.organizationId,
+        organizationId: user.organizationId || '',
         data: subscription,
         timestamp: new Date(),
       });
 
+      const subMetadata = (subscription.metadata as any) || {};
       return {
         id: subscription.id,
-        userId: subscription.userId,
-        planId: subscription.planId,
+        userId: subMetadata.userId || '',
+        planId: subMetadata.planId || '',
         status: subscription.status as any,
         currentPeriodStart: subscription.currentPeriodStart,
         currentPeriodEnd: subscription.currentPeriodEnd,
-        trialStart: subscription.trialStart,
-        trialEnd: subscription.trialEnd,
+        trialStart: subMetadata.trialStart ? new Date(subMetadata.trialStart) : undefined,
+        trialEnd: subMetadata.trialEnd ? new Date(subMetadata.trialEnd) : undefined,
         stripeSubscriptionId: subscription.stripeSubscriptionId,
-        paypalSubscriptionId: subscription.paypalSubscriptionId,
+        paypalSubscriptionId: subMetadata.paypalSubscriptionId,
         metadata: subscription.metadata as any,
       };
     } catch (error) {
@@ -296,7 +362,7 @@ export class SubscriptionService {
     try {
       const subscription = await prisma.subscription.findUnique({
         where: { id: subscriptionId },
-        include: { user: true, plan: true },
+        include: { customer: true },
       });
 
       if (!subscription) {
@@ -305,39 +371,52 @@ export class SubscriptionService {
 
       // Cancel with payment provider
       if (subscription.stripeSubscriptionId) {
-        await stripeService.cancelSubscription(subscription.stripeSubscriptionId, immediate);
+        await stripeService.cancelSubscription(subscription.stripeSubscriptionId);
       }
 
       const now = new Date();
       const cancelAt = immediate ? now : subscription.currentPeriodEnd;
+      const subMetadata = (subscription.metadata as any) || {};
 
       // Update subscription
       const updatedSubscription = await prisma.subscription.update({
         where: { id: subscriptionId },
         data: {
           status: immediate ? 'canceled' : 'active',
-          cancelAt: immediate ? undefined : cancelAt,
-          canceledAt: immediate ? now : undefined,
+          cancelAtPeriodEnd: !immediate,
           metadata: {
-            ...subscription.metadata as any,
+            ...subMetadata,
+            cancelAt: cancelAt.toISOString(),
+            canceledAt: immediate ? now.toISOString() : undefined,
             cancellationReason: reason,
-            canceledAt: now.toISOString(),
-          },
+          } as any,
         },
       });
 
-      // Send cancellation email
-      await this.sendCancellationEmail(subscription.user, subscription.plan, immediate);
+      // Get user and plan for email
+      const userId = subMetadata.userId;
+      const planId = subMetadata.planId;
+      const user = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
+      const organization = subscription.customer?.organizationId ? await prisma.organization.findUnique({
+        where: { id: subscription.customer.organizationId },
+      }) : null;
+      const plan = planId && organization ? ((organization.settings as any)?.subscriptionPlans || []).find((p: any) => p.id === planId) : null;
 
+      // Send cancellation email
+      if (user && plan) {
+        await this.sendCancellationEmail(user, plan, immediate);
+      }
+
+      const updatedMetadata = (updatedSubscription.metadata as any) || {};
       return {
         id: updatedSubscription.id,
-        userId: updatedSubscription.userId,
-        planId: updatedSubscription.planId,
+        userId: updatedMetadata.userId || '',
+        planId: updatedMetadata.planId || '',
         status: updatedSubscription.status as any,
         currentPeriodStart: updatedSubscription.currentPeriodStart,
         currentPeriodEnd: updatedSubscription.currentPeriodEnd,
-        cancelAt: updatedSubscription.cancelAt,
-        canceledAt: updatedSubscription.canceledAt,
+        cancelAt: updatedMetadata.cancelAt ? new Date(updatedMetadata.cancelAt) : undefined,
+        canceledAt: updatedMetadata.canceledAt ? new Date(updatedMetadata.canceledAt) : undefined,
         stripeSubscriptionId: updatedSubscription.stripeSubscriptionId,
         metadata: updatedSubscription.metadata as any,
       };
@@ -357,13 +436,31 @@ export class SubscriptionService {
     metadata?: Record<string, any>
   ): Promise<UsageRecord> {
     try {
-      const usageRecord = await prisma.usageRecord.create({
+      // Store usage record in Subscription metadata
+      const subscription = await prisma.subscription.findUnique({
+        where: { id: subscriptionId },
+      });
+      if (!subscription) {
+        throw new Error('Subscription not found');
+      }
+      const subMetadata = (subscription.metadata as any) || {};
+      const usageRecords = subMetadata.usageRecords || [];
+      const usageRecord = {
+        id: `usage_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        subscriptionId,
+        metricType,
+        quantity,
+        timestamp: new Date().toISOString(),
+        metadata,
+      };
+      usageRecords.push(usageRecord);
+      await prisma.subscription.update({
+        where: { id: subscriptionId },
         data: {
-          subscriptionId,
-          metricType,
-          quantity,
-          timestamp: new Date(),
-          metadata,
+          metadata: {
+            ...subMetadata,
+            usageRecords,
+          } as any,
         },
       });
 
@@ -375,7 +472,7 @@ export class SubscriptionService {
         subscriptionId: usageRecord.subscriptionId,
         metricType: usageRecord.metricType,
         quantity: usageRecord.quantity,
-        timestamp: usageRecord.timestamp,
+        timestamp: new Date(usageRecord.timestamp),
         metadata: usageRecord.metadata as any,
       };
     } catch (error) {
@@ -389,25 +486,42 @@ export class SubscriptionService {
    */
   async createMembershipTier(tier: Omit<MembershipTier, 'id'>): Promise<MembershipTier> {
     try {
-      const createdTier = await prisma.membershipTier.create({
+      // Store membership tier in Organization settings
+      if (!tier.organizationId) {
+        throw new Error('Organization ID is required');
+      }
+      const organization = await prisma.organization.findUnique({
+        where: { id: tier.organizationId },
+      });
+      if (!organization) {
+        throw new Error('Organization not found');
+      }
+      const settings = (organization.settings as any) || {};
+      const membershipTiers = settings.membershipTiers || [];
+      const tierData = {
+        id: `tier_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        ...tier,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      membershipTiers.push(tierData);
+      await prisma.organization.update({
+        where: { id: organization.id },
         data: {
-          name: tier.name,
-          level: tier.level,
-          benefits: tier.benefits,
-          requirements: tier.requirements,
-          discountPercentage: tier.discountPercentage,
-          freeShipping: tier.freeShipping,
-          prioritySupport: tier.prioritySupport,
-          earlyAccess: tier.earlyAccess,
+          settings: {
+            ...settings,
+            membershipTiers,
+          } as any,
         },
       });
+      const createdTier = tierData;
 
       return {
         id: createdTier.id,
         name: createdTier.name,
         level: createdTier.level,
-        benefits: createdTier.benefits as string[],
-        requirements: createdTier.requirements as any,
+        benefits: createdTier.benefits,
+        requirements: createdTier.requirements,
         discountPercentage: createdTier.discountPercentage,
         freeShipping: createdTier.freeShipping,
         prioritySupport: createdTier.prioritySupport,
@@ -426,25 +540,43 @@ export class SubscriptionService {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
+      });
+
+      if (!user || !user.organizationId) return null;
+
+      // Get customer and their orders
+      const customer = await prisma.customer.findFirst({
+        where: {
+          organizationId: user.organizationId,
+          email: user.email,
+        },
         include: {
           orders: {
             where: { status: 'COMPLETED' },
           },
-          membership: true,
         },
       });
 
-      if (!user) return null;
+      if (!customer) return null;
 
       // Calculate totals
-      const totalSpent = user.orders.reduce((sum, order) => sum + order.total, 0);
-      const totalOrders = user.orders.length;
-      const memberSince = user.membership?.createdAt || user.createdAt;
+      const totalSpent = customer.orders.reduce((sum, order) => sum + order.totalAmount, 0);
+      const totalOrders = customer.orders.length;
 
-      // Get all tiers ordered by level
-      const tiers = await prisma.membershipTier.findMany({
-        orderBy: { level: 'asc' },
+      // Get membership status from UserPreference
+      const userPref = await prisma.userPreference.findUnique({
+        where: { userId },
       });
+      const membershipData = (userPref?.notifications as any)?.membershipStatus || {};
+      const memberSince = membershipData.memberSince ? new Date(membershipData.memberSince) : user.createdAt;
+
+      // Get all tiers from Organization settings
+      const organization = await prisma.organization.findUnique({
+        where: { id: user.organizationId },
+      });
+      if (!organization) return null;
+      const settings = (organization.settings as any) || {};
+      const tiers = (settings.membershipTiers || []).sort((a: any, b: any) => a.level - b.level);
 
       // Find appropriate tier
       let currentTier = tiers[0]; // Default to lowest tier
@@ -477,22 +609,30 @@ export class SubscriptionService {
         };
       }
 
-      // Update or create membership record
-      const membershipStatus = await prisma.membershipStatus.upsert({
+      // Store membership status in UserPreference
+      const membershipStatus = {
+        userId,
+        tierId: currentTier.id,
+        level: currentTier.level,
+        totalSpent,
+        totalOrders,
+        memberSince: memberSince.toISOString(),
+        nextTierProgress,
+      };
+
+      await prisma.userPreference.upsert({
         where: { userId },
         update: {
-          tierId: currentTier.id,
-          level: currentTier.level,
-          totalSpent,
-          totalOrders,
+          notifications: {
+            ...(userPref?.notifications as any || {}),
+            membershipStatus,
+          } as any,
         },
         create: {
           userId,
-          tierId: currentTier.id,
-          level: currentTier.level,
-          totalSpent,
-          totalOrders,
-          memberSince,
+          notifications: {
+            membershipStatus,
+          } as any,
         },
       });
 
@@ -502,7 +642,7 @@ export class SubscriptionService {
         level: membershipStatus.level,
         totalSpent: membershipStatus.totalSpent,
         totalOrders: membershipStatus.totalOrders,
-        memberSince: membershipStatus.memberSince,
+        memberSince: new Date(membershipStatus.memberSince),
         nextTierProgress,
       };
     } catch (error) {
@@ -516,19 +656,35 @@ export class SubscriptionService {
    */
   async createSubscriptionBox(box: Omit<SubscriptionBox, 'id'>): Promise<SubscriptionBox> {
     try {
-      const createdBox = await prisma.subscriptionBox.create({
+      // Store subscription box in Organization settings
+      if (!box.organizationId) {
+        throw new Error('Organization ID is required');
+      }
+      const organization = await prisma.organization.findUnique({
+        where: { id: box.organizationId },
+      });
+      if (!organization) {
+        throw new Error('Organization not found');
+      }
+      const settings = (organization.settings as any) || {};
+      const subscriptionBoxes = settings.subscriptionBoxes || [];
+      const boxData = {
+        id: `box_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        ...box,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      subscriptionBoxes.push(boxData);
+      await prisma.organization.update({
+        where: { id: organization.id },
         data: {
-          name: box.name,
-          description: box.description,
-          price: box.price,
-          frequency: box.frequency,
-          categories: box.categories,
-          customizable: box.customizable,
-          minItems: box.minItems,
-          maxItems: box.maxItems,
-          isActive: box.isActive,
+          settings: {
+            ...settings,
+            subscriptionBoxes,
+          } as any,
         },
       });
+      const createdBox = boxData;
 
       return {
         id: createdBox.id,
@@ -565,28 +721,42 @@ export class SubscriptionService {
   private async checkUsageLimits(subscriptionId: string, metricType: string): Promise<void> {
     const subscription = await prisma.subscription.findUnique({
       where: { id: subscriptionId },
-      include: { plan: true },
+      include: { customer: true },
     });
 
-    if (!subscription) return;
+    if (!subscription || !subscription.customer?.organizationId) return;
 
-    const limits = subscription.plan.limits as any;
+    // Get plan from Organization settings
+    const organization = await prisma.organization.findUnique({
+      where: { id: subscription.customer.organizationId },
+    });
+    if (!organization) return;
+
+    const subMetadata = (subscription.metadata as any) || {};
+    const planId = subMetadata.planId;
+    if (!planId) return;
+
+    const settings = (organization.settings as any) || {};
+    const subscriptionPlans = settings.subscriptionPlans || [];
+    const plan = subscriptionPlans.find((p: any) => p.id === planId);
+    if (!plan) return;
+
+    const limits = plan.limits || {};
     const limit = limits[metricType];
 
     if (!limit) return;
 
-    // Get usage for current period
-    const usage = await prisma.usageRecord.aggregate({
-      where: {
-        subscriptionId,
-        metricType,
-        timestamp: {
-          gte: subscription.currentPeriodStart,
-          lte: subscription.currentPeriodEnd,
-        },
-      },
-      _sum: { quantity: true },
-    });
+    // Get usage for current period from metadata
+    const usageRecords = subMetadata.usageRecords || [];
+    const periodStart = subscription.currentPeriodStart.getTime();
+    const periodEnd = subscription.currentPeriodEnd.getTime();
+    const periodUsage = usageRecords
+      .filter((r: any) => {
+        const timestamp = new Date(r.timestamp).getTime();
+        return r.metricType === metricType && timestamp >= periodStart && timestamp <= periodEnd;
+      })
+      .reduce((sum: number, r: any) => sum + (r.quantity || 0), 0);
+    const usage = { _sum: { quantity: periodUsage } };
 
     const totalUsage = usage._sum.quantity || 0;
 

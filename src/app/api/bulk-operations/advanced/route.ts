@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -66,12 +66,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { action, ...data } = body;
 
     switch (action) {
       case 'import-products':
-        const formData = await request.formData();
+        const formData = await _request.formData();
         const file = formData.get('file') as File;
         const format = data.format || 'csv';
 
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ result });
 
       case 'import-customers':
-        const customerFormData = await request.formData();
+        const customerFormData = await _request.formData();
         const customerFile = customerFormData.get('file') as File;
         const customerFormat = data.format || 'csv';
 

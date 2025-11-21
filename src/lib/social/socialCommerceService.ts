@@ -69,7 +69,7 @@ export class SocialCommerceService {
 
     return platforms.map(platform => ({
       id: platform.id,
-      name: platform.name,
+      name: platform.name as 'facebook' | 'instagram' | 'tiktok' | 'pinterest' | 'twitter',
       isActive: platform.isActive,
       config: platform.config,
       lastSync: platform.lastSync,
@@ -98,7 +98,7 @@ export class SocialCommerceService {
 
     return {
       id: socialPlatform.id,
-      name: socialPlatform.name,
+      name: socialPlatform.name as 'facebook' | 'instagram' | 'tiktok' | 'pinterest' | 'twitter',
       isActive: socialPlatform.isActive,
       config: socialPlatform.config,
       lastSync: socialPlatform.lastSync,
@@ -146,8 +146,17 @@ export class SocialCommerceService {
           }
         });
 
-        socialProducts.push(socialProduct);
-      } catch (error) {
+        socialProducts.push({
+          id: socialProduct.id,
+          productId: socialProduct.productId,
+          platformId: socialProduct.platformId,
+          platformProductId: socialProduct.platformProductId,
+          status: socialProduct.status as 'active' | 'inactive' | 'syncing' | 'error',
+          metadata: socialProduct.metadata,
+          lastSync: socialProduct.lastSync,
+        });
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(`Failed to sync product ${product.id} to ${platform.name}:`, error);
         
         await prisma.socialProduct.upsert({
@@ -157,7 +166,7 @@ export class SocialCommerceService {
           update: {
             status: 'error',
             lastSync: new Date(),
-            metadata: { error: error.message }
+            metadata: { error: errorMessage }
           },
           create: {
             productId: product.id,
@@ -165,7 +174,7 @@ export class SocialCommerceService {
             platformProductId: '',
             status: 'error',
             lastSync: new Date(),
-            metadata: { error: error.message }
+            metadata: { error: errorMessage }
           }
         });
       }
@@ -205,7 +214,23 @@ export class SocialCommerceService {
       }
     });
 
-    return post;
+    return {
+      id: post.id,
+      platformId: post.platformId,
+      type: post.type as 'product' | 'story' | 'reel' | 'post',
+      content: post.content,
+      mediaUrls: post.mediaUrls,
+      productIds: post.productIds,
+      scheduledAt: post.scheduledAt || undefined,
+      publishedAt: post.publishedAt || undefined,
+      status: post.status as 'draft' | 'scheduled' | 'published' | 'failed',
+      engagement: (post.engagement as any) || {
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        clicks: 0,
+      },
+    };
   }
 
   async publishPost(postId: string): Promise<SocialPost> {
@@ -227,17 +252,37 @@ export class SocialCommerceService {
         data: {
           status: 'published',
           publishedAt: new Date(),
-          metadata: { platformPostId }
+          metadata: { 
+            ...(post.metadata as any || {}),
+            platformPostId 
+          }
         }
       });
 
-      return updatedPost;
-    } catch (error) {
+      return {
+        id: updatedPost.id,
+        platformId: updatedPost.platformId,
+        type: updatedPost.type as 'product' | 'story' | 'reel' | 'post',
+        content: updatedPost.content,
+        mediaUrls: updatedPost.mediaUrls,
+        productIds: updatedPost.productIds,
+        scheduledAt: updatedPost.scheduledAt || undefined,
+        publishedAt: updatedPost.publishedAt || undefined,
+        status: updatedPost.status as 'draft' | 'scheduled' | 'published' | 'failed',
+        engagement: (updatedPost.engagement as any) || {
+          likes: 0,
+          comments: 0,
+          shares: 0,
+          clicks: 0,
+        },
+      };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       await prisma.socialPost.update({
         where: { id: postId },
         data: {
           status: 'failed',
-          metadata: { error: error.message }
+          metadata: { error: errorMessage }
         }
       });
 
@@ -275,18 +320,22 @@ export class SocialCommerceService {
 
     for (const platform of platforms) {
       const posts = platform.socialPosts;
-      const engagement = posts.reduce((sum, post) => 
-        sum + post.engagement.likes + post.engagement.comments + post.engagement.shares, 0
-      );
+      const engagement = posts.reduce((sum, post) => {
+        const postEngagement = (post.engagement as any) || {};
+        return sum + (postEngagement.likes || 0) + (postEngagement.comments || 0) + (postEngagement.shares || 0);
+      }, 0);
+
+      const platformConfig = (platform.config as any) || {};
+      const followers = platformConfig.followers || 0;
 
       platformBreakdown[platform.name] = {
-        followers: platform.config?.followers || 0,
+        followers,
         posts: posts.length,
         engagement,
         sales: 0 // Calculate from orders
       };
 
-      totalFollowers += platform.config?.followers || 0;
+      totalFollowers += followers;
       totalPosts += posts.length;
       totalEngagement += engagement;
 
@@ -461,77 +510,407 @@ export class SocialCommerceService {
 
   // Facebook implementations
   private async syncToFacebook(platform: any, product: any): Promise<string> {
-    // Facebook Catalog API implementation
-    return `fb_product_${Date.now()}`;
+    const { FacebookCommerceService } = await import('@/lib/integrations/facebook/facebookCommerceService');
+    const integration = await prisma.facebookIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration || !integration.isActive) {
+      throw new Error('Facebook integration not found or inactive');
+    }
+
+    const facebookService = new FacebookCommerceService(
+      integration.id,
+      integration.pageId,
+      integration.accessToken,
+      integration.catalogId || undefined
+    );
+
+    await facebookService.syncProducts();
+    return `fb_product_${product.id}`;
   }
 
   private async publishToFacebook(platform: any, post: any): Promise<string> {
-    // Facebook Graph API implementation
-    return `fb_post_${Date.now()}`;
+    const { FacebookCommerceService } = await import('@/lib/integrations/facebook/facebookCommerceService');
+    const integration = await prisma.facebookIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration || !integration.isActive) {
+      throw new Error('Facebook integration not found or inactive');
+    }
+
+    const facebookService = new FacebookCommerceService(
+      integration.id,
+      integration.pageId,
+      integration.accessToken
+    );
+
+    // Use Facebook Graph API to post
+    const axios = (await import('axios')).default;
+    const response = await axios.post(
+      `https://graph.facebook.com/v18.0/${integration.pageId}/feed`,
+      {
+        message: post.content,
+        link: post.productIds?.[0] ? `${process.env.NEXTAUTH_URL}/products/${post.productIds[0]}` : undefined,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${integration.accessToken}`,
+        },
+      }
+    );
+
+    return response.data.id;
   }
 
   private async deleteFromFacebook(platform: any, platformPostId: string): Promise<void> {
-    // Facebook Graph API delete implementation
+    const integration = await prisma.facebookIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration) {
+      throw new Error('Facebook integration not found');
+    }
+
+    const axios = (await import('axios')).default;
+    await axios.delete(
+      `https://graph.facebook.com/v18.0/${platformPostId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${integration.accessToken}`,
+        },
+      }
+    );
   }
 
   private async updateInventoryOnFacebook(platform: any, socialProduct: any): Promise<void> {
-    // Facebook Catalog API inventory update
+    const { FacebookCommerceService } = await import('@/lib/integrations/facebook/facebookCommerceService');
+    const integration = await prisma.facebookIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration || !integration.isActive) {
+      throw new Error('Facebook integration not found or inactive');
+    }
+
+    const facebookService = new FacebookCommerceService(
+      integration.id,
+      integration.pageId,
+      integration.accessToken,
+      integration.catalogId || undefined
+    );
+
+    const product = await prisma.product.findUnique({
+      where: { id: socialProduct.productId },
+    });
+
+    if (product) {
+      await facebookService.updateInventory(product.id, product.stockQuantity);
+    }
   }
 
   // Instagram implementations
   private async syncToInstagram(platform: any, product: any): Promise<string> {
-    // Instagram Basic Display API implementation
-    return `ig_product_${Date.now()}`;
+    const { InstagramShoppingService } = await import('@/lib/integrations/instagram/instagramShoppingService');
+    const integration = await prisma.instagramIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration || !integration.isActive) {
+      throw new Error('Instagram integration not found or inactive');
+    }
+
+    const instagramService = new InstagramShoppingService(
+      integration.id,
+      integration.businessAccountId,
+      integration.accessToken,
+      integration.catalogId || undefined
+    );
+
+    await instagramService.syncProducts();
+    return `ig_product_${product.id}`;
   }
 
   private async publishToInstagram(platform: any, post: any): Promise<string> {
-    // Instagram Basic Display API implementation
-    return `ig_post_${Date.now()}`;
+    const { InstagramShoppingService } = await import('@/lib/integrations/instagram/instagramShoppingService');
+    const integration = await prisma.instagramIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration || !integration.isActive) {
+      throw new Error('Instagram integration not found or inactive');
+    }
+
+    const instagramService = new InstagramShoppingService(
+      integration.id,
+      integration.businessAccountId,
+      integration.accessToken
+    );
+
+    // Use Instagram Graph API to create media container and publish
+    const axios = (await import('axios')).default;
+    
+    // Create media container
+    const mediaResponse = await axios.post(
+      `https://graph.facebook.com/v18.0/${integration.businessAccountId}/media`,
+      {
+        image_url: post.mediaUrls?.[0],
+        caption: post.content,
+        product_tags: post.productIds?.map((id: string) => ({ product_id: id })) || [],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${integration.accessToken}`,
+        },
+      }
+    );
+
+    // Publish media
+    const publishResponse = await axios.post(
+      `https://graph.facebook.com/v18.0/${integration.businessAccountId}/media_publish`,
+      {
+        creation_id: mediaResponse.data.id,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${integration.accessToken}`,
+        },
+      }
+    );
+
+    return publishResponse.data.id;
   }
 
   private async deleteFromInstagram(platform: any, platformPostId: string): Promise<void> {
-    // Instagram Basic Display API delete implementation
+    const integration = await prisma.instagramIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration) {
+      throw new Error('Instagram integration not found');
+    }
+
+    const axios = (await import('axios')).default;
+    await axios.delete(
+      `https://graph.facebook.com/v18.0/${platformPostId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${integration.accessToken}`,
+        },
+      }
+    );
   }
 
   private async updateInventoryOnInstagram(platform: any, socialProduct: any): Promise<void> {
-    // Instagram Basic Display API inventory update
+    const { InstagramShoppingService } = await import('@/lib/integrations/instagram/instagramShoppingService');
+    const integration = await prisma.instagramIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration || !integration.isActive) {
+      throw new Error('Instagram integration not found or inactive');
+    }
+
+    const instagramService = new InstagramShoppingService(
+      integration.id,
+      integration.businessAccountId,
+      integration.accessToken,
+      integration.catalogId || undefined
+    );
+
+    const product = await prisma.product.findUnique({
+      where: { id: socialProduct.productId },
+    });
+
+    if (product && integration.catalogId) {
+      const catalogItem = instagramService['productToInstagramProduct'](product);
+      await instagramService['uploadProductsBatch'](integration.catalogId, [catalogItem]);
+    }
   }
 
   // TikTok implementations
   private async syncToTikTok(platform: any, product: any): Promise<string> {
-    // TikTok Shop API implementation
-    return `tt_product_${Date.now()}`;
+    const { TikTokShopService } = await import('@/lib/integrations/tiktok/tiktokShopService');
+    const integration = await prisma.tikTokIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration || !integration.isActive) {
+      throw new Error('TikTok integration not found or inactive');
+    }
+
+    const tiktokService = new TikTokShopService(
+      integration.id,
+      integration.shopId,
+      integration.accessToken
+    );
+
+    await tiktokService.syncProducts();
+    return `tt_product_${product.id}`;
   }
 
   private async publishToTikTok(platform: any, post: any): Promise<string> {
-    // TikTok API implementation
+    const { TikTokShopService } = await import('@/lib/integrations/tiktok/tiktokShopService');
+    const integration = await prisma.tikTokIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration || !integration.isActive) {
+      throw new Error('TikTok integration not found or inactive');
+    }
+
+    const tiktokService = new TikTokShopService(
+      integration.id,
+      integration.shopId,
+      integration.accessToken
+    );
+
+    // Create live shopping event if products are provided
+    if (post.productIds && post.productIds.length > 0) {
+      const eventId = await tiktokService.createLiveShoppingEvent(
+        post.content || 'Live Shopping Event',
+        post.scheduledAt || new Date(),
+        post.productIds
+      );
+      return eventId;
+    }
+
     return `tt_post_${Date.now()}`;
   }
 
   private async deleteFromTikTok(platform: any, platformPostId: string): Promise<void> {
-    // TikTok API delete implementation
+    const integration = await prisma.tikTokIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration) {
+      throw new Error('TikTok integration not found');
+    }
+
+    const axios = (await import('axios')).default;
+    await axios.delete(
+      `https://open-api.tiktokglobalshop.com/api/live/events/${platformPostId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${integration.accessToken}`,
+        },
+      }
+    );
   }
 
   private async updateInventoryOnTikTok(platform: any, socialProduct: any): Promise<void> {
-    // TikTok Shop API inventory update
+    const { TikTokShopService } = await import('@/lib/integrations/tiktok/tiktokShopService');
+    const integration = await prisma.tikTokIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration || !integration.isActive) {
+      throw new Error('TikTok integration not found or inactive');
+    }
+
+    const tiktokService = new TikTokShopService(
+      integration.id,
+      integration.shopId,
+      integration.accessToken
+    );
+
+    const product = await prisma.product.findUnique({
+      where: { id: socialProduct.productId },
+    });
+
+    if (product) {
+      await tiktokService.syncProducts();
+    }
   }
 
   // Pinterest implementations
   private async syncToPinterest(platform: any, product: any): Promise<string> {
-    // Pinterest API implementation
-    return `pin_product_${Date.now()}`;
+    const { PinterestService } = await import('@/lib/integrations/pinterest/pinterestService');
+    const integration = await prisma.pinterestIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration || !integration.isActive || !integration.boardId) {
+      throw new Error('Pinterest integration not found or inactive');
+    }
+
+    const pinterestService = new PinterestService(
+      integration.id,
+      integration.accessToken
+    );
+
+    const pinId = await pinterestService.createProductPin(
+      product.id,
+      integration.boardId,
+      product.images[0] || '',
+      product.name,
+      product.description || '',
+      `${process.env.NEXTAUTH_URL}/products/${product.slug}`
+    );
+
+    return pinId;
   }
 
   private async publishToPinterest(platform: any, post: any): Promise<string> {
-    // Pinterest API implementation
-    return `pin_post_${Date.now()}`;
+    const { PinterestService } = await import('@/lib/integrations/pinterest/pinterestService');
+    const integration = await prisma.pinterestIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration || !integration.isActive || !integration.boardId) {
+      throw new Error('Pinterest integration not found or inactive');
+    }
+
+    const pinterestService = new PinterestService(
+      integration.id,
+      integration.accessToken
+    );
+
+    const pinId = await pinterestService.createProductPin(
+      post.productIds?.[0] || '',
+      integration.boardId,
+      post.mediaUrls?.[0] || '',
+      post.content || 'Product',
+      post.description || '',
+      post.link || ''
+    );
+
+    return pinId;
   }
 
   private async deleteFromPinterest(platform: any, platformPostId: string): Promise<void> {
-    // Pinterest API delete implementation
+    const integration = await prisma.pinterestIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration) {
+      throw new Error('Pinterest integration not found');
+    }
+
+    const axios = (await import('axios')).default;
+    await axios.delete(
+      `https://api.pinterest.com/v5/pins/${platformPostId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${integration.accessToken}`,
+        },
+      }
+    );
   }
 
   private async updateInventoryOnPinterest(platform: any, socialProduct: any): Promise<void> {
-    // Pinterest API inventory update
+    // Pinterest pins don't support direct inventory updates
+    // Would need to update the pin or create a new one
+    const integration = await prisma.pinterestIntegration.findFirst({
+      where: { organizationId: platform.organizationId },
+    });
+
+    if (!integration || !integration.isActive) {
+      throw new Error('Pinterest integration not found or inactive');
+    }
+
+    // Re-sync product to update pin
+    await this.syncToPinterest(platform, socialProduct);
   }
 } 

@@ -6,7 +6,11 @@ import { AuthProvider } from '@/components/providers/AuthProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'SmartStore AI - AI-Powered Commerce Automation',
@@ -65,8 +69,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
-      <body className={`${inter.className} h-full bg-gray-50`}>
+    <html lang="en" className={`h-full ${inter.variable}`}>
+      <body className={`${inter.className} h-full bg-background`}>
         <ErrorBoundary>
           <QueryProvider>
             <AuthProvider>

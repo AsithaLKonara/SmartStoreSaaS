@@ -24,19 +24,22 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  organization    Organization? @relation(fields: [organizationId], references: [id])
-  organizationId  String?       @db.ObjectId
-  sessions        Session[]
-  accounts        Account[]
-  activities      Activity[]
-  assignedChats   ChatMessage[]
-  createdOrders   Order[] @relation("OrderCreatedBy")
-  updatedOrders   Order[] @relation("OrderUpdatedBy")
-  createdProducts Product[] @relation("ProductCreatedBy")
-  updatedProducts Product[] @relation("ProductUpdatedBy")
-  preferences     UserPreference?
-  searchHistory   SearchHistory[]
-  assignedConversations CustomerConversation[]
+  organization           Organization?          @relation(fields: [organizationId], references: [id])
+  organizationId         String?                @db.ObjectId
+  sessions               Session[]
+  accounts               Account[]
+  activities             Activity[]
+  assignedChats          ChatMessage[]
+  createdOrders          Order[]                @relation("OrderCreatedBy")
+  updatedOrders          Order[]                @relation("OrderUpdatedBy")
+  createdProducts        Product[]              @relation("ProductCreatedBy")
+  updatedProducts        Product[]              @relation("ProductUpdatedBy")
+  preferences            UserPreference?
+  searchHistory          SearchHistory[]
+  assignedConversations  CustomerConversation[]
+  inventoryMovements     InventoryMovement[]    @relation("InventoryMovementCreatedBy")
+  notifications          Notification[]
+  assignedSupportTickets SupportTicket[]
 
   @@map("users")
 }
@@ -73,7 +76,7 @@ model Session {
 
 model Activity {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  type        String   // 'login', 'order_created', 'product_viewed', etc.
+  type        String // 'login', 'order_created', 'product_viewed', etc.
   description String
   metadata    Json?
   createdAt   DateTime @default(now())
@@ -97,71 +100,97 @@ model VerificationToken {
 
 // Organization & Multi-tenancy
 model Organization {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  slug        String   @unique
-  domain      String?
-  logo        String?
-  settings    Json?
-  isActive    Boolean  @default(true)
-  plan        PlanType @default(STARTER)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  slug      String   @unique
+  domain    String?
+  logo      String?
+  settings  Json?
+  isActive  Boolean  @default(true)
+  plan      PlanType @default(STARTER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  users       User[]
-  customers   Customer[]
-  products    Product[]
-  categories  Category[]
-  orders      Order[]
-  chats       ChatMessage[]
-  campaigns   Campaign[]
-  couriers    Courier[]
-  warehouses  Warehouse[]
-  payments    Payment[]
-  expenses    Expense[]
-  workflows   Workflow[]
-  conversations CustomerConversation[]
-  channelIntegrations ChannelIntegration[]
-  socialPlatforms SocialPlatform[]
-  syncConflicts SyncConflict[]
-  whatsAppIntegrations WhatsAppIntegration[]
-  whatsAppMessages WhatsAppMessage[]
-  whatsAppCatalogs WhatsAppCatalog[]
+  users                   User[]
+  customers               Customer[]
+  products                Product[]
+  categories              Category[]
+  orders                  Order[]
+  chats                   ChatMessage[]
+  campaigns               Campaign[]
+  couriers                Courier[]
+  warehouses              Warehouse[]
+  payments                Payment[]
+  expenses                Expense[]
+  workflows               Workflow[]
+  conversations           CustomerConversation[]
+  channelIntegrations     ChannelIntegration[]
+  socialPlatforms         SocialPlatform[]
+  syncConflicts           SyncConflict[]
+  whatsAppIntegrations    WhatsAppIntegration[]
+  whatsAppMessages        WhatsAppMessage[]
+  whatsAppCatalogs        WhatsAppCatalog[]
   wooCommerceIntegrations WooCommerceIntegration[]
-  bulkOperations BulkOperation[] // Added missing relation
+  bulkOperations          BulkOperation[]
+  reports                 Report[]
+  reportTemplates         ReportTemplate[]
+  campaignTemplates       CampaignTemplate[]
+  bulkOperationTemplates  BulkOperationTemplate[]
+  shopifyIntegrations     ShopifyIntegration[]
+  facebookIntegrations    FacebookIntegration[]
+  instagramIntegrations   InstagramIntegration[]
+  tiktokIntegrations      TikTokIntegration[]
+  pinterestIntegrations   PinterestIntegration[]
+  magentoIntegrations     MagentoIntegration[]
+  accountingIntegrations  AccountingIntegration[]
+  crmIntegrations         CRMIntegration[]
+  currencySettings        CurrencySettings?
+  suppliers               Supplier[]
+  purchaseOrders          PurchaseOrder[]
+  customerOffers          CustomerOffer[]
+  customerSegments        CustomerSegment[]
+  reviews                 Review[]
+  supportTickets          SupportTicket[]
+  notifications           Notification[]
+  kpiTargets              KpiTarget[]
+  scheduledReports        ScheduledReport[]
 
   @@map("organizations")
 }
 
 // Customer CRM
 model Customer {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  phone       String?
-  email       String?
-  name        String?
-  avatar      String?
-  tags        String[]
-  source      String?
-  isActive    Boolean  @default(true)
-  totalSpent  Float    @default(0)
-  points      Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  phone      String?
+  email      String?
+  name       String?
+  avatar     String?
+  tags       String[]
+  source     String?
+  isActive   Boolean  @default(true)
+  totalSpent Float    @default(0)
+  points     Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId String       @db.ObjectId
-  orders         Order[]
-  chatMessages   ChatMessage[]
-  activities     CustomerActivity[]
-  conversations  CustomerConversation[]
-  paymentMethods PaymentMethod[]
-  paymentIntents PaymentIntent[]
-  subscriptions  Subscription[]
-  invoices       Invoice[]
-  socialProducts SocialProduct[]
+  organization     Organization           @relation(fields: [organizationId], references: [id])
+  organizationId   String                 @db.ObjectId
+  orders           Order[]
+  chatMessages     ChatMessage[]
+  activities       CustomerActivity[]
+  conversations    CustomerConversation[]
+  paymentMethods   PaymentMethod[]
+  paymentIntents   PaymentIntent[]
+  subscriptions    Subscription[]
+  invoices         Invoice[]
+  socialProducts   SocialProduct[]
   whatsAppMessages WhatsAppMessage[]
+  courierRatings   CourierRating[]
+  customerOffers   CustomerOffer[]
+  reviews          Review[]
+  supportTickets   SupportTicket[]
 
   @@unique([organizationId, phone])
   @@unique([organizationId, email])
@@ -169,11 +198,11 @@ model Customer {
 }
 
 model CustomerActivity {
-  id         String           @id @default(auto()) @map("_id") @db.ObjectId
-  type       ActivityType
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  type        ActivityType
   description String
-  metadata   Json?
-  createdAt  DateTime         @default(now())
+  metadata    Json?
+  createdAt   DateTime     @default(now())
 
   // Relations
   customer   Customer @relation(fields: [customerId], references: [id])
@@ -195,50 +224,54 @@ model Category {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  products      Product[]
-  parent        Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  parentId      String?     @db.ObjectId
-  children      Category[]  @relation("CategoryHierarchy")
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
+  products       Product[]
+  parent         Category?    @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  parentId       String?      @db.ObjectId
+  children       Category[]   @relation("CategoryHierarchy")
 
   @@unique([organizationId, slug])
   @@map("categories")
 }
 
 model Product {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  slug        String
-  description String?
-  sku         String?
-  price       Float
-  comparePrice Float?
-  costPrice   Float? // Changed from 'cost' to 'costPrice' to match API
-  stockQuantity Int    @default(0) // Changed from 'stock' to 'stockQuantity' to match API
-  lowStockThreshold Int @default(0) // Changed from 'minStock' to 'lowStockThreshold' to match API
-  weight      Float?
-  dimensions  Json?
-  images      String[]
-  isActive    Boolean  @default(true)
-  isFeatured  Boolean  @default(false)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  name              String
+  slug              String
+  description       String?
+  sku               String?
+  price             Float
+  comparePrice      Float?
+  costPrice         Float? // Changed from 'cost' to 'costPrice' to match API
+  stockQuantity     Int      @default(0) // Changed from 'stock' to 'stockQuantity' to match API
+  lowStockThreshold Int      @default(0) // Changed from 'minStock' to 'lowStockThreshold' to match API
+  weight            Float?
+  dimensions        Json?
+  images            String[]
+  isActive          Boolean  @default(true)
+  isFeatured        Boolean  @default(false)
+  sortOrder         Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  category      Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  categoryId    String?   @db.ObjectId
-  createdBy     User     @relation("ProductCreatedBy", fields: [createdById], references: [id])
-  createdById   String   @db.ObjectId
-  updatedBy     User?    @relation("ProductUpdatedBy", fields: [updatedById], references: [id])
-  updatedById   String?  @db.ObjectId
-  variants      ProductVariant[]
-  orderItems    OrderItem[]
-  activities    ProductActivity[]
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  organizationId String              @db.ObjectId
+  category       Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId     String?             @db.ObjectId
+  createdBy      User                @relation("ProductCreatedBy", fields: [createdById], references: [id])
+  createdById    String              @db.ObjectId
+  updatedBy      User?               @relation("ProductUpdatedBy", fields: [updatedById], references: [id])
+  updatedById    String?             @db.ObjectId
+  variants       ProductVariant[]
+  orderItems     OrderItem[]
+  activities     ProductActivity[]
   socialProducts SocialProduct[]
+  movements      InventoryMovement[]
+  arModel        ARModel?
+  iotSensors     IoTSensor[]
+  reviews        Review[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, sku])
@@ -246,15 +279,15 @@ model Product {
 }
 
 model ProductVariant {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  sku       String?
-  price     Float?
-  costPrice Float? // Added costPrice to match API
-  stockQuantity Int @default(0) // Changed from 'stock' to 'stockQuantity' to match API
-  attributes Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  sku           String?
+  price         Float?
+  costPrice     Float? // Added costPrice to match API
+  stockQuantity Int      @default(0) // Changed from 'stock' to 'stockQuantity' to match API
+  attributes    Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -265,16 +298,16 @@ model ProductVariant {
 }
 
 model ProductActivity {
-  id         String        @id @default(auto()) @map("_id") @db.ObjectId
-  type       ProductActivityType
-  quantity   Int?
+  id          String              @id @default(auto()) @map("_id") @db.ObjectId
+  type        ProductActivityType
+  quantity    Int?
   description String
-  metadata   Json?
-  createdAt  DateTime      @default(now())
+  metadata    Json?
+  createdAt   DateTime            @default(now())
 
   // Relations
-  product    Product @relation(fields: [productId], references: [id])
-  productId  String  @db.ObjectId
+  product   Product @relation(fields: [productId], references: [id])
+  productId String  @db.ObjectId
 
   @@map("product_activities")
 }
@@ -284,11 +317,11 @@ model Order {
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
   orderNumber   String      @unique
   status        OrderStatus @default(DRAFT)
-  totalAmount   Float     // Changed from 'total' to 'totalAmount' to match API
+  totalAmount   Float // Changed from 'total' to 'totalAmount' to match API
   subtotal      Float
-  tax           Float     @default(0)
-  shipping      Float     @default(0)
-  discount      Float     @default(0)
+  tax           Float       @default(0)
+  shipping      Float       @default(0)
+  discount      Float       @default(0)
   currency      String      @default("USD")
   paymentMethod String      @default("COD") // Added to match API
   paymentStatus String      @default("PENDING") // Added to match API
@@ -298,30 +331,33 @@ model Order {
   updatedAt     DateTime    @updatedAt
 
   // Relations
-  organization  Organization @relation(fields: [organizationId], references: [id])
-  organizationId String      @db.ObjectId
-  customer      Customer @relation(fields: [customerId], references: [id])
-  customerId    String      @db.ObjectId
-  createdBy     User     @relation("OrderCreatedBy", fields: [createdById], references: [id])
-  createdById   String   @db.ObjectId
-  updatedBy     User?    @relation("OrderUpdatedBy", fields: [updatedById], references: [id])
-  updatedById   String?  @db.ObjectId
-  items         OrderItem[]
-  payments      Payment[]
-  shipments     Shipment[]
-  activities    OrderActivity[]
-  paymentIntents PaymentIntent[]
-  whatsAppMessages WhatsAppMessage[]
+  organization       Organization        @relation(fields: [organizationId], references: [id])
+  organizationId     String              @db.ObjectId
+  customer           Customer            @relation(fields: [customerId], references: [id])
+  customerId         String              @db.ObjectId
+  createdBy          User                @relation("OrderCreatedBy", fields: [createdById], references: [id])
+  createdById        String              @db.ObjectId
+  updatedBy          User?               @relation("OrderUpdatedBy", fields: [updatedById], references: [id])
+  updatedById        String?             @db.ObjectId
+  items              OrderItem[]
+  payments           Payment[]
+  shipments          Shipment[]
+  activities         OrderActivity[]
+  paymentIntents     PaymentIntent[]
+  whatsAppMessages   WhatsAppMessage[]
+  inventoryMovements InventoryMovement[]
+  courierDeliveries  CourierDelivery[]
+  supportTickets     SupportTicket[]
 
   @@map("orders")
 }
 
 model OrderItem {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  quantity  Int
-  price     Float
-  total     Float
-  metadata  Json?
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  quantity Int
+  price    Float
+  total    Float
+  metadata Json?
 
   // Relations
   order     Order   @relation(fields: [orderId], references: [id])
@@ -333,134 +369,139 @@ model OrderItem {
 }
 
 model OrderActivity {
-  id         String        @id @default(auto()) @map("_id") @db.ObjectId
-  type       OrderActivityType
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  type        OrderActivityType
   description String
-  metadata   Json?
-  createdAt  DateTime      @default(now())
+  metadata    Json?
+  createdAt   DateTime          @default(now())
 
   // Relations
-  order      Order @relation(fields: [orderId], references: [id])
-  orderId    String @db.ObjectId
+  order   Order  @relation(fields: [orderId], references: [id])
+  orderId String @db.ObjectId
 
   @@map("order_activities")
 }
 
 // Payment System
 model Payment {
-  id            String        @id @default(auto()) @map("_id") @db.ObjectId
-  amount        Float
-  currency      String        @default("USD")
-  method        String        // Changed from PaymentMethod enum to String to match API usage
-  status        PaymentStatus @default(PENDING)
-  gateway       String?
-  gatewayId     String?
-  metadata      Json?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  amount    Float
+  currency  String        @default("USD")
+  method    String // Changed from PaymentMethod enum to String to match API usage
+  status    PaymentStatus @default(PENDING)
+  gateway   String?
+  gatewayId String?
+  metadata  Json?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   // Relations
-  organization  Organization @relation(fields: [organizationId], references: [id])
-  organizationId String      @db.ObjectId
-  order         Order?       @relation(fields: [orderId], references: [id])
-  orderId       String?      @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
+  order          Order?       @relation(fields: [orderId], references: [id])
+  orderId        String?      @db.ObjectId
 
   @@map("payments")
 }
 
 // Shipping & Delivery
 model Courier {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  code        String
-  apiKey      String?
-  apiSecret   String?
-  isActive    Boolean  @default(true)
-  settings    Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  code      String
+  apiKey    String?
+  apiSecret String?
+  isActive  Boolean  @default(true)
+  settings  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  shipments     Shipment[]
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  organizationId String            @db.ObjectId
+  shipments      Shipment[]
+  deliveries     CourierDelivery[]
+  ratings        CourierRating[]
 
   @@unique([organizationId, code])
   @@map("couriers")
 }
 
 model Shipment {
-  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
   trackingNumber String?
-  status        ShipmentStatus @default(PENDING)
-  shippedAt     DateTime?
-  deliveredAt   DateTime?
-  metadata      Json?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  status         ShipmentStatus @default(PENDING)
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   // Relations
-  order         Order    @relation(fields: [orderId], references: [id])
-  orderId       String   @db.ObjectId
-  courier       Courier? @relation(fields: [courierId], references: [id])
-  courierId     String?  @db.ObjectId
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   String   @db.ObjectId
+  courier   Courier? @relation(fields: [courierId], references: [id])
+  courierId String?  @db.ObjectId
 
   @@map("shipments")
 }
 
 // Warehouse Management
 model Warehouse {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  address     String?
-  isActive    Boolean  @default(true)
-  settings    Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  address   String?
+  isActive  Boolean  @default(true)
+  settings  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  organizationId String              @db.ObjectId
+  movements      InventoryMovement[]
+  iotDevices     IoTDevice[]
 
   @@map("warehouses")
 }
 
 // Chat & Communication
 model ChatMessage {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
   content   String
-  type      MessageType @default(TEXT)
+  type      MessageType      @default(TEXT)
   direction MessageDirection
-  status    MessageStatus @default(SENT)
+  status    MessageStatus    @default(SENT)
   metadata  Json?
-  createdAt DateTime @default(now())
+  createdAt DateTime         @default(now())
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  customer       Customer @relation(fields: [customerId], references: [id])
-  customerId     String   @db.ObjectId
-  assignedTo     User?    @relation(fields: [assignedToId], references: [id])
-  assignedToId   String?  @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
+  customer       Customer     @relation(fields: [customerId], references: [id])
+  customerId     String       @db.ObjectId
+  assignedTo     User?        @relation(fields: [assignedToId], references: [id])
+  assignedToId   String?      @db.ObjectId
 
   @@map("chat_messages")
 }
 
 // Marketing & Campaigns
 model Campaign {
-  id          String        @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  type        CampaignType
-  status      CampaignStatus @default(DRAFT)
-  content     String?
-  settings    Json?
-  sentAt      DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  type      CampaignType
+  status    CampaignStatus @default(DRAFT)
+  content   String?
+  settings  Json?
+  sentAt    DateTime?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  organizationId String           @db.ObjectId
+  metrics        CampaignMetric[]
 
   @@map("campaigns")
 }
@@ -477,25 +518,25 @@ model Expense {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
 
   @@map("expenses")
 }
 
 // User Preferences & Settings
 model UserPreference {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  themeConfig String?  // JSON string for theme configuration
-  language    String   @default("en")
-  timezone    String   @default("UTC")
-  notifications Json?  // Notification preferences
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  themeConfig   String? // JSON string for theme configuration
+  language      String   @default("en")
+  timezone      String   @default("UTC")
+  notifications Json? // Notification preferences
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String @db.ObjectId @unique
+  userId String @unique @db.ObjectId
 
   @@map("user_preferences")
 }
@@ -506,7 +547,7 @@ model SearchHistory {
   query        String
   filters      Json?
   resultsCount Int?
-  searchType   String?  // 'products', 'customers', 'orders', 'global'
+  searchType   String? // 'products', 'customers', 'orders', 'global'
   createdAt    DateTime @default(now())
 
   // Relations
@@ -518,35 +559,35 @@ model SearchHistory {
 
 // Workflow Engine
 model Workflow {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  name           String
-  description    String?
-  type           String   // 'order', 'inventory', 'customer', 'custom'
-  isActive       Boolean  @default(true)
-  config         Json?    // Workflow configuration
-  nodes          Json?    // Workflow nodes data
-  connections    Json?    // Workflow connections data
-  triggers       Json?    // Workflow triggers data
-  version        Int      @default(1)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  type        String // 'order', 'inventory', 'customer', 'custom'
+  isActive    Boolean  @default(true)
+  config      Json? // Workflow configuration
+  nodes       Json? // Workflow nodes data
+  connections Json? // Workflow connections data
+  triggers    Json? // Workflow triggers data
+  version     Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId String       @db.ObjectId
-  workflowNodes  WorkflowNode[]
+  organization        Organization         @relation(fields: [organizationId], references: [id])
+  organizationId      String               @db.ObjectId
+  workflowNodes       WorkflowNode[]
   workflowConnections WorkflowConnection[]
-  executions     WorkflowExecution[]
+  executions          WorkflowExecution[]
 
   @@map("workflows")
 }
 
 model WorkflowNode {
-  id       String   @id @default(auto()) @map("_id") @db.ObjectId
-  type     String   // 'trigger', 'action', 'condition', 'delay', 'webhook', 'email', 'sms'
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  type     String // 'trigger', 'action', 'condition', 'delay', 'webhook', 'email', 'sms'
   name     String
-  config   Json?    // Node-specific configuration
-  position Json?    // UI position {x, y}
+  config   Json? // Node-specific configuration
+  position Json? // UI position {x, y}
 
   // Relations
   workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
@@ -556,10 +597,10 @@ model WorkflowNode {
 }
 
 model WorkflowConnection {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  id           String @id @default(auto()) @map("_id") @db.ObjectId
   sourceNodeId String @db.ObjectId
   targetNodeId String @db.ObjectId
-  condition  Json?    // Connection condition
+  condition    Json? // Connection condition
 
   // Relations
   workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
@@ -569,18 +610,18 @@ model WorkflowConnection {
 }
 
 model WorkflowExecution {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  status        String   // 'running', 'completed', 'failed', 'paused'
-  input         Json?    // Input data
-  output        Json?    // Output data
-  data          Json?    // Execution data
-  currentNodeId String?  // Current executing node
-  startedAt     DateTime @default(now())
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  status        String // 'running', 'completed', 'failed', 'paused'
+  input         Json? // Input data
+  output        Json? // Output data
+  data          Json? // Execution data
+  currentNodeId String? // Current executing node
+  startedAt     DateTime  @default(now())
   completedAt   DateTime?
 
   // Relations
-  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-  workflowId String   @db.ObjectId
+  workflow   Workflow      @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflowId String        @db.ObjectId
   logs       WorkflowLog[]
 
   @@map("workflow_executions")
@@ -588,14 +629,14 @@ model WorkflowExecution {
 
 model WorkflowLog {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  level     String   // 'info', 'warning', 'error'
+  level     String // 'info', 'warning', 'error'
   message   String
   data      Json?
   timestamp DateTime @default(now())
 
   // Relations
   execution   WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
-  executionId String             @db.ObjectId
+  executionId String            @db.ObjectId
 
   @@map("workflow_logs")
 }
@@ -605,9 +646,9 @@ model WorkflowTemplate {
   name        String
   description String?
   category    String?
-  config      Json?    // Template configuration
-  definition  Json?    // Template definition
-  tags        Json?    // Template tags
+  config      Json? // Template configuration
+  definition  Json? // Template definition
+  tags        Json? // Template tags
   usageCount  Int      @default(0)
   isPublic    Boolean  @default(false)
   createdAt   DateTime @default(now())
@@ -618,34 +659,34 @@ model WorkflowTemplate {
 
 // Omnichannel Customer Support
 model CustomerConversation {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  channel     String   // 'whatsapp', 'facebook', 'instagram', 'website', 'email', 'sms'
-  status      String   // 'active', 'resolved', 'pending'
-  priority    String   // 'low', 'medium', 'high', 'urgent'
-  tags        String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  channel   String // 'whatsapp', 'facebook', 'instagram', 'website', 'email', 'sms'
+  status    String // 'active', 'resolved', 'pending'
+  priority  String // 'low', 'medium', 'high', 'urgent'
+  tags      String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  customer       Customer   @relation(fields: [customerId], references: [id])
-  customerId     String     @db.ObjectId
-  assignedAgent  User?      @relation(fields: [assignedAgentId], references: [id])
-  assignedAgentId String?   @db.ObjectId
-  messages       ChannelMessage[]
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  organizationId  String           @db.ObjectId
+  customer        Customer         @relation(fields: [customerId], references: [id])
+  customerId      String           @db.ObjectId
+  assignedAgent   User?            @relation(fields: [assignedAgentId], references: [id])
+  assignedAgentId String?          @db.ObjectId
+  messages        ChannelMessage[]
 
   @@map("customer_conversations")
 }
 
 model ChannelMessage {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  channel        String   // 'whatsapp', 'facebook', 'instagram', 'website', 'email', 'sms'
-  message        String
-  timestamp      DateTime @default(now())
-  isIncoming     Boolean  @default(true)
-  status         String   // 'sent', 'delivered', 'read', 'failed'
-  metadata       Json?
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  channel    String // 'whatsapp', 'facebook', 'instagram', 'website', 'email', 'sms'
+  message    String
+  timestamp  DateTime @default(now())
+  isIncoming Boolean  @default(true)
+  status     String // 'sent', 'delivered', 'read', 'failed'
+  metadata   Json?
 
   // Relations
   conversation   CustomerConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -655,17 +696,17 @@ model ChannelMessage {
 }
 
 model ChannelIntegration {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  channel     String   // 'whatsapp', 'facebook', 'instagram', 'email', 'sms'
-  isActive    Boolean  @default(true)
-  config      Json?    // Integration configuration
-  lastSync    DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  channel   String // 'whatsapp', 'facebook', 'instagram', 'email', 'sms'
+  isActive  Boolean  @default(true)
+  config    Json? // Integration configuration
+  lastSync  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
 
   @@unique([organizationId, channel])
   @@map("channel_integrations")
@@ -674,7 +715,7 @@ model ChannelIntegration {
 // Advanced Payment Processing
 model PaymentMethod {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  type        String   // 'card', 'bank_account', 'paypal', 'crypto'
+  type        String // 'card', 'bank_account', 'paypal', 'crypto'
   last4       String?
   brand       String?
   expiryMonth Int?
@@ -685,8 +726,8 @@ model PaymentMethod {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  customerId String   @db.ObjectId
+  customer   Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId String          @db.ObjectId
   intents    PaymentIntent[]
 
   @@map("payment_methods")
@@ -697,73 +738,73 @@ model PaymentIntent {
   stripePaymentIntentId String?  @unique
   amount                Float
   currency              String   @default("USD")
-  status                String   // 'pending', 'processing', 'succeeded', 'failed', 'canceled'
+  status                String // 'pending', 'processing', 'succeeded', 'failed', 'canceled'
   metadata              Json?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
   // Relations
-  customer      Customer      @relation(fields: [customerId], references: [id])
-  customerId    String        @db.ObjectId
-  paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
-  paymentMethodId String?     @db.ObjectId
-  order         Order?        @relation(fields: [orderId], references: [id])
-  orderId       String?       @db.ObjectId
+  customer        Customer       @relation(fields: [customerId], references: [id])
+  customerId      String         @db.ObjectId
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  paymentMethodId String?        @db.ObjectId
+  order           Order?         @relation(fields: [orderId], references: [id])
+  orderId         String?        @db.ObjectId
 
   @@map("payment_intents")
 }
 
 model Subscription {
-  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
-  stripeSubscriptionId String? @unique
-  status              String   // 'active', 'canceled', 'past_due', 'unpaid'
-  currentPeriodStart  DateTime
-  currentPeriodEnd    DateTime
-  cancelAtPeriodEnd   Boolean  @default(false)
-  metadata            Json?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  stripeSubscriptionId String?  @unique
+  status               String // 'active', 'canceled', 'past_due', 'unpaid'
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean  @default(false)
+  metadata             Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   // Relations
-  customer   Customer @relation(fields: [customerId], references: [id])
-  customerId String   @db.ObjectId
+  customer   Customer  @relation(fields: [customerId], references: [id])
+  customerId String    @db.ObjectId
   invoices   Invoice[]
 
   @@map("subscriptions")
 }
 
 model Invoice {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  amount      Float
-  currency    String   @default("USD")
-  status      String   // 'draft', 'open', 'paid', 'void', 'uncollectible'
-  dueDate     DateTime?
-  metadata    Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  amount    Float
+  currency  String    @default("USD")
+  status    String // 'draft', 'open', 'paid', 'void', 'uncollectible'
+  dueDate   DateTime?
+  metadata  Json?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   // Relations
-  customer      Customer     @relation(fields: [customerId], references: [id])
-  customerId    String       @db.ObjectId
-  subscription  Subscription? @relation(fields: [subscriptionId], references: [id])
-  subscriptionId String?     @db.ObjectId
+  customer       Customer      @relation(fields: [customerId], references: [id])
+  customerId     String        @db.ObjectId
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  subscriptionId String?       @db.ObjectId
 
   @@map("invoices")
 }
 
 // Social Commerce Integration
 model SocialPlatform {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String   // 'facebook', 'instagram', 'tiktok', 'pinterest', 'twitter'
-  isActive    Boolean  @default(true)
-  config      Json?    // Platform configuration
-  lastSync    DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String // 'facebook', 'instagram', 'tiktok', 'pinterest', 'twitter'
+  isActive  Boolean  @default(true)
+  config    Json? // Platform configuration
+  lastSync  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  organizationId String       @db.ObjectId
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  organizationId String          @db.ObjectId
   socialProducts SocialProduct[]
   socialPosts    SocialPost[]
 
@@ -773,8 +814,8 @@ model SocialPlatform {
 
 model SocialProduct {
   id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  platformProductId String   // External platform product ID
-  status            String   // 'active', 'inactive', 'syncing', 'error'
+  platformProductId String // External platform product ID
+  status            String // 'active', 'inactive', 'syncing', 'error'
   metadata          Json?
   lastSync          DateTime @default(now())
   createdAt         DateTime @default(now())
@@ -793,18 +834,18 @@ model SocialProduct {
 }
 
 model SocialPost {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  type        String   // 'product', 'story', 'reel', 'post'
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  type        String // 'product', 'story', 'reel', 'post'
   content     String
   mediaUrls   String[]
   productIds  String[]
   scheduledAt DateTime?
   publishedAt DateTime?
-  status      String   // 'draft', 'scheduled', 'published', 'failed'
-  engagement  Json?    // {likes, comments, shares, clicks}
+  status      String // 'draft', 'scheduled', 'published', 'failed'
+  engagement  Json? // {likes, comments, shares, clicks}
   metadata    Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Relations
   platform   SocialPlatform @relation(fields: [platformId], references: [id], onDelete: Cascade)
@@ -815,41 +856,42 @@ model SocialPost {
 
 // Bulk Operations
 model BulkOperation {
-  id               String   @id @default(auto()) @map("_id") @db.ObjectId
-  type             String   // 'import', 'export'
-  entity           String   // 'products', 'customers', 'orders', 'inventory'
-  status           String   // 'pending', 'processing', 'completed', 'failed'
-  totalRecords     Int      @default(0)
-  processedRecords Int      @default(0)
-  successRecords   Int      @default(0)
-  failedRecords    Int      @default(0)
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  name             String
+  type             String // 'import', 'export', 'update'
+  entity           String // 'products', 'customers', 'orders', 'inventory'
+  status           String // 'pending', 'processing', 'completed', 'failed'
+  totalRecords     Int       @default(0)
+  processedRecords Int       @default(0)
+  successRecords   Int       @default(0)
+  failedRecords    Int       @default(0)
   fileUrl          String?
   errors           String[]
   metadata         Json?
-  createdAt        DateTime @default(now())
+  createdAt        DateTime  @default(now())
   completedAt      DateTime?
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
 
   @@map("bulk_operations")
 }
 
 // Sync and Integration Models
 model SyncConflict {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  entityType  String
-  entityId    String
-  conflicts   Json
-  resolved    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  resolvedAt  DateTime?
-  resolvedBy  String?  @db.ObjectId
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  entityType String
+  entityId   String
+  conflicts  Json
+  resolved   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+  resolvedBy String?   @db.ObjectId
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
 
   @@map("sync_conflicts")
 }
@@ -865,31 +907,31 @@ model WhatsAppIntegration {
   updatedAt     DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
 
   @@map("whatsapp_integrations")
 }
 
 model WhatsAppMessage {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  from        String
-  to          String
-  type        String
-  content     String
-  timestamp   DateTime
-  status      String   @default("sent")
-  metadata    Json?
-  syncedAt    DateTime?
-  syncSource  String?
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  from       String
+  to         String
+  type       String
+  content    String
+  timestamp  DateTime
+  status     String    @default("sent")
+  metadata   Json?
+  syncedAt   DateTime?
+  syncSource String?
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  customer      Customer?   @relation(fields: [customerId], references: [id])
-  customerId    String?     @db.ObjectId
-  order         Order?      @relation(fields: [orderId], references: [id])
-  orderId       String?     @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
+  customer       Customer?    @relation(fields: [customerId], references: [id])
+  customerId     String?      @db.ObjectId
+  order          Order?       @relation(fields: [orderId], references: [id])
+  orderId        String?      @db.ObjectId
 
   @@map("whatsapp_messages")
 }
@@ -903,30 +945,428 @@ model WhatsAppCatalog {
   lastUpdated DateTime @default(now())
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
 
   @@unique([organizationId])
   @@map("whatsapp_catalogs")
 }
 
 model WooCommerceIntegration {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  siteUrl       String
-  consumerKey   String
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  siteUrl        String
+  consumerKey    String
   consumerSecret String
-  apiVersion    String   @default("wc/v3")
-  isActive      Boolean  @default(true)
-  settings      Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  apiVersion     String   @default("wc/v3")
+  isActive       Boolean  @default(true)
+  settings       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
 
   @@unique([organizationId])
   @@map("woocommerce_integrations")
+}
+
+// Shopify Integration
+model ShopifyIntegration {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String    @db.ObjectId
+  shopDomain     String
+  accessToken    String
+  apiKey         String
+  apiSecret      String
+  webhookSecret  String?
+  isActive       Boolean   @default(true)
+  lastSync       DateTime?
+  syncProducts   Boolean   @default(true)
+  syncOrders     Boolean   @default(true)
+  syncInventory  Boolean   @default(true)
+  settings       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  syncLogs     ShopifySyncLog[]
+
+  @@unique([organizationId])
+  @@map("shopify_integrations")
+}
+
+model ShopifySyncLog {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  integrationId    String    @db.ObjectId
+  syncType         String // 'product', 'order', 'inventory', 'customer'
+  status           String // 'success', 'failed', 'partial'
+  recordsProcessed Int       @default(0)
+  recordsFailed    Int       @default(0)
+  errorMessage     String?
+  metadata         Json?
+  startedAt        DateTime  @default(now())
+  completedAt      DateTime?
+
+  integration ShopifyIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@map("shopify_sync_logs")
+}
+
+// Facebook Integration
+model FacebookIntegration {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String    @db.ObjectId
+  pageId         String
+  accessToken    String
+  catalogId      String?
+  isActive       Boolean   @default(true)
+  lastSync       DateTime?
+  settings       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId])
+  @@map("facebook_integrations")
+}
+
+// Instagram Integration
+model InstagramIntegration {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId    String    @db.ObjectId
+  businessAccountId String
+  accessToken       String
+  catalogId         String?
+  isActive          Boolean   @default(true)
+  lastSync          DateTime?
+  settings          Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId])
+  @@map("instagram_integrations")
+}
+
+// TikTok Integration
+model TikTokIntegration {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String    @db.ObjectId
+  shopId         String
+  accessToken    String
+  apiKey         String?
+  apiSecret      String?
+  isActive       Boolean   @default(true)
+  lastSync       DateTime?
+  settings       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId])
+  @@map("tiktok_integrations")
+}
+
+// Pinterest Integration
+model PinterestIntegration {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String    @db.ObjectId
+  boardId        String?
+  accessToken    String
+  isActive       Boolean   @default(true)
+  lastSync       DateTime?
+  settings       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId])
+  @@map("pinterest_integrations")
+}
+
+// Magento Integration
+model MagentoIntegration {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String    @db.ObjectId
+  baseUrl        String
+  accessToken    String
+  consumerKey    String?
+  consumerSecret String?
+  isActive       Boolean   @default(true)
+  lastSync       DateTime?
+  settings       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId])
+  @@map("magento_integrations")
+}
+
+// Accounting Integration
+model AccountingIntegration {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String    @db.ObjectId
+  provider       String // 'quickbooks', 'xero'
+  accessToken    String
+  refreshToken   String?
+  companyId      String?
+  isActive       Boolean   @default(true)
+  lastSync       DateTime?
+  settings       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, provider])
+  @@map("accounting_integrations")
+}
+
+// CRM Integration
+model CRMIntegration {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String    @db.ObjectId
+  provider       String // 'salesforce', 'hubspot'
+  accessToken    String
+  refreshToken   String?
+  instanceUrl    String? // For Salesforce
+  apiKey         String? // For HubSpot
+  isActive       Boolean   @default(true)
+  lastSync       DateTime?
+  settings       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, provider])
+  @@map("crm_integrations")
+}
+
+// Currency Settings
+model CurrencySettings {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId       String   @unique @db.ObjectId
+  defaultCurrency      String   @default("USD")
+  supportedCurrencies  String[]
+  exchangeRateProvider String   @default("openexchangerates")
+  autoUpdate           Boolean  @default(true)
+  lastUpdated          DateTime @default(now())
+  rates                Json? // { USD: 1, EUR: 0.85, ... }
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@map("currency_settings")
+}
+
+// Voice Commands
+model VoiceCommand {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String   @db.ObjectId
+  userId         String?  @db.ObjectId
+  command        String
+  intent         String // 'search', 'order', 'support', 'navigation'
+  result         Json?
+  confidence     Float?
+  processedAt    DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  @@map("voice_commands")
+}
+
+// AR Models
+model ARModel {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId    String   @db.ObjectId
+  modelUrl     String
+  modelType    String // 'gltf', 'glb', 'obj'
+  thumbnailUrl String?
+  isActive     Boolean  @default(true)
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([productId])
+  @@map("ar_models")
+}
+
+// Gamification
+model Achievement {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String   @db.ObjectId
+  name           String
+  description    String
+  icon           String?
+  points         Int      @default(0)
+  category       String // 'purchase', 'referral', 'engagement', 'milestone'
+  criteria       Json? // Conditions to unlock
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @db.ObjectId
+  achievementId String   @db.ObjectId
+  unlockedAt    DateTime @default(now())
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+model Leaderboard {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String    @db.ObjectId
+  name           String
+  period         String // 'daily', 'weekly', 'monthly', 'all-time'
+  type           String // 'points', 'purchases', 'referrals'
+  entries        Json? // Leaderboard entries
+  startDate      DateTime
+  endDate        DateTime?
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("leaderboards")
+}
+
+model Reward {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String    @db.ObjectId
+  name           String
+  description    String
+  type           String // 'discount', 'points', 'free_shipping', 'gift'
+  value          Json? // Reward value/criteria
+  pointsRequired Int?
+  isActive       Boolean   @default(true)
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("rewards")
+}
+
+// Blockchain
+model BlockchainTransaction {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String   @db.ObjectId
+  type           String // 'payment', 'supply_chain', 'nft', 'order'
+  blockchain     String // 'ethereum', 'polygon', 'binance'
+  txHash         String   @unique
+  fromAddress    String?
+  toAddress      String?
+  amount         String?
+  status         String // 'pending', 'confirmed', 'failed'
+  blockNumber    Int?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("blockchain_transactions")
+}
+
+// IoT
+model IoTDevice {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String    @db.ObjectId
+  warehouseId    String?   @db.ObjectId
+  deviceId       String    @unique
+  deviceType     String // 'shelf', 'sensor', 'gateway'
+  name           String
+  location       String?
+  isActive       Boolean   @default(true)
+  lastSeen       DateTime?
+  metadata       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  warehouse Warehouse?  @relation(fields: [warehouseId], references: [id])
+  sensors   IoTSensor[]
+
+  @@map("iot_devices")
+}
+
+model IoTSensor {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  deviceId     String    @db.ObjectId
+  sensorType   String // 'weight', 'motion', 'temperature', 'humidity'
+  productId    String?   @db.ObjectId
+  currentValue Float?
+  threshold    Float?
+  unit         String?
+  lastReading  DateTime?
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  device  IoTDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  product Product?  @relation(fields: [productId], references: [id])
+
+  @@unique([deviceId, sensorType])
+  @@map("iot_sensors")
+}
+
+// Multi-Language Content
+model MultiLanguageContent {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String   @db.ObjectId
+  entityType     String // 'product', 'category', 'page'
+  entityId       String   @db.ObjectId
+  language       String
+  field          String // 'name', 'description', 'title'
+  content        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([entityType, entityId, language, field])
+  @@map("multi_language_content")
+}
+
+// ML Training
+model MLTrainingJob {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String    @db.ObjectId
+  modelType      String // 'recommendation', 'forecasting', 'classification', 'regression'
+  status         String // 'training', 'completed', 'failed'
+  config         Json?
+  accuracy       Float?
+  modelPath      String?
+  errorMessage   String?
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("ml_training_jobs")
+}
+
+// Security Events
+model SecurityEvent {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String    @db.ObjectId
+  type           String // 'suspicious_login', 'brute_force', 'sql_injection', 'xss', 'rate_limit_exceeded'
+  severity       String // 'low', 'medium', 'high', 'critical'
+  source         String?
+  details        Json?
+  resolved       Boolean   @default(false)
+  resolvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@map("security_events")
 }
 
 // Enums
@@ -1048,4 +1488,376 @@ enum CampaignStatus {
   SENDING
   SENT
   CANCELLED
-} 
+}
+
+// Reports System
+model Report {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  type           String // 'SALES', 'INVENTORY', 'CUSTOMER', 'FINANCIAL', 'OPERATIONAL'
+  status         String // 'GENERATING', 'READY', 'FAILED'
+  format         String // 'PDF', 'EXCEL', 'CSV'
+  size           String?
+  fileUrl        String?
+  parameters     Json?
+  organizationId String   @db.ObjectId
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@map("reports")
+}
+
+model ReportTemplate {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  description    String?
+  type           String // 'SALES', 'INVENTORY', 'CUSTOMER', 'FINANCIAL', 'OPERATIONAL', 'CUSTOM'
+  category       String?
+  parameters     String[]
+  isCustomizable Boolean  @default(true)
+  organizationId String?  @db.ObjectId // null for system templates
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
+  @@map("report_templates")
+}
+
+// Campaign Templates
+model CampaignTemplate {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  type           CampaignType
+  content        String
+  variables      String[]
+  organizationId String?      @db.ObjectId // null for system templates
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relations
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
+  @@map("campaign_templates")
+}
+
+// Campaign Metrics
+model CampaignMetric {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  campaignId String   @db.ObjectId
+  sent       Int      @default(0)
+  delivered  Int      @default(0)
+  opened     Int      @default(0)
+  clicked    Int      @default(0)
+  bounced    Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId])
+  @@map("campaign_metrics")
+}
+
+// Bulk Operation Templates
+model BulkOperationTemplate {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  description    String
+  type           String // 'IMPORT', 'EXPORT', 'UPDATE'
+  entity         String // 'PRODUCTS', 'CUSTOMERS', 'ORDERS', 'INVENTORY', 'EXPENSES', 'CUSTOM'
+  fields         String[]
+  sampleFile     String?
+  organizationId String?  @db.ObjectId // null for system templates
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
+  @@map("bulk_operation_templates")
+}
+
+// Inventory Movements
+model InventoryMovement {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId    String   @db.ObjectId
+  warehouseId  String?  @db.ObjectId
+  type         String // 'in', 'out', 'transfer', 'adjustment'
+  quantity     Int
+  fromLocation String?
+  toLocation   String?
+  reason       String?
+  orderId      String?  @db.ObjectId
+  createdById  String   @db.ObjectId
+  createdAt    DateTime @default(now())
+
+  // Relations
+  product   Product    @relation(fields: [productId], references: [id])
+  warehouse Warehouse? @relation(fields: [warehouseId], references: [id])
+  order     Order?     @relation(fields: [orderId], references: [id])
+  createdBy User       @relation("InventoryMovementCreatedBy", fields: [createdById], references: [id])
+
+  @@map("inventory_movements")
+}
+
+// Courier Deliveries
+model CourierDelivery {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  courierId      String    @db.ObjectId
+  orderId        String    @db.ObjectId
+  trackingNumber String?
+  status         String // 'assigned', 'picked_up', 'in_transit', 'delivered', 'failed'
+  earnings       Float? // Delivery fee/earnings
+  distance       Float? // Distance in km
+  deliveredAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  courier Courier         @relation(fields: [courierId], references: [id])
+  order   Order           @relation(fields: [orderId], references: [id])
+  ratings CourierRating[]
+
+  @@map("courier_deliveries")
+}
+
+// Courier Ratings
+model CourierRating {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  courierId  String   @db.ObjectId
+  deliveryId String?  @db.ObjectId
+  rating     Int // 1-5 stars
+  comment    String?
+  customerId String?  @db.ObjectId
+  createdAt  DateTime @default(now())
+
+  // Relations
+  courier  Courier          @relation(fields: [courierId], references: [id])
+  delivery CourierDelivery? @relation(fields: [deliveryId], references: [id])
+  customer Customer?        @relation(fields: [customerId], references: [id])
+
+  @@map("courier_ratings")
+}
+
+// Supplier Management
+model Supplier {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String   @db.ObjectId
+  name           String
+  contactName    String?
+  email          String?
+  phone          String?
+  address        String?
+  city           String?
+  country        String?
+  website        String?
+  rating         Float?   @default(0)
+  isActive       Boolean  @default(true)
+  notes          String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  purchaseOrders PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+// Purchase Orders
+model PurchaseOrder {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String    @db.ObjectId
+  supplierId     String    @db.ObjectId
+  orderNumber    String    @unique
+  status         String // 'DRAFT', 'PENDING', 'CONFIRMED', 'RECEIVED', 'CANCELLED'
+  items          Json? // Array of {productId, quantity, price, etc.}
+  totalAmount    Float
+  currency       String    @default("USD")
+  expectedDate   DateTime?
+  receivedDate   DateTime?
+  notes          String?
+  metadata       Json?
+  createdBy      String    @db.ObjectId
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  supplier     Supplier     @relation(fields: [supplierId], references: [id])
+
+  @@map("purchase_orders")
+}
+
+// Customer Offers
+model CustomerOffer {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String   @db.ObjectId
+  customerId     String   @db.ObjectId
+  offerType      String // 'DISCOUNT', 'BUNDLE', 'UPSELL', 'CROSS_SELL'
+  offerData      Json? // Discount percentage, product IDs, etc.
+  status         String // 'DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED'
+  validFrom      DateTime
+  validUntil     DateTime
+  metadata       Json?
+  createdBy      String   @db.ObjectId
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  customer     Customer     @relation(fields: [customerId], references: [id])
+
+  @@map("customer_offers")
+}
+
+// Customer Segments
+model CustomerSegment {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String   @db.ObjectId
+  name           String
+  description    String?
+  criteria       Json? // Segment criteria (e.g., {totalSpent: {gte: 1000}, tags: ['VIP']})
+  customerCount  Int      @default(0)
+  isActive       Boolean  @default(true)
+  metadata       Json?
+  createdBy      String   @db.ObjectId
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@map("customer_segments")
+}
+
+// Product Reviews
+model Review {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String   @db.ObjectId
+  productId      String   @db.ObjectId
+  customerId     String?  @db.ObjectId
+  rating         Int // 1-5
+  title          String?
+  content        String
+  isVerified     Boolean  @default(false)
+  isPublished    Boolean  @default(false)
+  helpfulCount   Int      @default(0)
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  product      Product      @relation(fields: [productId], references: [id])
+  customer     Customer?    @relation(fields: [customerId], references: [id])
+
+  @@map("reviews")
+}
+
+// Support Tickets
+model SupportTicket {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String    @db.ObjectId
+  customerId     String?   @db.ObjectId
+  orderId        String?   @db.ObjectId
+  ticketNumber   String    @unique
+  subject        String
+  description    String
+  status         String // 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'
+  priority       String // 'LOW', 'MEDIUM', 'HIGH', 'URGENT'
+  assignedToId   String?   @db.ObjectId
+  category       String? // 'REFUND', 'SHIPPING', 'PRODUCT', 'ACCOUNT', 'OTHER'
+  tags           String[]
+  metadata       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  resolvedAt     DateTime?
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+  customer     Customer?    @relation(fields: [customerId], references: [id])
+  order        Order?       @relation(fields: [orderId], references: [id])
+  assignedTo   User?        @relation(fields: [assignedToId], references: [id])
+
+  @@map("support_tickets")
+}
+
+// Notifications
+model Notification {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String?   @db.ObjectId
+  userId         String?   @db.ObjectId
+  type           String // 'ORDER', 'PAYMENT', 'SHIPMENT', 'ALERT', 'SYSTEM', 'URGENT_CHAT'
+  title          String
+  message        String
+  link           String?
+  isRead         Boolean   @default(false)
+  priority       String // 'LOW', 'MEDIUM', 'HIGH', 'URGENT'
+  metadata       Json?
+  createdAt      DateTime  @default(now())
+  readAt         DateTime?
+
+  // Relations
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  user         User?         @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@index([organizationId, createdAt])
+  @@map("notifications")
+}
+
+// KPI Targets
+model KpiTarget {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId String    @db.ObjectId
+  kpiName        String // 'REVENUE', 'ORDERS', 'CUSTOMERS', 'AOV', etc.
+  targetValue    Float
+  period         String // 'DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY'
+  startDate      DateTime
+  endDate        DateTime?
+  currentValue   Float?    @default(0)
+  isActive       Boolean   @default(true)
+  metadata       Json?
+  createdBy      String    @db.ObjectId
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@map("kpi_targets")
+}
+
+// Scheduled Reports
+model ScheduledReport {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  organizationId   String    @db.ObjectId
+  reportTemplateId String?   @db.ObjectId
+  name             String
+  type             String // 'SALES', 'INVENTORY', 'CUSTOMER', 'FINANCIAL', 'OPERATIONAL'
+  schedule         String // 'DAILY', 'WEEKLY', 'MONTHLY', 'CUSTOM'
+  cronExpression   String? // For custom schedules
+  format           String // 'PDF', 'EXCEL', 'CSV'
+  recipients       String[] // Email addresses
+  parameters       Json?
+  isActive         Boolean   @default(true)
+  lastRunAt        DateTime?
+  nextRunAt        DateTime?
+  metadata         Json?
+  createdBy        String    @db.ObjectId
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@map("scheduled_reports")
+}

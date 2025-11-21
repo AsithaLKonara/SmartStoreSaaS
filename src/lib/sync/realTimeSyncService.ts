@@ -123,11 +123,9 @@ export class RealTimeSyncService extends EventEmitter {
 
   private validateEvent(event: SyncEvent): boolean {
     return !!(
-      event.id &&
       event.type &&
       event.action &&
-      event.data &&
-      event.source &&
+      event.entityId &&
       event.organizationId
     );
   }
@@ -162,7 +160,7 @@ export class RealTimeSyncService extends EventEmitter {
     const conflictRecord: SyncConflict = {
       id: `conflict_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       entityType: event.type,
-      entityId: event.data.id || event.data._id,
+      entityId: event.entityId,
       conflicts: conflicts.map(c => ({
         field: c.field,
         localValue: c.localValue,
@@ -225,8 +223,6 @@ export class RealTimeSyncService extends EventEmitter {
           data: {
             ...data,
             organizationId,
-            syncedAt: new Date(),
-            syncSource: event.source
           }
         });
         break;
@@ -235,8 +231,6 @@ export class RealTimeSyncService extends EventEmitter {
           where: { id: data.id, organizationId },
           data: {
             ...data,
-            syncedAt: new Date(),
-            syncSource: event.source
           }
         });
         break;
@@ -257,8 +251,6 @@ export class RealTimeSyncService extends EventEmitter {
           data: {
             ...data,
             organizationId,
-            syncedAt: new Date(),
-            syncSource: event.source
           }
         });
         break;
@@ -267,8 +259,6 @@ export class RealTimeSyncService extends EventEmitter {
           where: { id: data.id, organizationId },
           data: {
             ...data,
-            syncedAt: new Date(),
-            syncSource: event.source
           }
         });
         break;
@@ -289,8 +279,6 @@ export class RealTimeSyncService extends EventEmitter {
           data: {
             ...data,
             organizationId,
-            syncedAt: new Date(),
-            syncSource: event.source
           }
         });
         break;
@@ -299,8 +287,6 @@ export class RealTimeSyncService extends EventEmitter {
           where: { id: data.id, organizationId },
           data: {
             ...data,
-            syncedAt: new Date(),
-            syncSource: event.source
           }
         });
         break;
@@ -321,8 +307,6 @@ export class RealTimeSyncService extends EventEmitter {
           where: { id: data.productId, organizationId },
           data: {
             stockQuantity: data.quantity,
-            syncedAt: new Date(),
-            syncSource: event.source
           }
         });
         break;
@@ -338,8 +322,6 @@ export class RealTimeSyncService extends EventEmitter {
           data: {
             ...data,
             organizationId,
-            syncedAt: new Date(),
-            syncSource: event.source
           }
         });
         break;

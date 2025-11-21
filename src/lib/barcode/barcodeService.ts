@@ -1,3 +1,4 @@
+// @ts-ignore - quagga types not available
 import Quagga from 'quagga';
 import { prisma } from '@/lib/prisma';
 
@@ -252,12 +253,11 @@ export class BarcodeService {
     try {
       const product = await prisma.product.findFirst({
         where: {
-          barcode,
+          sku: barcode, // Use sku field or check dimensions metadata
           organizationId,
         },
         include: {
           category: true,
-          images: true,
         },
       });
 
@@ -270,11 +270,11 @@ export class BarcodeService {
         name: product.name,
         description: product.description || undefined,
         price: product.price,
-        category: product.category?.name,
-        brand: product.brand || undefined,
-        manufacturer: product.manufacturer || undefined,
-        images: product.images.map(img => img.url),
-        specifications: product.specifications as Record<string, any> || {},
+        category: product.categoryId ? (await prisma.category.findUnique({ where: { id: product.categoryId }, select: { name: true } }))?.name : undefined,
+        brand: (product.dimensions as any)?.brand || undefined, // Store in dimensions metadata
+        manufacturer: (product.dimensions as any)?.manufacturer || undefined, // Store in dimensions metadata
+        images: product.images, // images is already string[]
+        specifications: (product.dimensions as any)?.specifications as Record<string, any> || {}, // Store in dimensions metadata
         source: 'internal',
       };
     } catch (error) {
@@ -440,23 +440,29 @@ export class BarcodeService {
 
   private async cacheProductLookup(barcode: string, product: ProductLookup, organizationId: string): Promise<void> {
     try {
-      await prisma.productLookupCache.upsert({
-        where: {
-          barcode_organizationId: {
-            barcode,
-            organizationId,
-          },
-        },
-        update: {
-          productData: product as any,
+      // Store lookup cache in Organization settings instead of separate model
+      const organization = await prisma.organization.findUnique({
+        where: { id: organizationId },
+      });
+
+      if (organization) {
+        const settings = (organization.settings as any) || {};
+        const productLookupCache = settings.productLookupCache || {};
+        productLookupCache[barcode] = {
+          productData: product,
           lastUpdated: new Date(),
-        },
-        create: {
-          barcode,
-          organizationId,
-          productData: product as any,
+        };
+
+        await prisma.organization.update({
+          where: { id: organizationId },
+          data: {
+            settings: {
+              ...settings,
+              productLookupCache,
+            } as any,
         },
       });
+      }
     } catch (error) {
       console.error('Error caching product lookup:', error);
     }

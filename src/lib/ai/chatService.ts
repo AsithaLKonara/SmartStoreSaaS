@@ -28,13 +28,15 @@ interface OrderFromChat {
 }
 
 export class AIChatService {
-  private openai: OpenAI;
+  private openai: OpenAI | null;
   private ollamaBaseUrl: string;
 
   constructor() {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    this.openai = process.env.OPENAI_API_KEY 
+      ? new OpenAI({
+          apiKey: process.env.OPENAI_API_KEY,
+        })
+      : null;
     this.ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
   }
 
@@ -53,6 +55,9 @@ export class AIChatService {
         - reason: string
       `;
 
+      if (!this.openai) {
+        throw new Error('OpenAI API key not configured');
+      }
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
@@ -100,6 +105,9 @@ export class AIChatService {
         Return JSON array with product recommendations.
       `;
 
+      if (!this.openai) {
+        throw new Error('OpenAI API key not configured');
+      }
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
@@ -132,6 +140,9 @@ export class AIChatService {
         - notes: string (optional)
       `;
 
+      if (!this.openai) {
+        throw new Error('OpenAI API key not configured');
+      }
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
@@ -171,6 +182,9 @@ export class AIChatService {
         Provide a helpful, accurate response. If the question isn't covered in FAQs, say so politely.
       `;
 
+      if (!this.openai) {
+        throw new Error('OpenAI API key not configured');
+      }
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
@@ -218,6 +232,9 @@ export class AIChatService {
         Be helpful and informative.
       `;
 
+      if (!this.openai) {
+        throw new Error('OpenAI API key not configured');
+      }
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
@@ -244,6 +261,9 @@ export class AIChatService {
         - overall: "positive" | "negative" | "neutral"
       `;
 
+      if (!this.openai) {
+        throw new Error('OpenAI API key not configured');
+      }
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
@@ -280,6 +300,9 @@ export class AIChatService {
         - reason: string
       `;
 
+      if (!this.openai) {
+        throw new Error('OpenAI API key not configured');
+      }
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],

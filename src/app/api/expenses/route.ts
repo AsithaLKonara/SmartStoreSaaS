@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
@@ -22,14 +22,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { title, description, amount, category, type, paymentMethod, vendor, tags } = body;
 
     if (!title || !description || !amount || !category || !type || !paymentMethod) {
@@ -38,16 +38,18 @@ export async function POST(request: NextRequest) {
 
     const expense = await prisma.expense.create({
       data: {
-        title,
-        description,
+        description: title || description || 'Expense',
         amount: parseFloat(amount),
-        category: category as any,
-        type: type as any,
-        paymentMethod: paymentMethod as any,
-        vendor,
-        tags: tags || [],
-        status: 'PENDING',
+        category: category || null,
+        date: new Date(),
         organizationId: session.user.organizationId,
+        metadata: {
+          type,
+          paymentMethod,
+          vendor,
+          tags: tags || [],
+          status: 'PENDING',
+        },
       },
     });
 

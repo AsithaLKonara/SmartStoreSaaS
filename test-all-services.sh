@@ -40,7 +40,7 @@ check_docker() {
 # Run frontend tests
 run_frontend_tests() {
     print_status "Running frontend tests..."
-    cd /c/Users/asith/Documents/SmartStore
+    cd "$(dirname "$0")"
     
     # Install dependencies if needed
     if [ ! -d "node_modules" ]; then
@@ -71,7 +71,7 @@ run_microservice_tests() {
     
     # Test User Service
     print_status "Testing User Service..."
-    cd /c/Users/asith/Documents/SmartStore/services/user-service
+    cd "$(dirname "$0")/services/user-service"
     if npm test -- --passWithNoTests --coverage; then
         print_success "User Service tests passed"
     else
@@ -80,7 +80,7 @@ run_microservice_tests() {
     
     # Test Product Service
     print_status "Testing Product Service..."
-    cd /c/Users/asith/Documents/SmartStore/services/product-service
+    cd "$(dirname "$0")/services/product-service"
     if npm test -- --passWithNoTests --coverage; then
         print_success "Product Service tests passed"
     else
@@ -89,7 +89,7 @@ run_microservice_tests() {
     
     # Test Order Service
     print_status "Testing Order Service..."
-    cd /c/Users/asith/Documents/SmartStore/services/order-service
+    cd "$(dirname "$0")/services/order-service"
     if npm test -- --passWithNoTests --coverage; then
         print_success "Order Service tests passed"
     else
@@ -98,7 +98,7 @@ run_microservice_tests() {
     
     # Test Payment Service
     print_status "Testing Payment Service..."
-    cd /c/Users/asith/Documents/SmartStore/services/payment-service
+    cd "$(dirname "$0")/services/payment-service"
     if npm test -- --passWithNoTests --coverage; then
         print_success "Payment Service tests passed"
     else
@@ -107,7 +107,7 @@ run_microservice_tests() {
     
     # Test API Gateway
     print_status "Testing API Gateway..."
-    cd /c/Users/asith/Documents/SmartStore/services/api-gateway
+    cd "$(dirname "$0")/services/api-gateway"
     if npm test -- --passWithNoTests --coverage; then
         print_success "API Gateway tests passed"
     else
@@ -118,7 +118,7 @@ run_microservice_tests() {
 # Build and start services
 build_and_start_services() {
     print_status "Building and starting services with Docker..."
-    cd /c/Users/asith/Documents/SmartStore
+    cd "$(dirname "$0")"
     
     # Stop any existing containers
     print_status "Stopping existing containers..."

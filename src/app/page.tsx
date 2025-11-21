@@ -8,8 +8,6 @@ import {
   Users, 
   BarChart3,
   Bot,
-  Zap,
-  Shield,
   Globe
 } from 'lucide-react';
 
@@ -93,8 +91,8 @@ export default function HomePage() {
                       <span className="font-medium text-gray-900">Chat Center</span>
                     </div>
                     <div className="space-y-2">
-                      <div className="bg-white rounded p-2 text-sm">Customer: "I need 2 red mugs under $20"</div>
-                      <div className="bg-blue-100 rounded p-2 text-sm ml-4">AI: "Found 3 options for you..."</div>
+                      <div className="bg-white rounded p-2 text-sm">Customer: &quot;I need 2 red mugs under $20&quot;</div>
+                      <div className="bg-blue-100 rounded p-2 text-sm ml-4">AI: &quot;Found 3 options for you...&quot;</div>
                     </div>
                   </div>
                 </div>

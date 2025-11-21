@@ -1,8 +1,10 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = process.env.OPENAI_API_KEY 
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
 
 export interface InventoryPrediction {
   productId: string;
@@ -58,6 +60,10 @@ export class AIInventoryService {
         
         Return as JSON array with fields: productId, productName, currentStock, predictedDemand, daysUntilStockout, recommendedReorderQuantity, confidence, factors
       `;
+
+      if (!openai) {
+        throw new Error('OpenAI API key not configured');
+      }
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4",
@@ -132,6 +138,10 @@ export class AIInventoryService {
         
         Return as JSON array with fields: supplierId, supplierName, averageDeliveryTime, qualityScore, reliabilityScore, costEffectiveness, recommendations
       `;
+
+      if (!openai) {
+        throw new Error('OpenAI API key not configured');
+      }
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4",
@@ -208,6 +218,10 @@ export class AIInventoryService {
         
         Return as JSON array with optimized pricing recommendations
       `;
+
+      if (!openai) {
+        throw new Error('OpenAI API key not configured');
+      }
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4",

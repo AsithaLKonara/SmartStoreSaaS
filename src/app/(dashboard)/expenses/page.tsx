@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
-  DollarSign, Plus, Search, Filter, Download, Upload, AlertTriangle,
+  DollarSign, Plus, Search, Download, Upload, AlertTriangle,
   CheckCircle, XCircle, Clock, TrendingUp, BarChart3, Settings, Edit,
   Trash2, Eye, Receipt, CreditCard, Banknote, ShoppingCart, Truck,
-  Building2, Users, Calendar, PieChart, LineChart, FileText, Tag
+  Building2, Users, PieChart, LineChart, FileText, Tag
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';

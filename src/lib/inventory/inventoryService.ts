@@ -109,40 +109,91 @@ export interface InventoryReport {
 }
 
 export class InventoryService {
+  // Helper to map InventoryMovement type to StockMovement type
+  private mapMovementType(type: string): StockMovement['type'] {
+    const typeMap: Record<string, StockMovement['type']> = {
+      'in': 'IN',
+      'out': 'OUT',
+      'transfer': 'TRANSFER',
+      'adjustment': 'ADJUSTMENT',
+      'return': 'RETURN',
+      'damage': 'DAMAGE',
+      'expired': 'EXPIRED',
+    };
+    return typeMap[type.toLowerCase()] || 'ADJUSTMENT';
+  }
+
+  // Helper to get active stock alerts from Organization metadata
+  private async getActiveStockAlerts(organizationId: string): Promise<StockAlert[]> {
+    const organization = await prisma.organization.findUnique({
+      where: { id: organizationId },
+    });
+
+    if (!organization) return [];
+
+    const orgSettings = (organization.settings as any) || {};
+    const stockAlerts = orgSettings.stockAlerts || {};
+
+    return Object.values(stockAlerts)
+      .filter((alert: any) => alert.isActive)
+      .map((alert: any) => ({
+        id: alert.id || '',
+        productId: alert.productId,
+        warehouseId: alert.warehouseId,
+        type: alert.type,
+        currentQuantity: alert.currentQuantity || 0,
+        threshold: alert.threshold,
+        severity: alert.severity,
+        isActive: alert.isActive,
+        createdAt: alert.createdAt ? new Date(alert.createdAt) : new Date(),
+        resolvedAt: alert.resolvedAt ? new Date(alert.resolvedAt) : undefined,
+        notificationsSent: alert.notificationsSent || 0,
+        lastNotificationAt: alert.lastNotificationAt ? new Date(alert.lastNotificationAt) : undefined,
+      }));
+  }
   /**
    * Get inventory for a product across all warehouses
    */
   async getProductInventory(productId: string, organizationId: string): Promise<InventoryItem[]> {
     try {
-      const inventory = await prisma.inventory.findMany({
-        where: {
-          productId,
-          product: { organizationId },
-        },
-        include: {
-          product: true,
-          warehouse: true,
-        },
+      // Get product and warehouses
+      const product = await prisma.product.findFirst({
+        where: { id: productId, organizationId },
       });
 
-      return inventory.map(item => ({
-        id: item.id,
-        productId: item.productId,
-        warehouseId: item.warehouseId,
-        sku: item.sku,
-        quantity: item.quantity,
-        reservedQuantity: item.reservedQuantity,
-        availableQuantity: item.quantity - item.reservedQuantity,
-        reorderLevel: item.reorderLevel,
-        maxStockLevel: item.maxStockLevel,
-        costPrice: item.costPrice,
-        lastStockUpdate: item.lastStockUpdate,
-        location: item.location,
-        batchNumber: item.batchNumber,
-        expirationDate: item.expirationDate,
-        supplier: item.supplier,
-        status: item.status as 'ACTIVE' | 'INACTIVE' | 'DISCONTINUED',
-      }));
+      if (!product) {
+        throw new Error('Product not found');
+      }
+
+      const warehouses = await prisma.warehouse.findMany({
+        where: { organizationId },
+      });
+
+      // Get inventory data from Warehouse settings metadata
+      return warehouses.map(warehouse => {
+        const inventoryData = (warehouse.settings as any)?.inventory?.[productId] || {};
+        const quantity = inventoryData.quantity || 0;
+        const reservedQuantity = inventoryData.reservedQuantity || 0;
+
+        return {
+          id: `${productId}-${warehouse.id}`,
+          productId,
+          warehouseId: warehouse.id,
+          sku: product.sku || '',
+          quantity,
+          reservedQuantity,
+          availableQuantity: quantity - reservedQuantity,
+          reorderLevel: inventoryData.reorderLevel || product.lowStockThreshold || 0,
+          maxStockLevel: inventoryData.maxStockLevel || 0,
+          costPrice: inventoryData.costPrice || product.costPrice || 0,
+          lastStockUpdate: inventoryData.lastStockUpdate ? new Date(inventoryData.lastStockUpdate) : new Date(),
+          location: inventoryData.location,
+          batchNumber: inventoryData.batchNumber,
+          expirationDate: inventoryData.expirationDate ? new Date(inventoryData.expirationDate) : undefined,
+          supplier: inventoryData.supplier,
+          status: inventoryData.status || 'ACTIVE' as 'ACTIVE' | 'INACTIVE' | 'DISCONTINUED',
+        };
+      });
     } catch (error) {
       console.error('Error getting product inventory:', error);
       throw new Error('Failed to get product inventory');
@@ -169,20 +220,29 @@ export class InventoryService {
   ): Promise<StockMovement> {
     try {
       return await prisma.$transaction(async (tx) => {
-        // Get current inventory
-        const inventory = await tx.inventory.findFirst({
-          where: {
-            productId,
-            warehouseId,
-            product: { organizationId },
-          },
+        // Get product and warehouse
+        const product = await tx.product.findFirst({
+          where: { id: productId, organizationId },
         });
 
-        if (!inventory) {
-          throw new Error('Inventory item not found');
+        if (!product) {
+          throw new Error('Product not found');
         }
 
-        const previousQuantity = inventory.quantity;
+        const warehouse = await tx.warehouse.findFirst({
+          where: { id: warehouseId, organizationId },
+        });
+
+        if (!warehouse) {
+          throw new Error('Warehouse not found');
+        }
+
+        // Get current inventory from warehouse settings
+        const warehouseSettings = (warehouse.settings as any) || {};
+        const inventoryData = warehouseSettings.inventory || {};
+        const currentInventory = inventoryData[productId] || {};
+        const previousQuantity = currentInventory.quantity || 0;
+
         let newQuantity: number;
 
         // Calculate new quantity based on movement type
@@ -207,30 +267,49 @@ export class InventoryService {
             throw new Error('Invalid stock movement type');
         }
 
-        // Update inventory
-        await tx.inventory.update({
-          where: { id: inventory.id },
+        // Update inventory in warehouse settings
+        inventoryData[productId] = {
+          ...currentInventory,
+          quantity: newQuantity,
+          lastStockUpdate: new Date(),
+          costPrice: options.cost || currentInventory.costPrice || product.costPrice,
+        };
+
+        await tx.warehouse.update({
+          where: { id: warehouseId },
           data: {
-            quantity: newQuantity,
-            lastStockUpdate: new Date(),
+            settings: {
+              ...warehouseSettings,
+              inventory: inventoryData,
+            } as any,
           },
         });
 
-        // Create stock movement record
-        const movement = await tx.stockMovement.create({
+        // Also update product stockQuantity (aggregate across all warehouses)
+        const allWarehouses = await tx.warehouse.findMany({
+          where: { organizationId },
+        });
+        const totalStock = allWarehouses.reduce((sum, w) => {
+          const wSettings = (w.settings as any) || {};
+          const wInventory = wSettings.inventory || {};
+          return sum + (wInventory[productId]?.quantity || 0);
+        }, 0);
+
+        await tx.product.update({
+          where: { id: productId },
+          data: { stockQuantity: totalStock },
+        });
+
+        // Create inventory movement record
+        const movement = await tx.inventoryMovement.create({
           data: {
             productId,
             warehouseId,
-            type,
+            type: type.toLowerCase(),
             quantity: Math.abs(quantity),
-            previousQuantity,
-            newQuantity,
-            reason: options.reason,
-            reference: options.reference,
-            orderId: options.orderId,
-            userId,
-            cost: options.cost,
-            notes: options.notes,
+            reason: options.reason || undefined,
+            orderId: options.orderId || undefined,
+            createdById: userId,
           },
         });
 
@@ -238,10 +317,10 @@ export class InventoryService {
         await this.checkStockAlerts(productId, warehouseId, newQuantity, organizationId);
 
         // Broadcast real-time update
-        await realTimeSyncService.broadcastEvent({
-          type: 'inventory_updated',
-          entityId: inventory.id,
-          entityType: 'inventory',
+        await realTimeSyncService.queueEvent({
+          type: 'inventory',
+          action: 'update',
+          entityId: productId,
           organizationId,
           data: {
             productId,
@@ -256,18 +335,18 @@ export class InventoryService {
         return {
           id: movement.id,
           productId: movement.productId,
-          warehouseId: movement.warehouseId,
-          type: movement.type as StockMovement['type'],
+          warehouseId: movement.warehouseId || '',
+          type: this.mapMovementType(movement.type),
           quantity: movement.quantity,
-          previousQuantity: movement.previousQuantity,
-          newQuantity: movement.newQuantity,
-          reason: movement.reason,
-          reference: movement.reference,
-          orderId: movement.orderId,
-          userId: movement.userId,
+          previousQuantity,
+          newQuantity,
+          reason: movement.reason || undefined,
+          reference: undefined, // Not stored in InventoryMovement
+          orderId: movement.orderId || undefined,
+          userId: movement.createdById,
           timestamp: movement.createdAt,
-          cost: movement.cost,
-          notes: movement.notes,
+          cost: undefined, // Not stored in InventoryMovement
+          notes: undefined, // Not stored in InventoryMovement
         };
       });
     } catch (error) {
@@ -291,42 +370,68 @@ export class InventoryService {
     try {
       return await prisma.$transaction(async (tx) => {
         for (const item of items) {
-          const inventory = await tx.inventory.findFirst({
-            where: {
-              productId: item.productId,
-              warehouseId: item.warehouseId,
-              product: { organizationId },
-            },
+          // Get warehouse to check inventory
+          const warehouse = await tx.warehouse.findFirst({
+            where: { id: item.warehouseId, organizationId },
           });
 
-          if (!inventory) {
-            throw new Error(`Inventory not found for product ${item.productId}`);
+          if (!warehouse) {
+            throw new Error(`Warehouse not found: ${item.warehouseId}`);
           }
 
-          const availableQuantity = inventory.quantity - inventory.reservedQuantity;
+          const warehouseSettings = (warehouse.settings as any) || {};
+          const inventoryData = warehouseSettings.inventory || {};
+          const currentInventory = inventoryData[item.productId] || {};
+          const quantity = currentInventory.quantity || 0;
+          const reservedQuantity = currentInventory.reservedQuantity || 0;
+          const availableQuantity = quantity - reservedQuantity;
           
           if (availableQuantity < item.quantity) {
             throw new Error(`Insufficient inventory for product ${item.productId}. Available: ${availableQuantity}, Required: ${item.quantity}`);
           }
 
-          // Update reserved quantity
-          await tx.inventory.update({
-            where: { id: inventory.id },
+          // Update reserved quantity in warehouse settings
+          inventoryData[item.productId] = {
+            ...currentInventory,
+            reservedQuantity: reservedQuantity + item.quantity,
+          };
+
+          await tx.warehouse.update({
+            where: { id: item.warehouseId },
             data: {
-              reservedQuantity: inventory.reservedQuantity + item.quantity,
+              settings: {
+                ...warehouseSettings,
+                inventory: inventoryData,
+              } as any,
             },
           });
 
-          // Create reservation record
-          await tx.inventoryReservation.create({
-            data: {
+          // Store reservation in Order metadata
+          const order = await tx.order.findUnique({
+            where: { id: orderId },
+          });
+
+          if (order) {
+            const orderMetadata = (order.metadata as any) || {};
+            const reservations = orderMetadata.inventoryReservations || [];
+            reservations.push({
               productId: item.productId,
               warehouseId: item.warehouseId,
-              orderId,
               quantity: item.quantity,
               status: 'ACTIVE',
-            },
-          });
+              createdAt: new Date(),
+            });
+
+            await tx.order.update({
+              where: { id: orderId },
+              data: {
+                metadata: {
+                  ...orderMetadata,
+                  inventoryReservations: reservations,
+                } as any,
+              },
+            });
+          }
         }
 
         return true;
@@ -347,30 +452,46 @@ export class InventoryService {
   ): Promise<boolean> {
     try {
       return await prisma.$transaction(async (tx) => {
-        const reservations = await tx.inventoryReservation.findMany({
-          where: {
-            orderId,
-            status: 'ACTIVE',
-            product: { organizationId },
-          },
+        // Get reservations from Order metadata
+        const order = await tx.order.findUnique({
+          where: { id: orderId },
         });
 
+        if (!order) return false;
+
+        const orderMetadata = (order.metadata as any) || {};
+        const reservations = orderMetadata.inventoryReservations || [];
+
         for (const reservation of reservations) {
-          const inventory = await tx.inventory.findFirst({
-            where: {
-              productId: reservation.productId,
-              warehouseId: reservation.warehouseId,
-            },
+          if (reservation.status !== 'ACTIVE') continue;
+
+          // Get warehouse to update inventory
+          const warehouse = await tx.warehouse.findFirst({
+            where: { id: reservation.warehouseId, organizationId },
           });
 
-          if (inventory) {
+          if (warehouse) {
+            const warehouseSettings = (warehouse.settings as any) || {};
+            const inventoryData = warehouseSettings.inventory || {};
+            const currentInventory = inventoryData[reservation.productId] || {};
+            const currentQuantity = currentInventory.quantity || 0;
+            const currentReserved = currentInventory.reservedQuantity || 0;
+
             if (fulfill) {
               // Fulfill reservation - reduce actual quantity and reserved quantity
-              await tx.inventory.update({
-                where: { id: inventory.id },
+              inventoryData[reservation.productId] = {
+                ...currentInventory,
+                quantity: currentQuantity - reservation.quantity,
+                reservedQuantity: currentReserved - reservation.quantity,
+              };
+
+              await tx.warehouse.update({
+                where: { id: reservation.warehouseId },
                 data: {
-                  quantity: inventory.quantity - reservation.quantity,
-                  reservedQuantity: inventory.reservedQuantity - reservation.quantity,
+                  settings: {
+                    ...warehouseSettings,
+                    inventory: inventoryData,
+                  } as any,
                 },
               });
 
@@ -384,27 +505,42 @@ export class InventoryService {
                 organizationId,
                 {
                   reason: 'Order fulfillment',
-                  reference: orderId,
                   orderId,
                 }
               );
             } else {
               // Cancel reservation - just reduce reserved quantity
-              await tx.inventory.update({
-                where: { id: inventory.id },
+              inventoryData[reservation.productId] = {
+                ...currentInventory,
+                reservedQuantity: currentReserved - reservation.quantity,
+              };
+
+              await tx.warehouse.update({
+                where: { id: reservation.warehouseId },
                 data: {
-                  reservedQuantity: inventory.reservedQuantity - reservation.quantity,
+                  settings: {
+                    ...warehouseSettings,
+                    inventory: inventoryData,
+                  } as any,
                 },
               });
             }
           }
 
-          // Update reservation status
-          await tx.inventoryReservation.update({
-            where: { id: reservation.id },
+          // Update reservation status in Order metadata
+          const updatedReservations = reservations.map((r: any) => 
+            r.productId === reservation.productId && r.warehouseId === reservation.warehouseId
+              ? { ...r, status: fulfill ? 'FULFILLED' : 'CANCELLED' }
+              : r
+          );
+
+          await tx.order.update({
+            where: { id: orderId },
             data: {
-              status: fulfill ? 'FULFILLED' : 'CANCELLED',
-              updatedAt: new Date(),
+              metadata: {
+                ...orderMetadata,
+                inventoryReservations: updatedReservations,
+              } as any,
             },
           });
         }
@@ -427,18 +563,23 @@ export class InventoryService {
     organizationId: string
   ): Promise<void> {
     try {
-      const inventory = await prisma.inventory.findFirst({
-        where: {
-          productId,
-          warehouseId,
-        },
-        include: {
-          product: true,
-          warehouse: true,
-        },
+      // Get product and warehouse to check thresholds
+      const product = await prisma.product.findFirst({
+        where: { id: productId, organizationId },
       });
 
-      if (!inventory) return;
+      const warehouse = await prisma.warehouse.findFirst({
+        where: { id: warehouseId, organizationId },
+      });
+
+      if (!product || !warehouse) return;
+
+      // Get inventory data from warehouse settings
+      const warehouseSettings = (warehouse.settings as any) || {};
+      const inventoryData = warehouseSettings.inventory?.[productId] || {};
+      const reorderLevel = inventoryData.reorderLevel || product.lowStockThreshold || 0;
+      const maxStockLevel = inventoryData.maxStockLevel || 0;
+      const expirationDate = inventoryData.expirationDate ? new Date(inventoryData.expirationDate) : null;
 
       const alerts: Array<{
         type: StockAlert['type'];
@@ -447,11 +588,11 @@ export class InventoryService {
       }> = [];
 
       // Check for low stock
-      if (currentQuantity <= inventory.reorderLevel && currentQuantity > 0) {
+      if (currentQuantity <= reorderLevel && currentQuantity > 0) {
         alerts.push({
           type: 'LOW_STOCK',
-          severity: currentQuantity <= (inventory.reorderLevel * 0.5) ? 'HIGH' : 'MEDIUM',
-          threshold: inventory.reorderLevel,
+          severity: currentQuantity <= (reorderLevel * 0.5) ? 'HIGH' : 'MEDIUM',
+          threshold: reorderLevel,
         });
       }
 
@@ -465,18 +606,18 @@ export class InventoryService {
       }
 
       // Check for overstock
-      if (inventory.maxStockLevel > 0 && currentQuantity > inventory.maxStockLevel) {
+      if (maxStockLevel > 0 && currentQuantity > maxStockLevel) {
         alerts.push({
           type: 'OVERSTOCK',
           severity: 'LOW',
-          threshold: inventory.maxStockLevel,
+          threshold: maxStockLevel,
         });
       }
 
       // Check for expiring items
-      if (inventory.expirationDate) {
+      if (expirationDate) {
         const daysUntilExpiry = Math.ceil(
-          (inventory.expirationDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+          (expirationDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
         );
 
         if (daysUntilExpiry <= 30 && daysUntilExpiry > 0) {
@@ -522,42 +663,55 @@ export class InventoryService {
     organizationId: string
   ): Promise<void> {
     try {
-      const existingAlert = await prisma.stockAlert.findFirst({
-        where: {
+      // Store stock alerts in Organization metadata
+      const organization = await prisma.organization.findUnique({
+        where: { id: organizationId },
+      });
+
+      if (!organization) return;
+
+      const orgSettings = (organization.settings as any) || {};
+      const stockAlerts = orgSettings.stockAlerts || {};
+      const alertKey = `${productId}-${warehouseId}-${type}`;
+
+      const existingAlert = stockAlerts[alertKey];
+
+      if (existingAlert) {
+        stockAlerts[alertKey] = {
+          ...existingAlert,
+          currentQuantity,
+          severity,
+          threshold,
+          lastNotificationAt: new Date(),
+        };
+      } else {
+        const alert = {
+          id: alertKey,
           productId,
           warehouseId,
           type,
+          currentQuantity,
+          severity,
+          threshold,
           isActive: true,
-        },
-      });
-
-      if (existingAlert) {
-        // Update existing alert
-        await prisma.stockAlert.update({
-          where: { id: existingAlert.id },
-          data: {
-            currentQuantity,
-            severity,
-            threshold,
-          },
-        });
-      } else {
-        // Create new alert
-        const alert = await prisma.stockAlert.create({
-          data: {
-            productId,
-            warehouseId,
-            type,
-            currentQuantity,
-            severity,
-            threshold,
-            isActive: true,
-          },
-        });
+          createdAt: new Date(),
+          notificationsSent: 0,
+        };
+        stockAlerts[alertKey] = alert;
 
         // Send notifications
-        await this.sendStockAlertNotifications(alert, organizationId);
+        await this.sendStockAlertNotifications(alert as any, organizationId);
       }
+
+      await prisma.organization.update({
+        where: { id: organizationId },
+        data: {
+          settings: {
+            ...orgSettings,
+            stockAlerts,
+          } as any,
+        },
+      });
     } catch (error) {
       console.error('Error creating/updating stock alert:', error);
     }
@@ -569,16 +723,22 @@ export class InventoryService {
     currentQuantity: number
   ): Promise<void> {
     try {
-      const inventory = await prisma.inventory.findFirst({
-        where: { productId, warehouseId },
+      // Get warehouse to check thresholds
+      const warehouse = await prisma.warehouse.findFirst({
+        where: { id: warehouseId },
       });
 
-      if (!inventory) return;
+      if (!warehouse) return;
+
+      const warehouseSettings = (warehouse.settings as any) || {};
+      const inventoryData = warehouseSettings.inventory?.[productId] || {};
+      const reorderLevel = inventoryData.reorderLevel || 0;
+      const maxStockLevel = inventoryData.maxStockLevel || 0;
 
       const alertsToResolve: string[] = [];
 
       // Resolve low stock alert if stock is above reorder level
-      if (currentQuantity > inventory.reorderLevel) {
+      if (currentQuantity > reorderLevel) {
         alertsToResolve.push('LOW_STOCK');
       }
 
@@ -588,23 +748,45 @@ export class InventoryService {
       }
 
       // Resolve overstock alert if within limits
-      if (inventory.maxStockLevel > 0 && currentQuantity <= inventory.maxStockLevel) {
+      if (maxStockLevel > 0 && currentQuantity <= maxStockLevel) {
         alertsToResolve.push('OVERSTOCK');
       }
 
+      // Update alerts in Organization metadata
       if (alertsToResolve.length > 0) {
-        await prisma.stockAlert.updateMany({
+        const organization = await prisma.organization.findFirst({
           where: {
-            productId,
-            warehouseId,
-            type: { in: alertsToResolve },
-            isActive: true,
-          },
-          data: {
-            isActive: false,
-            resolvedAt: new Date(),
+            warehouses: {
+              some: { id: warehouseId },
+            },
           },
         });
+
+        if (organization) {
+          const orgSettings = (organization.settings as any) || {};
+          const stockAlerts = orgSettings.stockAlerts || {};
+
+          alertsToResolve.forEach(type => {
+            const alertKey = `${productId}-${warehouseId}-${type}`;
+            if (stockAlerts[alertKey]) {
+              stockAlerts[alertKey] = {
+                ...stockAlerts[alertKey],
+                isActive: false,
+                resolvedAt: new Date(),
+              };
+            }
+          });
+
+          await prisma.organization.update({
+            where: { id: organization.id },
+            data: {
+              settings: {
+                ...orgSettings,
+                stockAlerts,
+              } as any,
+            },
+          });
+        }
       }
     } catch (error) {
       console.error('Error resolving alerts:', error);
@@ -616,20 +798,29 @@ export class InventoryService {
     organizationId: string
   ): Promise<void> {
     try {
-      // Get notification preferences and admin contacts
-      const organization = await prisma.organization.findUnique({
-        where: { id: organizationId },
-        include: {
-          users: {
-            where: {
-              role: { in: ['ADMIN', 'MANAGER'] },
-              notifications: { has: 'STOCK_ALERTS' },
-            },
-          },
+      // Get admin users with stock alert notifications enabled
+      const adminUsers = await prisma.user.findMany({
+        where: {
+          organizationId,
+          role: { in: ['ADMIN', 'MANAGER'] },
         },
       });
 
-      if (!organization) return;
+      // Filter users who have stock alerts enabled in preferences
+      const usersWithAlerts = await Promise.all(
+        adminUsers.map(async (user) => {
+          const userPref = await prisma.userPreference.findUnique({
+            where: { userId: user.id },
+          });
+          const notifications = (userPref?.notifications as any) || {};
+          const stockAlertsEnabled = notifications.stockAlerts !== false; // Default to true
+          return stockAlertsEnabled ? user : null;
+        })
+      );
+
+      const users = usersWithAlerts.filter((u): u is NonNullable<typeof u> => u !== null);
+
+      if (users.length === 0) return;
 
       const product = await prisma.product.findUnique({
         where: { id: alert.productId },
@@ -644,7 +835,7 @@ export class InventoryService {
       const message = this.getAlertMessage(alert, product.name, warehouse.name);
 
       // Send notifications to admins
-      for (const user of organization.users) {
+      for (const user of users) {
         // Send email notification
         if (user.email) {
           await emailService.sendEmail({
@@ -673,13 +864,38 @@ export class InventoryService {
       }
 
       // Update notification count
-      await prisma.stockAlert.update({
-        where: { id: alert.id },
-        data: {
-          notificationsSent: alert.notificationsSent + 1,
-          lastNotificationAt: new Date(),
-        },
-      });
+        // Update alert in Organization metadata
+        const organizationForAlert = await prisma.organization.findFirst({
+          where: {
+            warehouses: {
+              some: { id: alert.warehouseId },
+            },
+          },
+        });
+
+        if (organizationForAlert) {
+          const orgSettings = (organizationForAlert.settings as any) || {};
+          const stockAlerts = orgSettings.stockAlerts || {};
+          const alertKey = `${alert.productId}-${alert.warehouseId}-${alert.type}`;
+          
+          if (stockAlerts[alertKey]) {
+            stockAlerts[alertKey] = {
+              ...stockAlerts[alertKey],
+              notificationsSent: (stockAlerts[alertKey].notificationsSent || 0) + 1,
+              lastNotificationAt: new Date(),
+            };
+
+            await prisma.organization.update({
+              where: { id: organizationForAlert.id },
+              data: {
+                settings: {
+                  ...orgSettings,
+                  stockAlerts,
+                } as any,
+              },
+            });
+          }
+        }
     } catch (error) {
       console.error('Error sending stock alert notifications:', error);
     }
@@ -712,26 +928,28 @@ export class InventoryService {
     daysToForecast: number = 30
   ): Promise<InventoryForecast | null> {
     try {
-      // Get current inventory
-      const inventory = await prisma.inventory.findFirst({
-        where: {
-          productId,
-          warehouseId,
-          product: { organizationId },
-        },
+      // Get current inventory from warehouse settings
+      const warehouse = await prisma.warehouse.findFirst({
+        where: { id: warehouseId, organizationId },
       });
 
-      if (!inventory) return null;
+      if (!warehouse) return null;
 
-      // Calculate daily usage from recent stock movements
+      const warehouseSettings = (warehouse.settings as any) || {};
+      const inventoryData = warehouseSettings.inventory?.[productId] || {};
+      const quantity = inventoryData.quantity || 0;
+      const reservedQuantity = inventoryData.reservedQuantity || 0;
+      const reorderLevel = inventoryData.reorderLevel || 0;
+
+      // Calculate daily usage from recent inventory movements
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const movements = await prisma.stockMovement.findMany({
+      const movements = await prisma.inventoryMovement.findMany({
         where: {
           productId,
           warehouseId,
-          type: 'OUT',
+          type: 'out',
           createdAt: { gte: thirtyDaysAgo },
         },
         orderBy: { createdAt: 'desc' },
@@ -740,14 +958,14 @@ export class InventoryService {
       const totalUsage = movements.reduce((sum, movement) => sum + movement.quantity, 0);
       const dailyUsage = totalUsage / 30;
 
-      const currentStock = inventory.quantity - inventory.reservedQuantity;
+      const currentStock = quantity - reservedQuantity;
       const daysUntilStockout = dailyUsage > 0 ? Math.floor(currentStock / dailyUsage) : Infinity;
 
       // Calculate recommended reorder quantity (Economic Order Quantity approximation)
       const monthlyUsage = dailyUsage * 30;
       const recommendedReorderQuantity = Math.max(
         monthlyUsage,
-        inventory.reorderLevel * 2
+        reorderLevel * 2
       );
 
       const recommendedReorderDate = new Date();
@@ -783,19 +1001,19 @@ export class InventoryService {
    */
   async getStockValuation(organizationId: string): Promise<StockValuation> {
     try {
-      const inventory = await prisma.inventory.findMany({
+      // Get all products with stock > 0 and warehouses
+      const products = await prisma.product.findMany({
         where: {
-          product: { organizationId },
-          quantity: { gt: 0 },
+          organizationId,
+          stockQuantity: { gt: 0 },
         },
         include: {
-          product: {
-            include: {
-              category: true,
-            },
-          },
-          warehouse: true,
+          category: true,
         },
+      });
+
+      const warehouses = await prisma.warehouse.findMany({
+        where: { organizationId },
       });
 
       let totalValue = 0;
@@ -803,26 +1021,37 @@ export class InventoryService {
       const byCategory: Record<string, any> = {};
       const byWarehouse: Record<string, any> = {};
 
-      for (const item of inventory) {
-        const itemValue = item.quantity * item.costPrice;
-        totalValue += itemValue;
-        totalQuantity += item.quantity;
+      // Calculate from warehouse inventory data
+      for (const warehouse of warehouses) {
+        const warehouseSettings = (warehouse.settings as any) || {};
+        const inventoryData = warehouseSettings.inventory || {};
 
-        // By category
-        const categoryName = item.product.category?.name || 'Uncategorized';
-        if (!byCategory[categoryName]) {
-          byCategory[categoryName] = { value: 0, quantity: 0, averagePrice: 0 };
-        }
-        byCategory[categoryName].value += itemValue;
-        byCategory[categoryName].quantity += item.quantity;
+        for (const product of products) {
+          const itemInventory = inventoryData[product.id] || {};
+          const quantity = itemInventory.quantity || 0;
+          if (quantity <= 0) continue;
 
-        // By warehouse
-        const warehouseName = item.warehouse.name;
-        if (!byWarehouse[warehouseName]) {
-          byWarehouse[warehouseName] = { value: 0, quantity: 0, averagePrice: 0 };
+          const costPrice = itemInventory.costPrice || product.costPrice || 0;
+          const itemValue = quantity * costPrice;
+          totalValue += itemValue;
+          totalQuantity += quantity;
+
+          // By category
+          const categoryName = product.category?.name || 'Uncategorized';
+          if (!byCategory[categoryName]) {
+            byCategory[categoryName] = { value: 0, quantity: 0, averagePrice: 0 };
+          }
+          byCategory[categoryName].value += itemValue;
+          byCategory[categoryName].quantity += quantity;
+
+          // By warehouse
+          const warehouseName = warehouse.name;
+          if (!byWarehouse[warehouseName]) {
+            byWarehouse[warehouseName] = { value: 0, quantity: 0, averagePrice: 0 };
+          }
+          byWarehouse[warehouseName].value += itemValue;
+          byWarehouse[warehouseName].quantity += quantity;
         }
-        byWarehouse[warehouseName].value += itemValue;
-        byWarehouse[warehouseName].quantity += item.quantity;
       }
 
       // Calculate average prices
@@ -867,64 +1096,74 @@ export class InventoryService {
         topProducts,
         slowMovingProducts,
       ] = await Promise.all([
-        // Total products
-        prisma.inventory.count({
-          where: { product: { organizationId } },
-        }),
-
-        // Low stock items
-        prisma.inventory.count({
+        // Total products with stock
+        prisma.product.count({
           where: {
-            product: { organizationId },
-            quantity: { lte: prisma.inventory.fields.reorderLevel },
-            quantity: { gt: 0 },
+            organizationId,
+            stockQuantity: { gt: 0 },
           },
         }),
 
-        // Out of stock items
-        prisma.inventory.count({
+        // Low stock items (products with stock <= lowStockThreshold)
+        prisma.product.count({
           where: {
-            product: { organizationId },
-            quantity: { lte: 0 },
-          },
-        }),
-
-        // Overstock items
-        prisma.inventory.count({
-          where: {
-            product: { organizationId },
-            quantity: { gt: prisma.inventory.fields.maxStockLevel },
-            maxStockLevel: { gt: 0 },
-          },
-        }),
-
-        // Expiring items (next 30 days)
-        prisma.inventory.count({
-          where: {
-            product: { organizationId },
-            expirationDate: {
-              lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-              gt: new Date(),
+            organizationId,
+            stockQuantity: {
+              lte: prisma.product.fields.lowStockThreshold,
+              gt: 0,
             },
           },
         }),
 
+        // Out of stock items
+        prisma.product.count({
+          where: {
+            organizationId,
+            stockQuantity: { lte: 0 },
+          },
+        }),
+
+        // Overstock items (approximate - would need warehouse-level data)
+        prisma.product.count({
+          where: {
+            organizationId,
+            stockQuantity: { gt: 1000 }, // Approximate threshold
+          },
+        }),
+
+        // Expiring items - count from warehouse settings
+        // Since expiration data is stored in warehouse settings JSON, we count warehouses
+        // that have expiration tracking enabled and estimate based on warehouse count
+        (async () => {
+          const warehouses = await prisma.warehouse.findMany({
+            where: {
+              organizationId,
+              isActive: true,
+            },
+            select: {
+              settings: true,
+            },
+          });
+          
+          // Count warehouses with expiration tracking in settings
+          // If settings contain expiration data, count those items
+          let expiringCount = 0;
+          for (const warehouse of warehouses) {
+            const settings = warehouse.settings as any;
+            if (settings?.expirationTracking?.enabled && settings?.expiringItems) {
+              expiringCount += settings.expiringItems.length || 0;
+            }
+          }
+          
+          // If no expiration data in settings, return 0 (approximate as comment indicates)
+          return expiringCount;
+        })(),
+
         // Stock valuation
         this.getStockValuation(organizationId),
 
-        // Active alerts
-        prisma.stockAlert.findMany({
-          where: {
-            product: { organizationId },
-            isActive: true,
-          },
-          include: {
-            product: true,
-            warehouse: true,
-          },
-          orderBy: { severity: 'desc' },
-          take: 10,
-        }),
+        // Active alerts (from Organization metadata)
+        this.getActiveStockAlerts(organizationId),
 
         // Top products by value
         this.getTopProductsByValue(organizationId),
@@ -966,23 +1205,21 @@ export class InventoryService {
   }
 
   private async getTopProductsByValue(organizationId: string): Promise<any[]> {
-    const inventory = await prisma.inventory.findMany({
+    // Get products with stock quantity > 0
+    const products = await prisma.product.findMany({
       where: {
-        product: { organizationId },
-        quantity: { gt: 0 },
-      },
-      include: {
-        product: true,
+        organizationId,
+        stockQuantity: { gt: 0 },
       },
       take: 10,
     });
 
-    return inventory
-      .map(item => ({
-        productId: item.productId,
-        name: item.product.name,
-        quantity: item.quantity,
-        value: item.quantity * item.costPrice,
+    return products
+      .map(product => ({
+        productId: product.id,
+        name: product.name,
+        quantity: product.stockQuantity,
+        value: product.stockQuantity * (product.costPrice || 0),
         turnoverRate: 0, // This would need historical data calculation
       }))
       .sort((a, b) => b.value - a.value)
@@ -993,17 +1230,17 @@ export class InventoryService {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const inventory = await prisma.inventory.findMany({
+    // Get products with stock quantity > 0
+    const products = await prisma.product.findMany({
       where: {
-        product: { organizationId },
-        quantity: { gt: 0 },
+        organizationId,
+        stockQuantity: { gt: 0 },
       },
       include: {
-        product: true,
-        stockMovements: {
+        movements: {
           where: {
             createdAt: { gte: thirtyDaysAgo },
-            type: 'OUT',
+            type: 'out',
           },
           orderBy: { createdAt: 'desc' },
           take: 1,
@@ -1011,16 +1248,16 @@ export class InventoryService {
       },
     });
 
-    return inventory
-      .filter(item => item.stockMovements.length === 0)
-      .map(item => ({
-        productId: item.productId,
-        name: item.product.name,
-        quantity: item.quantity,
+    return products
+      .filter(product => product.movements.length === 0)
+      .map(product => ({
+        productId: product.id,
+        name: product.name,
+        quantity: product.stockQuantity,
         daysSinceLastMovement: Math.floor(
-          (new Date().getTime() - item.lastStockUpdate.getTime()) / (1000 * 60 * 60 * 24)
+          (new Date().getTime() - product.updatedAt.getTime()) / (1000 * 60 * 60 * 24)
         ),
-        value: item.quantity * item.costPrice,
+        value: product.stockQuantity * (product.costPrice || 0),
       }))
       .sort((a, b) => b.daysSinceLastMovement - a.daysSinceLastMovement)
       .slice(0, 10);
@@ -1043,17 +1280,19 @@ export class InventoryService {
       const movements: StockMovement[] = [];
 
       for (const item of items) {
-        const inventory = await prisma.inventory.findFirst({
-          where: {
-            productId: item.productId,
-            warehouseId: item.warehouseId,
-            product: { organizationId },
-          },
+        // Get warehouse to check current inventory
+        const warehouse = await prisma.warehouse.findFirst({
+          where: { id: item.warehouseId, organizationId },
         });
 
-        if (!inventory) continue;
+        if (!warehouse) continue;
 
-        const difference = item.countedQuantity - inventory.quantity;
+        const warehouseSettings = (warehouse.settings as any) || {};
+        const inventoryData = warehouseSettings.inventory || {};
+        const currentInventory = inventoryData[item.productId] || {};
+        const currentQuantity = currentInventory.quantity || 0;
+
+        const difference = item.countedQuantity - currentQuantity;
 
         if (difference !== 0) {
           const movement = await this.updateInventory(
@@ -1065,7 +1304,7 @@ export class InventoryService {
             organizationId,
             {
               reason: 'Cycle count adjustment',
-              notes: `Counted: ${item.countedQuantity}, System: ${inventory.quantity}, Difference: ${difference}. ${item.notes || ''}`,
+              notes: `Counted: ${item.countedQuantity}, System: ${currentQuantity}, Difference: ${difference}. ${item.notes || ''}`,
             }
           );
 
@@ -1090,14 +1329,14 @@ export class InventoryService {
     limit: number = 50
   ): Promise<StockMovement[]> {
     try {
-      const movements = await prisma.stockMovement.findMany({
+      const movements = await prisma.inventoryMovement.findMany({
         where: {
           productId,
-          warehouseId,
+          warehouseId: warehouseId || undefined,
           product: { organizationId },
         },
         include: {
-          user: {
+          createdBy: {
             select: { name: true, email: true },
           },
         },
@@ -1108,18 +1347,18 @@ export class InventoryService {
       return movements.map(movement => ({
         id: movement.id,
         productId: movement.productId,
-        warehouseId: movement.warehouseId,
-        type: movement.type as StockMovement['type'],
+        warehouseId: movement.warehouseId || '',
+        type: this.mapMovementType(movement.type),
         quantity: movement.quantity,
-        previousQuantity: movement.previousQuantity,
-        newQuantity: movement.newQuantity,
-        reason: movement.reason,
-        reference: movement.reference,
-        orderId: movement.orderId,
-        userId: movement.userId,
+        previousQuantity: 0, // Not stored in InventoryMovement
+        newQuantity: movement.quantity, // Approximate
+        reason: movement.reason || undefined,
+        reference: undefined, // Not stored in InventoryMovement
+        orderId: movement.orderId || undefined,
+        userId: movement.createdById,
         timestamp: movement.createdAt,
-        cost: movement.cost,
-        notes: movement.notes,
+        cost: undefined, // Not stored in InventoryMovement
+        notes: undefined, // Not stored in InventoryMovement
       }));
     } catch (error) {
       console.error('Error getting movement history:', error);

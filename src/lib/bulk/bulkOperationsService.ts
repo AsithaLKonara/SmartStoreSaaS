@@ -83,27 +83,44 @@ export class BulkOperationsService {
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
         try {
+          // Get category ID if category name is provided
+          let categoryId: string | null = null;
+          if (row.category) {
+            const category = await prisma.category.findFirst({
+              where: {
+                organizationId,
+                name: { equals: row.category, mode: 'insensitive' },
+              },
+            });
+            if (category) {
+              categoryId = category.id;
+            }
+          }
+
           await prisma.product.create({
             data: {
               name: row.name,
               description: row.description || '',
               price: parseFloat(row.price) || 0,
-              cost: parseFloat(row.cost) || 0,
-              sku: row.sku || '',
-              barcode: row.barcode || '',
-              category: row.category || '',
-              brand: row.brand || '',
+              costPrice: parseFloat(row.cost) || 0,
+              sku: row.sku || row.barcode || '',
               weight: parseFloat(row.weight) || 0,
-              dimensions: row.dimensions || '',
+              dimensions: {
+                ...(row.dimensions ? JSON.parse(row.dimensions) : {}),
+                brand: row.brand || undefined,
+                barcode: row.barcode || undefined,
+              } as any,
               stockQuantity: parseInt(row.stockQuantity) || 0,
-              reorderPoint: parseInt(row.reorderPoint) || 0,
+              lowStockThreshold: parseInt(row.reorderPoint) || 0,
+              categoryId,
               isActive: row.isActive === 'true' || row.isActive === true,
-              organizationId
-            }
+              organizationId,
+            },
           });
           successCount++;
-        } catch (error) {
-          errors.push(`Row ${i + 1}: ${error.message}`);
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          errors.push(`Row ${i + 1}: ${errorMessage}`);
           failedCount++;
         }
 
@@ -141,12 +158,13 @@ export class BulkOperationsService {
         failedRecords: failedCount,
         errors: errors.slice(-100)
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
           status: 'failed',
-          errors: [error.message],
+          errors: [errorMessage],
           completedAt: new Date()
         }
       });
@@ -190,21 +208,20 @@ export class BulkOperationsService {
               name: row.name,
               email: row.email,
               phone: row.phone || '',
-              address: row.address || '',
-              city: row.city || '',
-              state: row.state || '',
-              country: row.country || '',
-              postalCode: row.postalCode || '',
               organizationId,
-              metadata: {
-                source: 'bulk_import',
-                importDate: new Date().toISOString()
-              }
-            }
+              tags: [
+                ...(row.address ? [`address:${row.address}`] : []),
+                ...(row.city ? [`city:${row.city}`] : []),
+                ...(row.state ? [`state:${row.state}`] : []),
+                ...(row.country ? [`country:${row.country}`] : []),
+                ...(row.postalCode ? [`postalCode:${row.postalCode}`] : []),
+              ],
+            },
           });
           successCount++;
-        } catch (error) {
-          errors.push(`Row ${i + 1}: ${error.message}`);
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          errors.push(`Row ${i + 1}: ${errorMessage}`);
           failedCount++;
         }
 
@@ -241,12 +258,13 @@ export class BulkOperationsService {
         failedRecords: failedCount,
         errors: errors.slice(-100)
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
           status: 'failed',
-          errors: [error.message],
+          errors: [errorMessage],
           completedAt: new Date()
         }
       });
@@ -276,24 +294,35 @@ export class BulkOperationsService {
         fileContent = Buffer.from(JSON.stringify(products, null, 2));
         fileUrl = `/exports/products_${Date.now()}.json`;
       } else if (format === 'csv') {
-        const csvData = products.map(product => ({
-          id: product.id,
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          cost: product.cost,
-          sku: product.sku,
-          barcode: product.barcode,
-          category: product.category,
-          brand: product.brand,
-          weight: product.weight,
-          dimensions: product.dimensions,
-          stockQuantity: product.stockQuantity,
-          reorderPoint: product.reorderPoint,
-          isActive: product.isActive,
-          createdAt: product.createdAt,
-          updatedAt: product.updatedAt
-        }));
+        // Get category names for products
+        const categoryIds = [...new Set(products.map(p => p.categoryId).filter(Boolean))];
+        const categories = await prisma.category.findMany({
+          where: { id: { in: categoryIds as string[] } },
+          select: { id: true, name: true },
+        });
+        const categoryMap = new Map(categories.map(c => [c.id, c.name]));
+
+        const csvData = products.map(product => {
+          const dimensions = (product.dimensions as any) || {};
+          return {
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            cost: product.costPrice,
+            sku: product.sku,
+            barcode: dimensions.barcode || product.sku,
+            category: product.categoryId ? (categoryMap.get(product.categoryId) || '') : '',
+            brand: dimensions.brand || '',
+            weight: product.weight,
+            dimensions: JSON.stringify(product.dimensions),
+            stockQuantity: product.stockQuantity,
+            reorderPoint: product.lowStockThreshold,
+            isActive: product.isActive,
+            createdAt: product.createdAt,
+            updatedAt: product.updatedAt
+          };
+        });
 
         const csvString = stringify(csvData, { header: true });
         fileContent = Buffer.from(csvString);
@@ -325,12 +354,13 @@ export class BulkOperationsService {
         recordCount: products.length,
         format
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
           status: 'failed',
-          errors: [error.message],
+          errors: [errorMessage],
           completedAt: new Date()
         }
       });
@@ -365,11 +395,11 @@ export class BulkOperationsService {
           name: customer.name,
           email: customer.email,
           phone: customer.phone,
-          address: customer.address,
-          city: customer.city,
-          state: customer.state,
-          country: customer.country,
-          postalCode: customer.postalCode,
+          address: (customer.tags as any)?.address || undefined, // Store in tags metadata or use separate field
+          city: (customer.tags as any)?.city || undefined,
+          state: (customer.tags as any)?.state || undefined,
+          country: (customer.tags as any)?.country || undefined,
+          postalCode: (customer.tags as any)?.postalCode || undefined,
           createdAt: customer.createdAt,
           updatedAt: customer.updatedAt
         }));
@@ -402,12 +432,13 @@ export class BulkOperationsService {
         recordCount: customers.length,
         format
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
           status: 'failed',
-          errors: [error.message],
+          errors: [errorMessage],
           completedAt: new Date()
         }
       });
@@ -451,8 +482,8 @@ export class BulkOperationsService {
           totalAmount: order.totalAmount,
           status: order.status,
           paymentMethod: order.paymentMethod,
-          shippingAddress: order.shippingAddress,
-          billingAddress: order.billingAddress,
+          shippingAddress: (order.metadata as any)?.shippingAddress || undefined, // Store in metadata
+          billingAddress: (order.metadata as any)?.billingAddress || undefined, // Store in metadata
           createdAt: order.createdAt,
           updatedAt: order.updatedAt
         }));
@@ -485,12 +516,13 @@ export class BulkOperationsService {
         recordCount: orders.length,
         format
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
           status: 'failed',
-          errors: [error.message],
+          errors: [errorMessage],
           completedAt: new Date()
         }
       });

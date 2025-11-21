@@ -10,16 +10,12 @@ import {
   Bell,
   Plus,
   Search,
-  Filter,
-  Play,
   Pause,
   Edit,
   Trash2,
   Eye,
   BarChart3,
   Users,
-  Calendar,
-  Target,
   Send,
   Clock,
   CheckCircle,
@@ -30,7 +26,7 @@ import {
   Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface Campaign {

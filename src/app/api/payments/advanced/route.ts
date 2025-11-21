@@ -49,14 +49,14 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ error: 'Customer ID required' }, { status: 400 });
         }
         const subscriptions = await prisma.subscription.findMany({
-          where: { customerId },
+          where: { customerId: customerId || undefined },
           include: { customer: true }
         });
         return NextResponse.json({ subscriptions });
 
       case 'payment-intents':
         const paymentIntents = await prisma.paymentIntent.findMany({
-          where: { customerId },
+          where: { customerId: customerId || undefined },
           include: { customer: true, paymentMethod: true },
           orderBy: { createdAt: 'desc' }
         });
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
 
       case 'invoices':
         const invoices = await prisma.invoice.findMany({
-          where: { customerId },
+          where: { customerId: customerId || undefined },
           include: { customer: true, subscription: true },
           orderBy: { createdAt: 'desc' }
         });
@@ -82,14 +82,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { action, ...data } = body;
 
     switch (action) {
@@ -170,12 +170,12 @@ export async function POST(request: NextRequest) {
 
       case 'webhook':
         // Handle Stripe webhook
-        const signature = request.headers.get('stripe-signature');
+        const signature = _request.headers.get('stripe-signature');
         if (!signature) {
           return NextResponse.json({ error: 'No signature' }, { status: 400 });
         }
 
-        const event = JSON.parse(await request.text());
+        const event = JSON.parse(await _request.text());
         await paymentService.handleWebhook(event);
         return NextResponse.json({ received: true });
 

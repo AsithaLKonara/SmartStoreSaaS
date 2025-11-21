@@ -149,10 +149,9 @@ export class AdvancedSecurityService {
 
       // Broadcast real-time event for critical threats
       if (enhancedEvent.severity === 'critical' || enhancedEvent.severity === 'high') {
-        await realTimeSyncService.broadcastEvent({
-          type: 'security_alert',
+        await realTimeSyncService.queueEvent({
+          type: 'message',
           entityId: enhancedEvent.id || crypto.randomUUID(),
-          entityType: 'security_event',
           organizationId: enhancedEvent.organizationId || 'system',
           data: enhancedEvent,
           timestamp: new Date(),

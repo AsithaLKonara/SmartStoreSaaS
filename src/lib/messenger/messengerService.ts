@@ -154,10 +154,9 @@ export class MessengerService {
       await this.storeMessage(message);
 
       // Broadcast real-time event
-      await realTimeSyncService.broadcastEvent({
-        type: 'messenger_message_sent',
+      await realTimeSyncService.queueEvent({
+        type: 'message',
         entityId: message.id,
-        entityType: 'messenger_message',
         organizationId,
         data: message,
         timestamp: new Date(),
@@ -204,10 +203,9 @@ export class MessengerService {
 
       await this.storeMessage(message);
 
-      await realTimeSyncService.broadcastEvent({
-        type: 'messenger_template_sent',
+      await realTimeSyncService.queueEvent({
+        type: 'message',
         entityId: message.id,
-        entityType: 'messenger_message',
         organizationId,
         data: message,
         timestamp: new Date(),
@@ -260,10 +258,9 @@ export class MessengerService {
 
       await this.storeMessage(message);
 
-      await realTimeSyncService.broadcastEvent({
-        type: 'messenger_attachment_sent',
+      await realTimeSyncService.queueEvent({
+        type: 'message',
         entityId: message.id,
-        entityType: 'messenger_message',
         organizationId,
         data: message,
         timestamp: new Date(),
@@ -486,10 +483,9 @@ export class MessengerService {
       await this.processAutoReply(message);
 
       // Broadcast real-time event
-      await realTimeSyncService.broadcastEvent({
-        type: 'messenger_message_received',
+      await realTimeSyncService.queueEvent({
+        type: 'message',
         entityId: message.id,
-        entityType: 'messenger_message',
         organizationId,
         data: message,
         timestamp: new Date(),
@@ -592,7 +588,7 @@ export class MessengerService {
   private async handleGetStarted(senderId: string, organizationId: string): Promise<void> {
     const welcomeMessage = `🎉 Welcome to SmartStore AI!
 
-We're excited to help you with:
+We&apos;re excited to help you with:
 • Product browsing and purchasing
 • Order tracking and support
 • Personalized recommendations

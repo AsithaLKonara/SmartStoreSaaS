@@ -14,11 +14,13 @@ A comprehensive, production-ready SaaS platform that combines AI-powered automat
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
+- [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
 - [Environment Setup](#environment-setup)
 - [Database Setup](#database-setup)
 - [API Documentation](#api-documentation)
 - [Deployment](#deployment)
+- [Documentation](#documentation)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -446,6 +448,32 @@ For production, you can use MongoDB Atlas:
 - `GET /api/analytics/ai` - AI-powered analytics
 - `POST /api/workflows/trigger` - Trigger automated workflows
 
+## 📁 Project Structure
+
+```
+SmartStoreSaaS/
+├── deployment/          # Deployment configurations
+├── docs/                # Comprehensive documentation
+├── monitoring/          # Monitoring and observability
+├── mocks/              # Mock data and test fixtures
+├── scripts/             # Deployment and setup scripts
+├── services/           # Microservices
+├── src/                # Application source code
+│   ├── app/            # Next.js app directory
+│   ├── components/     # React components
+│   ├── lib/            # Utility libraries
+│   └── types/          # TypeScript types
+├── prisma/             # Database schema and migrations
+├── .github/            # GitHub Actions workflows
+└── [config files]      # Configuration files
+```
+
+### Documentation
+- **Setup Guide**: [SETUP_GUIDE.md](./SETUP_GUIDE.md)
+- **Deployment Guides**: [docs/DEPLOYMENT_INDEX.md](./docs/DEPLOYMENT_INDEX.md)
+- **Testing Guide**: [TESTING_GUIDE.md](./TESTING_GUIDE.md)
+- **Database Integration**: [DATABASE_INTEGRATION_REPORT.md](./DATABASE_INTEGRATION_REPORT.md)
+
 ## 🚀 Deployment
 
 ### Docker Deployment
@@ -481,6 +509,30 @@ Set the following environment variables in your production environment:
 - `NEXTAUTH_URL` - Production domain
 - `REDIS_URL` - Production Redis URL
 - All API keys for external services
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the `docs/` folder:
+
+### Quick Links
+- **[Documentation Index](./docs/README.md)** - Complete documentation overview
+- **[Deployment Guides](./docs/DEPLOYMENT_INDEX.md)** - All deployment documentation
+- **[Setup Guide](./SETUP_GUIDE.md)** - Getting started guide
+- **[Testing Guide](./TESTING_GUIDE.md)** - Testing documentation
+
+### Documentation Structure
+- **Deployment**: Vercel, Docker, CI/CD guides in `docs/`
+- **Configuration**: Deployment configurations in `deployment/`
+- **Monitoring**: Monitoring setup in `monitoring/`
+- **Mock Data**: Test fixtures in `mocks/`
+
+### Key Documentation Files
+- [Vercel Deployment Guide](./docs/VERCEL_DEPLOYMENT_GUIDE.md)
+- [Git-Based Deployment](./docs/GIT_VERCEL_DEPLOYMENT.md)
+- [Docker Deployment](./docs/DEPLOYMENT_QUICK_START.md)
+- [Database Integration](./DATABASE_INTEGRATION_REPORT.md)
+- [Project Comparison](./PROJECT_COMPARISON.md)
+- [Merge Summary](./MERGE_SUMMARY.md)
 
 ## 🤝 Contributing
 

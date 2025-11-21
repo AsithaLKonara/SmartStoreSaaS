@@ -1,8 +1,10 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = process.env.OPENAI_API_KEY 
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
 
 export interface RealTimeMetrics {
   timestamp: Date;
@@ -67,6 +69,14 @@ export interface RiskAssessment {
 }
 
 export class BusinessIntelligenceService {
+  private checkOpenAI(): boolean {
+    if (!openai) {
+      console.warn('OpenAI API key not configured');
+      return false;
+    }
+    return true;
+  }
+
   /**
    * Generate real-time business metrics
    */
@@ -77,6 +87,10 @@ export class BusinessIntelligenceService {
     productData: any[]
   ): Promise<RealTimeMetrics> {
     try {
+      if (!this.checkOpenAI()) {
+        return {} as RealTimeMetrics;
+      }
+
       const prompt = `
         Generate real-time business metrics based on:
         
@@ -121,6 +135,10 @@ export class BusinessIntelligenceService {
     targets: any[]
   ): Promise<PerformanceKPI[]> {
     try {
+      if (!this.checkOpenAI()) {
+        return [];
+      }
+
       const prompt = `
         Calculate performance KPIs based on:
         
@@ -147,7 +165,7 @@ export class BusinessIntelligenceService {
         Return as JSON array with KPI details
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await openai!.chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.2,
@@ -170,6 +188,10 @@ export class BusinessIntelligenceService {
     seasonalData: any[]
   ): Promise<SalesForecast[]> {
     try {
+      if (!this.checkOpenAI()) {
+        return [];
+      }
+
       const prompt = `
         Generate sales forecasts based on:
         
@@ -191,7 +213,7 @@ export class BusinessIntelligenceService {
         Return as JSON array with forecast details
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await openai!.chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -214,6 +236,10 @@ export class BusinessIntelligenceService {
     industryReports: any[]
   ): Promise<MarketTrend[]> {
     try {
+      if (!this.checkOpenAI()) {
+        return [];
+      }
+
       const prompt = `
         Analyze market trends based on:
         
@@ -236,7 +262,7 @@ export class BusinessIntelligenceService {
         Return as JSON array with trend analysis
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await openai!.chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.4,
@@ -259,6 +285,10 @@ export class BusinessIntelligenceService {
     productComparison: any[]
   ): Promise<CompetitiveAnalysis[]> {
     try {
+      if (!this.checkOpenAI()) {
+        return [];
+      }
+
       const prompt = `
         Perform competitive analysis based on:
         
@@ -277,7 +307,7 @@ export class BusinessIntelligenceService {
         Return as JSON array with competitive analysis
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await openai!.chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -300,6 +330,10 @@ export class BusinessIntelligenceService {
     financialData: any[]
   ): Promise<RiskAssessment[]> {
     try {
+      if (!this.checkOpenAI()) {
+        return [];
+      }
+
       const prompt = `
         Assess business risks based on:
         
@@ -323,7 +357,7 @@ export class BusinessIntelligenceService {
         Return as JSON array with risk assessment
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await openai!.chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -344,6 +378,10 @@ export class BusinessIntelligenceService {
     allData: any[]
   ): Promise<any[]> {
     try {
+      if (!this.checkOpenAI()) {
+        return [];
+      }
+
       const prompt = `
         Generate comprehensive business insights based on all available data:
         
@@ -366,7 +404,7 @@ export class BusinessIntelligenceService {
         Return as JSON array with business insights
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await openai!.chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.4,

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { realTimeSyncService } from '@/lib/sync/realTimeSyncService';
-import { whatsAppService } from '@/lib/whatsapp/whatsappService';
-import { wooCommerceService } from '@/lib/woocommerce/woocommerceService';
 import { sriLankaCourierService } from '@/lib/courier/sriLankaCourierService';
 
 export async function GET(request: NextRequest) {
@@ -28,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     // Check database connection
     try {
-      await prisma.$queryRaw`SELECT 1`;
+      await prisma.$connect();
       health.services.database = 'healthy';
     } catch (error) {
       health.services.database = 'unhealthy';

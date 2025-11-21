@@ -4,48 +4,118 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+     /* ERP Light Mode Colors */
+    /* Background: #F9FAFB (slate-50) */
+    --background: 210 40% 98%;
+    /* Text: #111827 (gray-900) */
     --foreground: 222.2 84% 4.9%;
+    
+    /* Surface: #FFFFFF (white) */
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
+    
+    /* Panel: #FFFFFF (white) */
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
+    
+    /* ERP Primary: Blue-600 #2563EB */
+    --primary: 217.2 91.2% 53.3%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary Surface: #F3F4F6 (slate-100) */
     --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 84% 4.9%;
+    
+    /* Muted: #F3F4F6 (slate-100) */
     --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
+    
+    /* Accent */
     --accent: 210 40% 96%;
     --accent-foreground: 222.2 84% 4.9%;
+    
+    /* Destructive: Red-600 #DC2626 */
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Border: #E5E7EB (slate-200) */
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    
+    /* Ring: Blue-600 #2563EB */
+    --ring: 217.2 91.2% 53.3%;
+    
+    /* Border Radius */
     --radius: 0.5rem;
+    
+    /* ERP Semantic Surface Tokens */
+    /* Dashboard Background: #F9FAFB */
+    --surface: 210 40% 98%;
+    /* Panel/Card: #FFFFFF */
+    --surface-panel: 0 0% 100%;
+    /* Subpanel/Input: #F3F4F6 */
+    --surface-subpanel: 210 40% 96%;
+    
+    /* ERP Status Colors (Light Mode) */
+    --success: 142.1 76.2% 36.3%; /* Green-600 #16A34A */
+    --warning: 32.1 94.6% 43.7%; /* Orange-600 #D97706 */
+    --error: 0 84.2% 60.2%; /* Red-600 #DC2626 */
   }
 
   .dark {
+    /* ERP Dark Mode Colors */
+    /* Background: #0F172A (slate-900) */
     --background: 222.2 84% 4.9%;
+    /* Text: #F1F5F9 (slate-100) */
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    
+    /* Surface: #1E293B (slate-800) */
+    --card: 217.2 32.6% 17.5%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    
+    /* Panel: #1E293B (slate-800) */
+    --popover: 217.2 32.6% 17.5%;
     --popover-foreground: 210 40% 98%;
+    
+    /* ERP Primary: Blue-500 #3B82F6 */
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
+    
+    /* Secondary Surface: #334155 (slate-700) */
+    --secondary: 215 27.9% 16.9%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    
+    /* Muted: #334155 (slate-700) */
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 217.9 10.6% 64.9%;
+    
+    /* Accent */
+    --accent: 215 27.9% 16.9%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    
+    /* Destructive: Red-400 #F87171 */
+    --destructive: 0 72.2% 50.6%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Border: #334155 (slate-700) */
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+    
+    /* Ring: Blue-500 #3B82F6 */
+    --ring: 217.2 91.2% 59.8%;
+    
+    /* ERP Semantic Surface Tokens (Dark Mode) */
+    /* Dashboard Background: #0F172A */
+    --surface: 222.2 84% 4.9%;
+    /* Panel/Card: #1E293B */
+    --surface-panel: 217.2 32.6% 17.5%;
+    /* Subpanel/Input: #334155 */
+    --surface-subpanel: 215 27.9% 16.9%;
+    
+    /* ERP Status Colors (Dark Mode) */
+    --success: 142.1 70.6% 45.3%; /* Green-500 #22C55E */
+    --warning: 45.4 93.4% 47.5%; /* Yellow-500 #FACC15 */
+    --error: 0 72.2% 50.6%; /* Red-400 #F87171 */
   }
 }
 
@@ -101,12 +171,12 @@
 
   /* Loading spinner */
   .loading-spinner {
-    @apply animate-spin rounded-full border-2 border-gray-300 border-t-blue-600;
+    @apply animate-spin rounded-full border-2 border-slate-300 dark:border-slate-600 border-t-primary-600 dark:border-t-primary-500;
   }
 
-  /* Card styles */
+  /* Card styles - ERP Design */
   .card {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-soft border border-gray-200 dark:border-gray-700;
+    @apply bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700;
   }
 
   .card-header {
@@ -254,9 +324,9 @@
     @apply bg-blue-600 text-white;
   }
 
-  /* Dashboard card styles */
+  /* Dashboard card styles - ERP Design */
   .dashboard-card {
-    @apply bg-white dark:bg-gray-800 rounded-lg shadow-soft p-6 border border-gray-200 dark:border-gray-700;
+    @apply bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-4 border border-slate-200 dark:border-slate-700;
   }
 
   .dashboard-stat {

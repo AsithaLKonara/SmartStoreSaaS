@@ -7,31 +7,23 @@ import {
   BarChart3,
   TrendingUp,
   Users,
-  DollarSign,
   Package,
-  ShoppingCart,
   Target,
   AlertTriangle,
   CheckCircle,
-  Clock,
-  Star,
   Brain,
   Zap,
   Lightbulb,
   ArrowUpRight,
   ArrowDownRight,
   Activity,
-  PieChart,
-  LineChart,
-  Calendar,
-  Filter,
   Download,
   RefreshCw,
   Eye,
   Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface AIInsight {

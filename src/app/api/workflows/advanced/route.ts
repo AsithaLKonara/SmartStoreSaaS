@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ executions });
 
       case 'analytics':
-        const analytics = await workflowEngine.getWorkflowAnalytics();
+        const analytics = await workflowEngine.getWorkflowAnalytics(workflowId || '', { start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), end: new Date() });
         return NextResponse.json({ analytics });
 
       case 'workflow':
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         }
         const workflow = await prisma.workflow.findUnique({
           where: { id: workflowId },
-          include: { nodes: true, connections: true }
+          include: { workflowNodes: true, workflowConnections: true }
         });
         return NextResponse.json({ workflow });
 
@@ -48,18 +48,18 @@ export async function GET(request: NextRequest) {
         const execution = await prisma.workflowExecution.findFirst({
           where: { workflowId },
           include: { logs: true },
-          orderBy: { createdAt: 'desc' }
+          orderBy: { startedAt: 'desc' }
         });
         return NextResponse.json({ execution });
 
       default:
         const workflows = await prisma.workflow.findMany({
           include: { 
-            nodes: true, 
-            connections: true,
+            workflowNodes: true, 
+            workflowConnections: true,
             executions: {
               take: 5,
-              orderBy: { createdAt: 'desc' }
+              orderBy: { startedAt: 'desc' }
             }
           }
         });
@@ -74,14 +74,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { action, ...data } = body;
 
     switch (action) {
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
               create: data.connections
             }
           },
-          include: { nodes: true, connections: true }
+          include: { workflowNodes: true, workflowConnections: true }
         });
         return NextResponse.json({ workflow: updatedWorkflow });
 
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
       case 'clone-workflow':
         const originalWorkflow = await prisma.workflow.findUnique({
           where: { id: data.workflowId },
-          include: { nodes: true, connections: true }
+          include: { workflowNodes: true, workflowConnections: true }
         });
         
         if (!originalWorkflow) {
@@ -158,23 +158,23 @@ export async function POST(request: NextRequest) {
             type: originalWorkflow.type,
             isActive: false,
             organizationId: originalWorkflow.organizationId,
-            nodes: {
-              create: originalWorkflow.nodes.map(node => ({
+            workflowNodes: {
+              create: (originalWorkflow.workflowNodes || []).map((node: any) => ({
                 type: node.type,
                 name: node.name,
                 config: node.config,
                 position: node.position
               }))
             },
-            connections: {
-              create: originalWorkflow.connections.map(conn => ({
+            workflowConnections: {
+              create: (originalWorkflow.workflowConnections || []).map((conn: any) => ({
                 sourceNodeId: conn.sourceNodeId,
                 targetNodeId: conn.targetNodeId,
                 condition: conn.condition
               }))
             }
           },
-          include: { nodes: true, connections: true }
+          include: { workflowNodes: true, workflowConnections: true }
         });
         return NextResponse.json({ workflow: clonedWorkflow });
 

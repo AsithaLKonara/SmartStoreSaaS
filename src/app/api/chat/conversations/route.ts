@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
         id: true,
       },
       _max: {
-        timestamp: true,
+        createdAt: true,
       },
     });
 
@@ -32,14 +32,14 @@ export async function GET(request: NextRequest) {
 
         const lastMessage = await prisma.chatMessage.findFirst({
           where: { customerId: conv.customerId },
-          orderBy: { timestamp: 'desc' },
+          orderBy: { createdAt: 'desc' },
         });
 
         const unreadCount = await prisma.chatMessage.count({
           where: {
             customerId: conv.customerId,
-            sender: { not: 'agent' },
-            read: false,
+            direction: 'INBOUND',
+            status: 'SENT',
           },
         });
 
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
             email: customer?.email || '',
           },
           lastMessage: lastMessage?.content || '',
-          lastMessageTime: lastMessage?.timestamp || conv._max.timestamp || new Date().toISOString(),
+          lastMessageTime: lastMessage?.createdAt || conv._max.createdAt || new Date().toISOString(),
           unreadCount,
           status: 'active', // This would be determined by business logic
           channel: 'whatsapp', // This would come from the message channel

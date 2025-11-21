@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
@@ -13,19 +13,32 @@ export async function GET(request: NextRequest) {
     const campaigns = await prisma.campaign.findMany({
       where: { organizationId: session.user.organizationId },
       orderBy: { createdAt: 'desc' },
+      include: {
+        metrics: true,
+      },
     });
 
-    // Add mock stats for demonstration
-    const campaignsWithStats = campaigns.map((campaign: any) => ({
-      ...campaign,
-      stats: {
-        sent: Math.floor(Math.random() * 1000) + 100,
-        delivered: Math.floor(Math.random() * 900) + 80,
-        opened: Math.floor(Math.random() * 500) + 50,
-        clicked: Math.floor(Math.random() * 100) + 10,
-        bounced: Math.floor(Math.random() * 20) + 1,
-      },
-    }));
+    // Get stats from CampaignMetric or use defaults
+    const campaignsWithStats = campaigns.map((campaign: any) => {
+      const metrics = campaign.metrics?.[0] || {
+        sent: 0,
+        delivered: 0,
+        opened: 0,
+        clicked: 0,
+        bounced: 0,
+      };
+
+      return {
+        ...campaign,
+        stats: {
+          sent: metrics.sent || 0,
+          delivered: metrics.delivered || 0,
+          opened: metrics.opened || 0,
+          clicked: metrics.clicked || 0,
+          bounced: metrics.bounced || 0,
+        },
+      };
+    });
 
     return NextResponse.json(campaignsWithStats);
   } catch (error) {
@@ -34,14 +47,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { name, type, content, settings } = body;
 
     if (!name || !type || !content) {
@@ -55,10 +68,31 @@ export async function POST(request: NextRequest) {
         content,
         settings: settings || {},
         organizationId: session.user.organizationId,
+        metrics: {
+          create: {
+            sent: 0,
+            delivered: 0,
+            opened: 0,
+            clicked: 0,
+            bounced: 0,
+          },
+        },
+      },
+      include: {
+        metrics: true,
       },
     });
 
-    return NextResponse.json(campaign, { status: 201 });
+    return NextResponse.json({
+      ...campaign,
+      stats: {
+        sent: 0,
+        delivered: 0,
+        opened: 0,
+        clicked: 0,
+        bounced: 0,
+      },
+    }, { status: 201 });
   } catch (error) {
     console.error('Error creating campaign:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

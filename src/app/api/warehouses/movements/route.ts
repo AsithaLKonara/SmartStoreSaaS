@@ -3,79 +3,98 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    // For now, we'll simulate inventory movements based on order activities
-    // In a real implementation, this would come from a dedicated movements table
-    const orderActivities = await prisma.orderActivity.findMany({
+    // Get movements filtered by organization through products
+    const movements = await prisma.inventoryMovement.findMany({
       where: {
-        order: { organizationId: session.user.organizationId },
-        type: { in: ['CREATED', 'CONFIRMED', 'PACKED', 'SHIPPED'] },
+        product: {
+          organizationId: session.user.organizationId,
+        },
       },
       include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            organizationId: true,
+          },
+        },
+        warehouse: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         order: {
-          include: {
-            items: {
-              include: {
-                product: true,
-              },
-            },
+          select: {
+            id: true,
+            orderNumber: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
           },
         },
       },
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: 100,
     });
 
-    // Transform order activities into inventory movements
-    const movements = orderActivities.map(activity => ({
-      id: activity.id,
-      productId: activity.order.items[0]?.productId || '',
-      productName: activity.order.items[0]?.product.name || 'Unknown Product',
-      type: activity.type === 'CREATED' ? 'out' : 'transfer' as any,
-      quantity: activity.order.items[0]?.quantity || 0,
-      fromLocation: 'Main Warehouse',
-      toLocation: activity.type === 'SHIPPED' ? 'Out for Delivery' : 'Processing',
-      reason: `Order ${activity.type.toLowerCase()}: ${activity.order.orderNumber}`,
-      date: activity.createdAt.toISOString(),
-      user: session.user.name || 'System',
+    // Format movements for response
+    const formattedMovements = movements.map(movement => ({
+      id: movement.id,
+      productId: movement.productId,
+      productName: movement.product.name,
+      type: movement.type,
+      quantity: movement.quantity,
+      fromLocation: movement.fromLocation || (movement.warehouse?.name || 'Unknown'),
+      toLocation: movement.toLocation || 'Unknown',
+      reason: movement.reason || 'Manual adjustment',
+      date: movement.createdAt.toISOString(),
+      user: movement.createdBy?.name || 'System',
+      warehouse: movement.warehouse?.name,
+      orderNumber: movement.order?.orderNumber,
     }));
 
-    return NextResponse.json(movements);
+    return NextResponse.json(formattedMovements);
   } catch (error) {
     console.error('Error fetching movements:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session?.user?.organizationId || !session?.user?.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { productId, type, quantity, fromLocation, toLocation, reason } = body;
+    const body = await _request.json();
+    const { productId, warehouseId, type, quantity, fromLocation, toLocation, reason, orderId } = body;
 
     if (!productId || !type || !quantity || !reason) {
       return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
     }
 
-    // Update product stock based on movement type
+    // Verify product belongs to organization
     const product = await prisma.product.findUnique({
       where: { id: productId },
     });
 
-    if (!product) {
+    if (!product || product.organizationId !== session.user.organizationId) {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
 
+    // Update product stock based on movement type
     let newStockQuantity = product.stockQuantity;
     if (type === 'in') {
       newStockQuantity += quantity;
@@ -86,27 +105,60 @@ export async function POST(request: NextRequest) {
       newStockQuantity -= quantity;
     }
 
-    // Update product stock
-    await prisma.product.update({
-      where: { id: productId },
-      data: { stockQuantity: newStockQuantity },
-    });
+    // Update product stock and create movement record in a transaction
+    const [updatedProduct, movement] = await prisma.$transaction([
+      prisma.product.update({
+        where: { id: productId },
+        data: { stockQuantity: newStockQuantity },
+      }),
+      prisma.inventoryMovement.create({
+        data: {
+          productId,
+          warehouseId: warehouseId || null,
+          type,
+          quantity,
+          fromLocation: fromLocation || null,
+          toLocation: toLocation || null,
+          reason,
+          orderId: orderId || null,
+          createdById: session.user.id,
+        },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          warehouse: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      }),
+    ]);
 
-    // Create movement record (in a real implementation, this would be a separate table)
-    const movement = {
-      id: `movement_${Date.now()}`,
-      productId,
-      productName: product.name,
-      type,
-      quantity,
-      fromLocation: fromLocation || 'Main Warehouse',
-      toLocation: toLocation || 'Main Warehouse',
-      reason,
-      date: new Date().toISOString(),
-      user: session.user.name || 'System',
-    };
-
-    return NextResponse.json(movement, { status: 201 });
+    return NextResponse.json({
+      id: movement.id,
+      productId: movement.productId,
+      productName: movement.product.name,
+      type: movement.type,
+      quantity: movement.quantity,
+      fromLocation: movement.fromLocation || movement.warehouse?.name || 'Unknown',
+      toLocation: movement.toLocation || 'Unknown',
+      reason: movement.reason,
+      date: movement.createdAt.toISOString(),
+      user: movement.createdBy?.name || 'System',
+      warehouse: movement.warehouse?.name,
+    }, { status: 201 });
   } catch (error) {
     console.error('Error creating movement:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
