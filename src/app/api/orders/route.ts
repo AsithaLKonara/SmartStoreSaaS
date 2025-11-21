@@ -141,13 +141,8 @@ export async function POST(_request: NextRequest) {
           totalAmount: totalAmount,
           subtotal: totalAmount,
           currency: 'USD',
-<<<<<<< HEAD
           notes: notes ? (typeof notes === 'string' ? notes : String(notes)) : null,
           organizationId: organizationId,
-=======
-          notes,
-          organizationId: session.user.organizationId!,
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           customerId,
           createdById: session.user.id!,
           items: {
