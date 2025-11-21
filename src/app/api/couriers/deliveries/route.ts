@@ -14,7 +14,6 @@ export async function GET(_request: NextRequest) {
     const orders = await prisma.order.findMany({
       where: {
         organizationId: session.user.organizationId,
-<<<<<<< HEAD
         status: { in: ['CONFIRMED', 'PACKED', 'OUT_FOR_DELIVERY'] }
       },
       include: {
@@ -29,18 +28,10 @@ export async function GET(_request: NextRequest) {
             courier: true,
           },
         },
-=======
-        status: 'OUT_FOR_DELIVERY',
-      },
-      include: {
-        customer: true,
-        items: true,
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       },
     });
 
     // Transform orders into delivery format
-<<<<<<< HEAD
     const deliveries = orders.map(order => {
       const shipment = order.shipments?.[0];
       return {
@@ -61,26 +52,6 @@ export async function GET(_request: NextRequest) {
         createdAt: order.createdAt.toISOString(),
       };
     });
-=======
-    const deliveries = orders.map((order: any) => ({
-      id: order.id,
-      orderNumber: order.orderNumber,
-      customerName: order.customer?.name || 'Unknown',
-      customerPhone: order.customer?.phone || '',
-      shippingAddress: order.shippingAddress || '',
-      status: order.status,
-      courierId: order.courierId || null,
-      courier: order.courier || null,
-      estimatedDeliveryTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
-      actualDeliveryTime: order.status === 'DELIVERED' ? order.updatedAt.toISOString() : undefined,
-      items: order.items.map((item: any) => ({
-        productId: item.productId,
-        quantity: item.quantity,
-        price: item.price,
-        total: item.total,
-      })),
-    }));
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
     return NextResponse.json(deliveries);
   } catch (error) {
@@ -108,7 +79,6 @@ export async function POST(_request: NextRequest) {
       where: { id: orderId },
       data: {
         status: 'OUT_FOR_DELIVERY',
-<<<<<<< HEAD
         shipments: {
           create: {
             courierId,
@@ -126,8 +96,6 @@ export async function POST(_request: NextRequest) {
             courier: true,
           },
         },
-=======
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       },
     });
 

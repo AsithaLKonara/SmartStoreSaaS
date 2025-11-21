@@ -90,28 +90,8 @@ async function setupWhatsAppIntegration(config: any, organizationId: string) {
     }
 
     // Save or update integration
-<<<<<<< HEAD
     const existing = await prisma.whatsAppIntegration.findFirst({
       where: { organizationId },
-=======
-    const integration = await prisma.whatsAppIntegration.upsert({
-      where: { phoneNumberId: config.phoneNumberId },
-      update: {
-        organizationId,
-        accessToken: config.accessToken,
-        webhookSecret: config.webhookSecret,
-        isActive: true,
-        settings: config.settings || {}
-      },
-      create: {
-        organizationId,
-        phoneNumberId: config.phoneNumberId,
-        accessToken: config.accessToken,
-        webhookSecret: config.webhookSecret,
-        isActive: true,
-        settings: config.settings || {}
-      }
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     });
     
     const integration = existing 

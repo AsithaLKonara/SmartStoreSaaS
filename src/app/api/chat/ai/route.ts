@@ -136,12 +136,6 @@ export async function POST(_request: NextRequest) {
     // Save AI response to conversation
     const aiMessage = await prisma.chatMessage.create({
       data: {
-<<<<<<< HEAD
-=======
-        conversationId,
-        direction: 'OUTBOUND' as any,
-        type: 'TEXT' as any,
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         content: aiResponse,
         direction: 'OUTBOUND',
         type: 'TEXT',
@@ -149,21 +143,11 @@ export async function POST(_request: NextRequest) {
         customerId: conversation?.customerId || '',
         organizationId: session.user.organizationId,
         metadata: {
-<<<<<<< HEAD
           sentiment: sentiment as any,
           isUrgent,
           confidence: 0.9,
           aiGenerated: true,
         } as any,
-=======
-          sentiment: sentiment.overall || 'neutral',
-          isUrgent: isUrgent,
-          confidence: 0.9,
-          aiGenerated: true,
-        },
-        organizationId: session.user.organizationId,
-        customerId: conversation.customerId,
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       },
     });
 
@@ -176,12 +160,8 @@ export async function POST(_request: NextRequest) {
     await prisma.customerConversation.update({
       where: { id: conversationId },
       data: {
-<<<<<<< HEAD
         updatedAt: new Date(),
         status: isUrgent ? 'urgent' : 'active',
-=======
-        status: isUrgent ? 'URGENT' : 'ACTIVE',
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       },
     });
 
@@ -233,12 +213,8 @@ async function createUrgentIssueNotification(conversation: any, message: string,
         type: 'URGENT_CHAT',
         title: 'Urgent Customer Issue',
         message: `Urgent issue in conversation #${conversation.id}: ${message.substring(0, 100)}...`,
-<<<<<<< HEAD
         organizationId,
         priority: 'HIGH',
-=======
-        recipient: conversation.assignedTo || conversation.customerId,
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         metadata: {
           conversationId: conversation.id,
           customerId: conversation.customerId,
@@ -303,11 +279,7 @@ async function getAIChatStats(organizationId: string): Promise<any> {
   try {
     const totalMessages = await prisma.chatMessage.count({
       where: {
-<<<<<<< HEAD
         organizationId,
-=======
-        conversation: { organizationId },
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         direction: 'OUTBOUND',
         metadata: { equals: { aiGenerated: true } },
       },
@@ -315,11 +287,7 @@ async function getAIChatStats(organizationId: string): Promise<any> {
 
     const urgentIssues = await prisma.chatMessage.count({
       where: {
-<<<<<<< HEAD
         organizationId,
-=======
-        conversation: { organizationId },
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         metadata: { equals: { isUrgent: true } },
       },
     });
@@ -348,11 +316,7 @@ async function calculateAverageResponseTime(organizationId: string): Promise<num
   try {
     const messages = await prisma.chatMessage.findMany({
       where: {
-<<<<<<< HEAD
         organizationId,
-=======
-        conversation: { organizationId },
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         direction: 'OUTBOUND',
         metadata: { equals: { aiGenerated: true } },
       },

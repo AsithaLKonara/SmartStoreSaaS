@@ -7,20 +7,7 @@ export interface EmailTemplate {
   htmlContent: string;
   textContent: string;
   variables: string[];
-<<<<<<< HEAD
   organizationId?: string;
-=======
-  isActive?: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-export interface EmailAttachment {
-  filename: string;
-  content: string;
-  type?: string;
-  disposition?: string;
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 }
 
 export interface EmailOptions {
@@ -268,19 +255,10 @@ export class EmailService {
       await prisma.organization.update({
         where: { id: organization.id },
         data: {
-<<<<<<< HEAD
           settings: {
             ...settings,
             emailTemplates,
           } as any,
-=======
-          name: template.name,
-          subject: template.subject,
-          htmlContent: template.htmlContent,
-          textContent: template.textContent,
-          variables: template.variables,
-          organizationId,
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         },
       });
       const createdTemplate = templateData;
@@ -349,7 +327,6 @@ export class EmailService {
       throw new Error('Customer email is required');
     }
 
-<<<<<<< HEAD
     const templateData = {
       customerName: order.customer.name,
       orderId: order.id,
@@ -363,8 +340,6 @@ export class EmailService {
       orderDate: order.createdAt.toLocaleDateString(),
     };
 
-=======
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     await this.sendEmail({
       to: customer.email,
       subject: 'Order Confirmation',
@@ -450,11 +425,7 @@ export class EmailService {
       templateData: {
         customerName: order.customer.name,
         orderId: order.id,
-<<<<<<< HEAD
         orderTotal: order.totalAmount,
-=======
-        orderTotal: order.totalAmount || 0,
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       },
       attachments: [{
         filename: `invoice-${order.id}.pdf`,
@@ -501,7 +472,6 @@ export class EmailService {
           listId,
           isActive: true,
           customFields,
-<<<<<<< HEAD
           subscribedAt: new Date(),
         };
         await prisma.userPreference.upsert({
@@ -521,11 +491,6 @@ export class EmailService {
         });
       }
       // TODO: Also store in a separate list for non-user emails
-=======
-          organizationId,
-        },
-      });
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     } catch (error) {
       console.error('Error adding to mailing list:', error);
       throw new Error('Failed to add to mailing list');
@@ -570,17 +535,9 @@ export class EmailService {
    */
   async sendCampaign(campaignId: string, organizationId: string): Promise<{ success: boolean; recipientCount: number }> {
     try {
-<<<<<<< HEAD
       // Get campaign from Organization settings
       const organization = await prisma.organization.findUnique({
         where: { id: organizationId },
-=======
-      const campaign = await prisma.emailCampaign.findUnique({
-        where: { id: campaignId },
-        include: {
-          template: true,
-        },
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       });
       if (!organization) {
         throw new Error('Organization not found');
@@ -593,7 +550,6 @@ export class EmailService {
         throw new Error('Campaign not found');
       }
 
-<<<<<<< HEAD
       // Get template
       const emailTemplates = settings.emailTemplates || [];
       const template = emailTemplates.find((t: any) => t.id === campaign.templateId);
@@ -623,17 +579,6 @@ export class EmailService {
 
       const result = await this.sendBulkEmail({
         templateId: template.id,
-=======
-      // For now, we'll use a simple approach without segments
-      // In a real implementation, you'd want to add segment support
-      const recipients = [{
-        email: 'test@example.com', // This should come from segments
-        templateData: {},
-      }];
-
-      const result = await this.sendBulkEmail({
-        templateId: campaign.templateId,
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         from: {
           email: process.env.FROM_EMAIL!,
           name: process.env.FROM_NAME || 'SmartStore AI',

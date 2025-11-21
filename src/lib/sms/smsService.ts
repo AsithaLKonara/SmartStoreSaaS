@@ -55,24 +55,6 @@ export class SMSService {
    */
   async sendSMS(options: SMSOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-<<<<<<< HEAD
-=======
-      // Log SMS in database
-      const smsLog = await prisma.smsLog.create({
-        data: {
-          phone: options.to,
-          message: options.message,
-          status: 'PENDING',
-          provider: this.provider,
-          organization: {
-            connect: {
-              id: process.env.DEFAULT_ORGANIZATION_ID || 'default'
-            }
-          }
-        },
-      });
-
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       let result;
       if (this.provider === 'twilio') {
         result = await this.sendWithTwilio(options);
@@ -83,7 +65,6 @@ export class SMSService {
       // Log SMS in Notification (smsLog model doesn't exist)
       await prisma.notification.create({
         data: {
-<<<<<<< HEAD
           type: 'SYSTEM',
           title: 'SMS Sent',
           message: `SMS sent to ${options.to}`,
@@ -101,11 +82,6 @@ export class SMSService {
               scheduledTime: options.scheduledTime,
             },
           } as any,
-=======
-          status: result.success ? 'SENT' : 'FAILED',
-          messageId: result.messageId,
-          sentAt: result.success ? new Date() : undefined,
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         },
       });
 
@@ -396,7 +372,6 @@ export class SMSService {
       // Log incoming message in Notification (smsLog model doesn't exist)
       await prisma.notification.create({
         data: {
-<<<<<<< HEAD
           type: 'SYSTEM',
           title: 'SMS Received',
           message: `SMS received from ${from}`,
@@ -411,18 +386,6 @@ export class SMSService {
               receivedAt: new Date(),
             },
           } as any,
-=======
-          phone: from,
-          message: body,
-          status: 'delivered',
-          provider: 'twilio',
-          messageId,
-          organization: {
-            connect: {
-              id: process.env.DEFAULT_ORGANIZATION_ID || 'default'
-            }
-          }
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         },
       });
 
@@ -510,7 +473,6 @@ export class SMSService {
         },
       });
 
-<<<<<<< HEAD
       const logs = notifications
         .map(n => (n.metadata as any)?.smsLog)
         .filter((log): log is NonNullable<typeof log> => !!log);
@@ -519,12 +481,6 @@ export class SMSService {
       const delivered = logs.filter(log => log.status === 'DELIVERED').length;
       const failed = logs.filter(log => log.status === 'FAILED').length;
       const clicked = logs.filter(log => log.clicked).length;
-=======
-      const sent = logs.filter((log: any) => log.status === 'SENT').length;
-      const delivered = logs.filter((log: any) => log.status === 'DELIVERED').length;
-      const failed = logs.filter((log: any) => log.status === 'FAILED').length;
-      const clicked = logs.filter((log: any) => log.clicked).length;
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
       return {
         sent,

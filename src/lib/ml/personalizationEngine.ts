@@ -516,7 +516,6 @@ export class PersonalizationEngine {
       }
 
       // Broadcast event
-<<<<<<< HEAD
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: { organizationId: true },
@@ -526,14 +525,6 @@ export class PersonalizationEngine {
         action: 'create',
         entityId: userId,
         organizationId: user?.organizationId || '',
-=======
-      await realTimeSyncService.broadcastEvent({
-        id: `user_interaction_${userId}_${Date.now()}`,
-        type: 'message',
-        action: 'create',
-        entityId: userId,
-        organizationId: 'personalization',
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         data: { userId, interactionType, itemId, itemType },
         timestamp: new Date(),
         source: 'personalization'

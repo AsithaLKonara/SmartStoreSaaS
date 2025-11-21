@@ -166,20 +166,9 @@ export class VisualSearchService {
       // Extract features from search image
       const searchFeatures = await this.extractImageFeatures(imageBuffer);
 
-<<<<<<< HEAD
       // Get all products with embeddings stored in metadata
       const products = await prisma.product.findMany({
         where: { organizationId },
-=======
-      // Get all product embeddings
-      const productEmbeddings = await prisma.productEmbedding.findMany({
-        where: {
-          product: { organizationId },
-        },
-        include: {
-          product: true,
-        },
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       });
 
       // Get embeddings from Organization settings
@@ -212,7 +201,6 @@ export class VisualSearchService {
           
           const similarity = this.cosineSimilarity(searchFeatures, embedding);
 
-<<<<<<< HEAD
           return {
             productId: product.id,
             similarity,
@@ -225,20 +213,6 @@ export class VisualSearchService {
             },
           };
         });
-=======
-        return {
-          productId: embedding.productId,
-          similarity,
-          product: {
-            id: embedding.product.id,
-            name: embedding.product.name,
-            price: embedding.product.price,
-            images: embedding.product.images || [],
-            description: embedding.product.description || undefined,
-          },
-        };
-      });
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
       // Filter by threshold and sort by similarity
       return similarities
@@ -270,31 +244,9 @@ export class VisualSearchService {
           const primaryImage = product.images[0];
           const features = await this.extractImageFeatures(primaryImage);
 
-<<<<<<< HEAD
           // Store embedding in Organization settings (Product model doesn't have metadata field)
           const organization = await prisma.organization.findUnique({
             where: { id: organizationId },
-=======
-          // Store or update embedding
-          await prisma.productEmbedding.upsert({
-            where: { 
-              productId_modelVersion: {
-                productId: product.id,
-                modelVersion: "v1"
-              }
-            },
-            update: {
-              embedding: features,
-              imageUrl: primaryImage,
-              updatedAt: new Date(),
-            },
-            create: {
-              productId: product.id,
-              embedding: features,
-              imageUrl: primaryImage,
-              organizationId: product.organizationId,
-            },
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           });
 
           if (organization) {
@@ -478,30 +430,9 @@ export class VisualSearchService {
         try {
           const features = await this.extractImageFeatures(image.imageUrl);
           
-<<<<<<< HEAD
           // Store embedding in Product metadata
           const product = await prisma.product.findUnique({
             where: { id: image.productId },
-=======
-          await prisma.productEmbedding.upsert({
-            where: { 
-              productId_modelVersion: {
-                productId: image.productId,
-                modelVersion: "v1"
-              }
-            },
-            update: {
-              embedding: features,
-              imageUrl: image.imageUrl,
-              updatedAt: new Date(),
-            },
-            create: {
-              productId: image.productId,
-              embedding: features,
-              imageUrl: image.imageUrl,
-              organizationId,
-            },
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           });
 
           if (product) {
@@ -538,18 +469,8 @@ export class VisualSearchService {
     threshold: number = 0.9
   ): Promise<VisualSearchResult[]> {
     try {
-<<<<<<< HEAD
       const product = await prisma.product.findUnique({
         where: { id: productId },
-=======
-      const productEmbedding = await prisma.productEmbedding.findUnique({
-        where: { 
-          productId_modelVersion: {
-            productId,
-            modelVersion: "v1"
-          }
-        },
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       });
 
       if (!product) {
@@ -573,7 +494,6 @@ export class VisualSearchService {
         throw new Error('Product embedding not found');
       }
 
-<<<<<<< HEAD
       const embedding = embeddingData.embedding as number[];
       
       // Get all products with embeddings
@@ -610,18 +530,6 @@ export class VisualSearchService {
       return similarities
         .filter(r => r.similarity >= threshold)
         .sort((a, b) => b.similarity - a.similarity);
-=======
-      if (!productEmbedding.imageUrl) {
-        throw new Error('Product embedding has no image URL');
-      }
-      
-      return await this.searchByImage(
-        productEmbedding.imageUrl,
-        organizationId,
-        10,
-        threshold
-      );
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     } catch (error) {
       console.error('Error finding similar products:', error);
       throw new Error('Failed to find similar products');

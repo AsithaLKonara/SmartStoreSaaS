@@ -1,27 +1,11 @@
 import OpenAI from 'openai';
 import { prisma } from '../prisma';
 
-<<<<<<< HEAD
 const openai = process.env.OPENAI_API_KEY 
   ? new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     })
   : null;
-=======
-// Lazy initialization of OpenAI client to prevent build-time errors
-let openai: OpenAI | null = null;
-
-function getOpenAIClient(): OpenAI {
-  if (!openai) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY environment variable is not set');
-    }
-    openai = new OpenAI({ apiKey });
-  }
-  return openai;
-}
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
 export interface CustomerLTV {
   customerId: string;

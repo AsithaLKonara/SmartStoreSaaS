@@ -14,7 +14,6 @@ export async function GET(
     }
 
     const messages = await prisma.chatMessage.findMany({
-<<<<<<< HEAD
       where: {
         customerId: params.conversationId,
         organizationId: session.user.organizationId,
@@ -29,11 +28,6 @@ export async function GET(
         },
       },
       orderBy: { createdAt: 'asc' },
-=======
-      where: { conversationId: params.conversationId },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     });
 
     return NextResponse.json({ messages });
@@ -62,7 +56,6 @@ export async function POST(
 
     const message = await prisma.chatMessage.create({
       data: {
-<<<<<<< HEAD
         content,
         direction: sender === 'agent' ? 'OUTBOUND' : 'INBOUND',
         type: 'TEXT',
@@ -82,14 +75,6 @@ export async function POST(
             email: true,
           },
         },
-=======
-        content: content,
-        type: 'TEXT',
-        direction: 'INBOUND',
-        conversationId: params.conversationId,
-        customerId: params.conversationId,
-        organizationId: session.user.organizationId,
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       },
     });
 

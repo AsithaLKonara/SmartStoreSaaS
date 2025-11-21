@@ -28,18 +28,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ executions });
 
       case 'analytics':
-<<<<<<< HEAD
         const analytics = await workflowEngine.getWorkflowAnalytics(workflowId || '', { start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), end: new Date() });
-=======
-        if (!workflowId) {
-          return NextResponse.json({ error: 'Workflow ID required for analytics' }, { status: 400 });
-        }
-        const timeRange = {
-          start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
-          end: new Date()
-        };
-        const analytics = await workflowEngine.getWorkflowAnalytics(workflowId, timeRange);
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         return NextResponse.json({ analytics });
 
       case 'workflow':
@@ -170,11 +159,7 @@ export async function POST(_request: NextRequest) {
             isActive: false,
             organizationId: originalWorkflow.organizationId,
             workflowNodes: {
-<<<<<<< HEAD
               create: (originalWorkflow.workflowNodes || []).map((node: any) => ({
-=======
-              create: originalWorkflow.workflowNodes?.map((node: any) => ({
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
                 type: node.type,
                 name: node.name,
                 config: node.config,
@@ -182,11 +167,7 @@ export async function POST(_request: NextRequest) {
               })) || []
             },
             workflowConnections: {
-<<<<<<< HEAD
               create: (originalWorkflow.workflowConnections || []).map((conn: any) => ({
-=======
-              create: originalWorkflow.workflowConnections?.map((conn: any) => ({
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
                 sourceNodeId: conn.sourceNodeId,
                 targetNodeId: conn.targetNodeId,
                 condition: conn.condition

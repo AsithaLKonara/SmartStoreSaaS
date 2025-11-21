@@ -157,11 +157,7 @@ async function handleOrderQuery(message: any, customer: any): Promise<void> {
     `Order #${order.orderNumber}: ${order.status} - $${order.totalAmount}`
   ).join('\n');
 
-<<<<<<< HEAD
     await whatsAppService.sendTextMessage(
-=======
-  await whatsAppService.sendTextMessage(
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     message.from,
     `Here are your recent orders:\n\n${orderList}`,
     message.organizationId
@@ -191,11 +187,7 @@ async function handleProductQuery(message: any, customer: any): Promise<void> {
     `${product.name} - $${product.price} (${product.stockQuantity} in stock)`
   ).join('\n');
 
-<<<<<<< HEAD
     await whatsAppService.sendTextMessage(
-=======
-  await whatsAppService.sendTextMessage(
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     message.from,
     `Here are some of our products:\n\n${productList}\n\nVisit our website to see more!`,
     message.organizationId
@@ -203,11 +195,7 @@ async function handleProductQuery(message: any, customer: any): Promise<void> {
 }
 
 async function handleSupportQuery(message: any, customer: any): Promise<void> {
-<<<<<<< HEAD
     await whatsAppService.sendTextMessage(
-=======
-  await whatsAppService.sendTextMessage(
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     message.from,
     'Our support team is here to help! Please provide your order number or describe your issue, and we\'ll get back to you soon.',
     message.organizationId

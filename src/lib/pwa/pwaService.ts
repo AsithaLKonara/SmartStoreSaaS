@@ -273,11 +273,7 @@ export class PWAService {
       // For now, we'll simulate the notification
       console.log('Sending push notification:', payload);
 
-<<<<<<< HEAD
       // Store notification in database
-=======
-      // Store notification in database using existing Notification model
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       await prisma.notification.create({
         data: {
           type: 'push',

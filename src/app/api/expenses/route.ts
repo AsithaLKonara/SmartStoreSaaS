@@ -29,13 +29,8 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-<<<<<<< HEAD
     const body = await _request.json();
     const { title, description, amount, category, type, paymentMethod, vendor, tags } = body;
-=======
-    const body = await request.json();
-    const { description, amount, category, date, metadata } = body;
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
     if (!description || !amount || !date) {
       return NextResponse.json({ message: 'Description, amount, and date are required' }, { status: 400 });
@@ -43,18 +38,10 @@ export async function POST(_request: NextRequest) {
 
     const expense = await prisma.expense.create({
       data: {
-<<<<<<< HEAD
         description: title || description || 'Expense',
         amount: parseFloat(amount),
         category: category || null,
         date: new Date(),
-=======
-        description,
-        amount: parseFloat(amount),
-        category: category || null,
-        date: new Date(date),
-        metadata: metadata || {},
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         organizationId: session.user.organizationId,
         metadata: {
           type,

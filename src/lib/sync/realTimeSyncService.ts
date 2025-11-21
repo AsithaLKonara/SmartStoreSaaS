@@ -251,11 +251,7 @@ export class RealTimeSyncService extends EventEmitter {
         await prisma.product.create({
           data: {
             ...data,
-<<<<<<< HEAD
             organizationId,
-=======
-            organizationId
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           }
         });
         break;
@@ -263,11 +259,7 @@ export class RealTimeSyncService extends EventEmitter {
         await prisma.product.update({
           where: { id: data.id, organizationId },
           data: {
-<<<<<<< HEAD
             ...data,
-=======
-            ...data
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           }
         });
         break;
@@ -287,11 +279,7 @@ export class RealTimeSyncService extends EventEmitter {
         await prisma.order.create({
           data: {
             ...data,
-<<<<<<< HEAD
             organizationId,
-=======
-            organizationId
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           }
         });
         break;
@@ -299,11 +287,7 @@ export class RealTimeSyncService extends EventEmitter {
         await prisma.order.update({
           where: { id: data.id, organizationId },
           data: {
-<<<<<<< HEAD
             ...data,
-=======
-            ...data
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           }
         });
         break;
@@ -323,11 +307,7 @@ export class RealTimeSyncService extends EventEmitter {
         await prisma.customer.create({
           data: {
             ...data,
-<<<<<<< HEAD
             organizationId,
-=======
-            organizationId
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           }
         });
         break;
@@ -335,11 +315,7 @@ export class RealTimeSyncService extends EventEmitter {
         await prisma.customer.update({
           where: { id: data.id, organizationId },
           data: {
-<<<<<<< HEAD
             ...data,
-=======
-            ...data
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           }
         });
         break;
@@ -360,10 +336,6 @@ export class RealTimeSyncService extends EventEmitter {
           where: { id: data.productId, organizationId },
           data: {
             stockQuantity: data.quantity,
-<<<<<<< HEAD
-=======
-            updatedAt: new Date()
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           }
         });
         break;
@@ -378,11 +350,7 @@ export class RealTimeSyncService extends EventEmitter {
         await prisma.chatMessage.create({
           data: {
             ...data,
-<<<<<<< HEAD
             organizationId,
-=======
-            organizationId
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           }
         });
         break;

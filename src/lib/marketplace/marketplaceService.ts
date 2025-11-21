@@ -188,7 +188,6 @@ export class MarketplaceService {
         }
       });
 
-<<<<<<< HEAD
       // Send welcome email
       await this.sendVendorWelcomeEmail(vendor.userId);
 
@@ -201,16 +200,6 @@ export class MarketplaceService {
         entityId: vendor.id,
         organizationId: 'marketplace',
         data: vendor,
-=======
-      // Broadcast vendor registration event
-      await realTimeSyncService.broadcastEvent({
-        id: `vendor_reg_${vendor.id}`,
-        type: 'customer',
-        action: 'create',
-        entityId: vendor.id,
-        data: { ...vendor, vendorType: 'new_registration' },
-        source: 'marketplace',
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         timestamp: new Date(),
         organizationId: vendorData.organizationId,
       });
@@ -277,7 +266,6 @@ export class MarketplaceService {
         }
       });
 
-<<<<<<< HEAD
       // Send approval email
       await this.sendVendorApprovalEmail(vendor.userId);
 
@@ -290,16 +278,6 @@ export class MarketplaceService {
         entityId: vendorId,
         organizationId: 'marketplace',
         data: { vendorId, approvedBy: adminId },
-=======
-      // Broadcast vendor approval event
-      await realTimeSyncService.broadcastEvent({
-        id: `vendor_approval_${vendorId}`,
-        type: 'customer',
-        action: 'update',
-        entityId: vendorId,
-        data: { vendorStatus: 'approved', approvedBy: adminId },
-        source: 'marketplace',
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         timestamp: new Date(),
         organizationId: 'marketplace',
       });

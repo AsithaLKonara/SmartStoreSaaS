@@ -1,26 +1,10 @@
 import OpenAI from 'openai';
 
-<<<<<<< HEAD
 const openai = process.env.OPENAI_API_KEY 
   ? new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     })
   : null;
-=======
-// Lazy initialization of OpenAI client to prevent build-time errors
-let openai: OpenAI | null = null;
-
-function getOpenAIClient(): OpenAI {
-  if (!openai) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY environment variable is not set');
-    }
-    openai = new OpenAI({ apiKey });
-  }
-  return openai;
-}
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
 export interface RealTimeMetrics {
   timestamp: Date;
@@ -210,11 +194,7 @@ export class BusinessIntelligenceService {
         Return as JSON array with KPI details
       `;
 
-<<<<<<< HEAD
       const completion = await openai!.chat.completions.create({
-=======
-      const completion = await getOpenAIClient().chat.completions.create({
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.2,
@@ -262,11 +242,7 @@ export class BusinessIntelligenceService {
         Return as JSON array with forecast details
       `;
 
-<<<<<<< HEAD
       const completion = await openai!.chat.completions.create({
-=======
-      const completion = await getOpenAIClient().chat.completions.create({
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -315,11 +291,7 @@ export class BusinessIntelligenceService {
         Return as JSON array with trend analysis
       `;
 
-<<<<<<< HEAD
       const completion = await openai!.chat.completions.create({
-=======
-      const completion = await getOpenAIClient().chat.completions.create({
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.4,
@@ -364,11 +336,7 @@ export class BusinessIntelligenceService {
         Return as JSON array with competitive analysis
       `;
 
-<<<<<<< HEAD
       const completion = await openai!.chat.completions.create({
-=======
-      const completion = await getOpenAIClient().chat.completions.create({
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -418,11 +386,7 @@ export class BusinessIntelligenceService {
         Return as JSON array with risk assessment
       `;
 
-<<<<<<< HEAD
       const completion = await openai!.chat.completions.create({
-=======
-      const completion = await getOpenAIClient().chat.completions.create({
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -469,11 +433,7 @@ export class BusinessIntelligenceService {
         Return as JSON array with business insights
       `;
 
-<<<<<<< HEAD
       const completion = await openai!.chat.completions.create({
-=======
-      const completion = await getOpenAIClient().chat.completions.create({
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.4,

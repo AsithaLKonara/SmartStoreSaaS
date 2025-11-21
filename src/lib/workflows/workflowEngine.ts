@@ -411,37 +411,16 @@ export class WorkflowEngine {
       await emailService.sendEmail({
         to: order.customer.email,
         subject: `Order Confirmation #${order.orderNumber}`,
-<<<<<<< HEAD
         templateId: 'order-confirmation',
         templateData: { order },
-=======
-        templateId: 'order_confirmation',
-        templateData: {
-          orderNumber: order.orderNumber,
-          customerName: order.customer.name,
-          totalAmount: order.totalAmount,
-          items: order.items.map((item: any) => ({
-            name: item.product.name,
-            quantity: item.quantity,
-            price: item.price
-          }))
-        }
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       });
     }
 
     // Send WhatsApp confirmation only if customer has phone
     if (order.customer.phone) {
-<<<<<<< HEAD
       await whatsappService.sendTextMessage(
         order.customer.phone,
         `Your order #${order.orderNumber} has been confirmed! Total: $${order.totalAmount}`
-=======
-      await whatsAppService.sendTextMessage(
-        order.customer.phone,
-        `Your order #${order.orderNumber} has been confirmed! Total: $${order.totalAmount}`,
-        order.organizationId
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       );
     }
   }
@@ -524,29 +503,15 @@ export class WorkflowEngine {
         to: customer.email,
         subject: 'Welcome to SmartStore AI!',
         templateId: 'welcome',
-<<<<<<< HEAD
         templateData: { customer },
-=======
-        templateData: {
-          customerName: customer.name,
-          organizationName: organization.name
-        }
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       });
     }
 
     // Send welcome WhatsApp message only if customer has phone
     if (customer.phone) {
-<<<<<<< HEAD
       await whatsappService.sendTextMessage(
         customer.phone,
         `Welcome to SmartStore AI! We're excited to have you as a customer.`
-=======
-      await whatsAppService.sendTextMessage(
-        customer.phone,
-        `Welcome to SmartStore AI! We're excited to have you as a customer.`,
-        organization.id
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       );
     }
   }

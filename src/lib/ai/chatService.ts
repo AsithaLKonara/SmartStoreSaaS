@@ -45,7 +45,6 @@ interface ChatConversationData {
 }
 
 export class AIChatService {
-<<<<<<< HEAD
   private openai: OpenAI | null;
   private ollamaBaseUrl: string;
 
@@ -55,12 +54,6 @@ export class AIChatService {
           apiKey: process.env.OPENAI_API_KEY,
         })
       : null;
-=======
-  private openai: OpenAI | null = null;
-  private ollamaBaseUrl: string;
-
-  constructor() {
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     this.ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
   }
 
@@ -90,14 +83,10 @@ export class AIChatService {
         - reason: string
       `;
 
-<<<<<<< HEAD
       if (!this.openai) {
         throw new Error('OpenAI API key not configured');
       }
       const response = await this.openai.chat.completions.create({
-=======
-      const response = await this.getOpenAIClient().chat.completions.create({
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
@@ -144,14 +133,10 @@ export class AIChatService {
         Return JSON array with product recommendations.
       `;
 
-<<<<<<< HEAD
       if (!this.openai) {
         throw new Error('OpenAI API key not configured');
       }
       const response = await this.openai.chat.completions.create({
-=======
-      const response = await this.getOpenAIClient().chat.completions.create({
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.4,
@@ -183,14 +168,10 @@ export class AIChatService {
         - notes: string (optional)
       `;
 
-<<<<<<< HEAD
       if (!this.openai) {
         throw new Error('OpenAI API key not configured');
       }
       const response = await this.openai.chat.completions.create({
-=======
-      const response = await this.getOpenAIClient().chat.completions.create({
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.2,
@@ -229,14 +210,10 @@ export class AIChatService {
         Provide a helpful, accurate response. If the question isn't covered in FAQs, say so politely.
       `;
 
-<<<<<<< HEAD
       if (!this.openai) {
         throw new Error('OpenAI API key not configured');
       }
       const response = await this.openai.chat.completions.create({
-=======
-      const response = await this.getOpenAIClient().chat.completions.create({
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
@@ -283,14 +260,10 @@ export class AIChatService {
         Be helpful and informative.
       `;
 
-<<<<<<< HEAD
       if (!this.openai) {
         throw new Error('OpenAI API key not configured');
       }
       const response = await this.openai.chat.completions.create({
-=======
-      const response = await this.getOpenAIClient().chat.completions.create({
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.4,
@@ -316,14 +289,10 @@ export class AIChatService {
         - overall: "positive" | "negative" | "neutral"
       `;
 
-<<<<<<< HEAD
       if (!this.openai) {
         throw new Error('OpenAI API key not configured');
       }
       const response = await this.openai.chat.completions.create({
-=======
-      const response = await this.getOpenAIClient().chat.completions.create({
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
@@ -359,14 +328,10 @@ export class AIChatService {
         - reason: string
       `;
 
-<<<<<<< HEAD
       if (!this.openai) {
         throw new Error('OpenAI API key not configured');
       }
       const response = await this.openai.chat.completions.create({
-=======
-      const response = await this.getOpenAIClient().chat.completions.create({
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.2,

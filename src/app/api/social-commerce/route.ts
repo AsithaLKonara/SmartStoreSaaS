@@ -51,14 +51,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ analytics });
 
       case 'scheduled-posts':
-<<<<<<< HEAD
         const scheduledPosts = await socialCommerceService.getScheduledPosts(platformId || undefined);
-=======
-        if (!platformId) {
-          return NextResponse.json({ error: 'Platform ID required' }, { status: 400 });
-        }
-        const scheduledPosts = await socialCommerceService.getScheduledPosts(platformId);
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         return NextResponse.json({ posts: scheduledPosts });
 
       case 'social-products':
@@ -169,11 +162,7 @@ export async function POST(_request: NextRequest) {
             const products = await socialCommerceService.syncProductsToPlatform(platformId, productIds);
             results.push({ platformId, success: true, products });
           } catch (error) {
-<<<<<<< HEAD
             results.push({ platformId, success: false, error: error instanceof Error ? error.message : String(error) });
-=======
-            results.push({ platformId, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           }
         }
         return NextResponse.json({ results });
@@ -186,11 +175,7 @@ export async function POST(_request: NextRequest) {
             const post = await socialCommerceService.publishPost(postId);
             publishResults.push({ postId, success: true, post });
           } catch (error) {
-<<<<<<< HEAD
             publishResults.push({ postId, success: false, error: error instanceof Error ? error.message : String(error) });
-=======
-            publishResults.push({ postId, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           }
         }
         return NextResponse.json({ results: publishResults });
@@ -258,16 +243,10 @@ export async function POST(_request: NextRequest) {
           return NextResponse.json({ error: 'Platform not found' }, { status: 404 });
         }
 
-<<<<<<< HEAD
         const totalEngagement = platformStats.socialPosts.reduce((sum, post) => {
           const engagement = post.engagement as any;
           return sum + (engagement?.likes || 0) + (engagement?.comments || 0) + (engagement?.shares || 0);
         }, 0);
-=======
-        const totalEngagement = platformStats.socialPosts.reduce((sum: number, post: any) => 
-          sum + (post.engagement?.likes || 0) + (post.engagement?.comments || 0) + (post.engagement?.shares || 0), 0
-        );
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
         const stats = {
           productCount: platformStats._count.socialProducts,

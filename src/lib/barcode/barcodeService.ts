@@ -253,11 +253,7 @@ export class BarcodeService {
     try {
       const product = await prisma.product.findFirst({
         where: {
-<<<<<<< HEAD
           sku: barcode, // Use sku field or check dimensions metadata
-=======
-          sku: barcode,
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           organizationId,
           isActive: true,
         },
@@ -273,19 +269,11 @@ export class BarcodeService {
         name: product.name,
         description: product.description || undefined,
         price: product.price,
-<<<<<<< HEAD
         category: product.categoryId ? (await prisma.category.findUnique({ where: { id: product.categoryId }, select: { name: true } }))?.name : undefined,
         brand: (product.dimensions as any)?.brand || undefined, // Store in dimensions metadata
         manufacturer: (product.dimensions as any)?.manufacturer || undefined, // Store in dimensions metadata
         images: product.images, // images is already string[]
         specifications: (product.dimensions as any)?.specifications as Record<string, any> || {}, // Store in dimensions metadata
-=======
-        category: product.category?.name,
-        brand: undefined, // Removed - not in schema
-        manufacturer: undefined, // Removed - not in schema
-        images: product.images || [],
-        specifications: {}, // Removed - not in schema
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         source: 'internal',
       };
     } catch (error) {
@@ -451,7 +439,6 @@ export class BarcodeService {
 
   private async cacheProductLookup(barcode: string, product: ProductLookup, organizationId: string): Promise<void> {
     try {
-<<<<<<< HEAD
       // Store lookup cache in Organization settings instead of separate model
       const organization = await prisma.organization.findUnique({
         where: { id: organizationId },
@@ -475,11 +462,6 @@ export class BarcodeService {
         },
       });
       }
-=======
-      // Remove caching functionality since productLookupCache model doesn't exist
-      // This could be implemented with a different approach if needed
-      console.log('Product lookup caching disabled - model not available');
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     } catch (error) {
       console.error('Error caching product lookup:', error);
     }

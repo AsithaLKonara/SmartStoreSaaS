@@ -738,17 +738,10 @@ export class SriLankaCourierService extends EventEmitter {
   // Sync Methods
   private async syncTrackingEvent(trackingInfo: TrackingInfo, organizationId: string): Promise<void> {
     const syncEvent: SyncEvent = {
-<<<<<<< HEAD
       type: 'order',
       action: 'update',
       entityId: trackingInfo.trackingNumber || '',
       organizationId: trackingInfo.organizationId || '',
-=======
-      id: crypto.randomUUID(),
-      type: 'order',
-      action: 'update', // Use valid sync action
-      entityId: trackingInfo.trackingNumber,
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       data: {
         trackingNumber: trackingInfo.trackingNumber,
         status: trackingInfo.status,
@@ -756,13 +749,7 @@ export class SriLankaCourierService extends EventEmitter {
         estimatedDelivery: trackingInfo.estimatedDelivery,
         organizationId: organizationId // Add organizationId to data
       },
-<<<<<<< HEAD
       timestamp: new Date(),
-=======
-      source: 'courier_service',
-      timestamp: new Date(),
-      organizationId: organizationId
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     };
 
     await realTimeSyncService.queueEvent(syncEvent);
@@ -770,23 +757,12 @@ export class SriLankaCourierService extends EventEmitter {
 
   private async syncShipmentEvent(shipmentResponse: ShipmentResponse, organizationId: string): Promise<void> {
     const syncEvent: SyncEvent = {
-<<<<<<< HEAD
       type: 'order',
       action: action as any,
       entityId: shipment.id || '',
       organizationId,
       data: shipment,
       timestamp: new Date(),
-=======
-      id: crypto.randomUUID(),
-      type: 'order',
-      action: 'create', // Use valid sync action
-      entityId: shipmentResponse.trackingNumber,
-      data: shipmentResponse,
-      source: 'courier_service',
-      timestamp: new Date(),
-      organizationId: organizationId
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     };
 
     await realTimeSyncService.queueEvent(syncEvent);

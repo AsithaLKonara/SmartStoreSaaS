@@ -10,7 +10,6 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-<<<<<<< HEAD
     const conversations = await prisma.chatMessage.groupBy({
       by: ['customerId'],
       where: {
@@ -21,16 +20,6 @@ export async function GET(_request: NextRequest) {
       },
       _max: {
         createdAt: true,
-=======
-    const conversations = await prisma.chatConversation.findMany({
-      where: { organizationId: session.user.organizationId },
-      include: {
-        customer: true,
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -42,24 +31,16 @@ export async function GET(_request: NextRequest) {
           where: { id: conv.customerId },
         });
 
-<<<<<<< HEAD
         const lastMessage = await prisma.chatMessage.findFirst({
           where: { customerId: conv.customerId },
           orderBy: { createdAt: 'desc' },
         });
-=======
-        const lastMessage = conv.messages[0];
-        const lastActivity = lastMessage ? lastMessage.createdAt : conv.createdAt;
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
         const unreadCount = await prisma.chatMessage.count({
           where: {
             customerId: conv.customerId,
             direction: 'INBOUND',
-<<<<<<< HEAD
             status: 'SENT',
-=======
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           },
         });
 
@@ -70,11 +51,7 @@ export async function GET(_request: NextRequest) {
           customerPhone: conv.customer?.phone || '',
           customerEmail: conv.customer?.email || '',
           lastMessage: lastMessage?.content || '',
-<<<<<<< HEAD
           lastMessageTime: lastMessage?.createdAt || conv._max.createdAt || new Date().toISOString(),
-=======
-          lastMessageTime: lastActivity || new Date().toISOString(),
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           unreadCount,
           status: 'active', // This would be determined by business logic
         };

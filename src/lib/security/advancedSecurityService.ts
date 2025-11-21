@@ -142,7 +142,6 @@ export class AdvancedSecurityService {
         }
       });
 
-<<<<<<< HEAD
       // Broadcast real-time event for critical threats
       if (enhancedEvent.severity === 'critical' || enhancedEvent.severity === 'high') {
         await realTimeSyncService.queueEvent({
@@ -152,13 +151,6 @@ export class AdvancedSecurityService {
           data: enhancedEvent,
           timestamp: new Date(),
         });
-=======
-      // Analyze threat level
-      const threatDetection = await this.analyzeThreat(event);
-      
-      if (threatDetection.isBlocked) {
-        await this.handleThreatResponse(event, threatDetection);
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       }
 
       // Sync event for real-time monitoring

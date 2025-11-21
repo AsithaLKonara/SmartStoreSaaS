@@ -112,7 +112,6 @@ export class SocialCommerceService {
         where: { id: platformId }
       });
 
-<<<<<<< HEAD
     if (!platform || !platform.isActive) {
       throw new Error('Platform not found or inactive');
     }
@@ -179,10 +178,6 @@ export class SocialCommerceService {
             metadata: { error: errorMessage }
           }
         });
-=======
-      if (!platform) {
-        throw new Error('Platform not found');
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       }
 
       const products = await prisma.product.findMany({
@@ -274,7 +269,6 @@ export class SocialCommerceService {
         }
       });
 
-<<<<<<< HEAD
     return {
       id: post.id,
       platformId: post.platformId,
@@ -292,28 +286,10 @@ export class SocialCommerceService {
         clicks: 0,
       },
     };
-=======
-      return {
-        id: post.id,
-        platformId: post.platformId,
-        type: post.type as 'product' | 'story' | 'reel' | 'post',
-        content: post.content,
-        mediaUrls: post.mediaUrls,
-        productIds: post.productIds,
-        scheduledAt: post.scheduledAt || undefined,
-        publishedAt: post.publishedAt || undefined,
-        status: post.status as 'draft' | 'scheduled' | 'published' | 'failed',
-        engagement: post.engagement as any
-      };
-    } catch (error) {
-      throw new Error(`Failed to create social post: ${error}`);
-    }
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
   }
 
   async publishPost(postId: string): Promise<SocialPost> {
     try {
-<<<<<<< HEAD
       // Publish to social platform
       const platformPostId = await this.publishToPlatform(post.platform, post);
 
@@ -357,61 +333,6 @@ export class SocialCommerceService {
       });
 
       throw error;
-=======
-      const post = await prisma.socialPost.findUnique({
-        where: { id: postId }
-      });
-
-      if (!post) {
-        throw new Error('Post not found');
-      }
-
-      const platform = await prisma.socialPlatform.findUnique({
-        where: { id: post.platformId }
-      });
-
-      if (!platform) {
-        throw new Error('Platform not found');
-      }
-
-      try {
-        const platformPostId = await this.publishToPlatform(platform, post);
-        
-        const updatedPost = await prisma.socialPost.update({
-          where: { id: postId },
-          data: {
-            status: 'published',
-            publishedAt: new Date(),
-            metadata: { platformPostId }
-          }
-        });
-
-        return {
-          id: updatedPost.id,
-          platformId: updatedPost.platformId,
-          type: updatedPost.type as 'product' | 'story' | 'reel' | 'post',
-          content: updatedPost.content,
-          mediaUrls: updatedPost.mediaUrls,
-          productIds: updatedPost.productIds,
-          scheduledAt: updatedPost.scheduledAt || undefined,
-          publishedAt: updatedPost.publishedAt || undefined,
-          status: updatedPost.status as 'draft' | 'scheduled' | 'published' | 'failed',
-          engagement: updatedPost.engagement as any
-        };
-      } catch (error) {
-        // Update post with error status
-        await prisma.socialPost.update({
-          where: { id: postId },
-          data: {
-            status: 'failed',
-            metadata: { error: (error as Error).message }
-          }
-        });
-        throw error;
-      }
-    } catch (error) {
-      throw new Error(`Failed to publish post: ${error}`);
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     }
   }
 
@@ -462,7 +383,6 @@ export class SocialCommerceService {
         };
       }
 
-<<<<<<< HEAD
     let totalFollowers = 0;
     let totalPosts = 0;
     let totalEngagement = 0;
@@ -493,11 +413,6 @@ export class SocialCommerceService {
       totalEngagement += engagement;
 
       // Calculate product sales from social posts
-=======
-      // Calculate top products
-      const productSales: Record<string, { sales: number; engagement: number }> = {};
-      
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       for (const post of posts) {
         for (const productId of post.productIds) {
           if (!productSales[productId]) {
@@ -711,7 +626,6 @@ export class SocialCommerceService {
 
   // Platform-specific implementation methods
   private async syncToFacebook(platform: any, product: any): Promise<string> {
-<<<<<<< HEAD
     const { FacebookCommerceService } = await import('@/lib/integrations/facebook/facebookCommerceService');
     const integration = await prisma.facebookIntegration.findFirst({
       where: { organizationId: platform.organizationId },
@@ -810,27 +724,9 @@ export class SocialCommerceService {
     if (product) {
       await facebookService.updateInventory(product.id, product.stockQuantity);
     }
-=======
-    // Implement Facebook product sync
-    return `fb_${Date.now()}`;
-  }
-
-  private async publishToFacebook(platform: any, post: any): Promise<string> {
-    // Implement Facebook post publishing
-    return `fb_post_${Date.now()}`;
-  }
-
-  private async deleteFromFacebook(platform: any, platformPostId: string): Promise<void> {
-    // Implement Facebook post deletion
-  }
-
-  private async updateInventoryOnFacebook(platform: any, socialProduct: any): Promise<void> {
-    // Implement Facebook inventory update
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
   }
 
   private async syncToInstagram(platform: any, product: any): Promise<string> {
-<<<<<<< HEAD
     const { InstagramShoppingService } = await import('@/lib/integrations/instagram/instagramShoppingService');
     const integration = await prisma.instagramIntegration.findFirst({
       where: { organizationId: platform.organizationId },
@@ -946,27 +842,9 @@ export class SocialCommerceService {
       const catalogItem = instagramService['productToInstagramProduct'](product);
       await instagramService['uploadProductsBatch'](integration.catalogId, [catalogItem]);
     }
-=======
-    // Implement Instagram product sync
-    return `ig_${Date.now()}`;
-  }
-
-  private async publishToInstagram(platform: any, post: any): Promise<string> {
-    // Implement Instagram post publishing
-    return `ig_post_${Date.now()}`;
-  }
-
-  private async deleteFromInstagram(platform: any, platformPostId: string): Promise<void> {
-    // Implement Instagram post deletion
-  }
-
-  private async updateInventoryOnInstagram(platform: any, socialProduct: any): Promise<void> {
-    // Implement Instagram inventory update
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
   }
 
   private async syncToTikTok(platform: any, product: any): Promise<string> {
-<<<<<<< HEAD
     const { TikTokShopService } = await import('@/lib/integrations/tiktok/tiktokShopService');
     const integration = await prisma.tikTokIntegration.findFirst({
       where: { organizationId: platform.organizationId },
@@ -1012,19 +890,10 @@ export class SocialCommerceService {
       return eventId;
     }
 
-=======
-    // Implement TikTok product sync
-    return `tt_${Date.now()}`;
-  }
-
-  private async publishToTikTok(platform: any, post: any): Promise<string> {
-    // Implement TikTok post publishing
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     return `tt_post_${Date.now()}`;
   }
 
   private async deleteFromTikTok(platform: any, platformPostId: string): Promise<void> {
-<<<<<<< HEAD
     const integration = await prisma.tikTokIntegration.findFirst({
       where: { organizationId: platform.organizationId },
     });
@@ -1067,17 +936,9 @@ export class SocialCommerceService {
     if (product) {
       await tiktokService.syncProducts();
     }
-=======
-    // Implement TikTok post deletion
-  }
-
-  private async updateInventoryOnTikTok(platform: any, socialProduct: any): Promise<void> {
-    // Implement TikTok inventory update
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
   }
 
   private async syncToPinterest(platform: any, product: any): Promise<string> {
-<<<<<<< HEAD
     const { PinterestService } = await import('@/lib/integrations/pinterest/pinterestService');
     const integration = await prisma.pinterestIntegration.findFirst({
       where: { organizationId: platform.organizationId },
@@ -1164,40 +1025,5 @@ export class SocialCommerceService {
 
     // Re-sync product to update pin
     await this.syncToPinterest(platform, socialProduct);
-=======
-    // Implement Pinterest product sync
-    return `pin_${Date.now()}`;
-  }
-
-  private async publishToPinterest(platform: any, post: any): Promise<string> {
-    // Implement Pinterest post publishing
-    return `pin_post_${Date.now()}`;
-  }
-
-  private async deleteFromPinterest(platform: any, platformPostId: string): Promise<void> {
-    // Implement Pinterest post deletion
-  }
-
-  private async updateInventoryOnPinterest(platform: any, socialProduct: any): Promise<void> {
-    // Implement Pinterest inventory update
-  }
-
-  private async syncToTwitter(platform: any, product: any): Promise<string> {
-    // Implement Twitter product sync
-    return `tw_${Date.now()}`;
-  }
-
-  private async publishToTwitter(platform: any, post: any): Promise<string> {
-    // Implement Twitter post publishing
-    return `tw_post_${Date.now()}`;
-  }
-
-  private async deleteFromTwitter(platform: any, platformPostId: string): Promise<void> {
-    // Implement Twitter post deletion
-  }
-
-  private async updateInventoryOnTwitter(platform: any, socialProduct: any): Promise<void> {
-    // Implement Twitter inventory update
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
   }
 } 

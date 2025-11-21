@@ -154,15 +154,8 @@ export class MessengerService {
       await this.storeMessage(message);
 
       // Broadcast real-time event
-<<<<<<< HEAD
       await realTimeSyncService.queueEvent({
         type: 'message',
-=======
-      await realTimeSyncService.broadcastEvent({
-        id: `messenger_message_${message.id}`,
-        type: 'message',
-        action: 'create',
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         entityId: message.id,
         organizationId,
         data: message,
@@ -227,15 +220,8 @@ export class MessengerService {
 
       await this.storeMessage(message);
 
-<<<<<<< HEAD
       await realTimeSyncService.queueEvent({
         type: 'message',
-=======
-      await realTimeSyncService.broadcastEvent({
-        id: `messenger_template_${message.id}`,
-        type: 'message',
-        action: 'create',
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         entityId: message.id,
         organizationId,
         data: message,
@@ -306,15 +292,8 @@ export class MessengerService {
 
       await this.storeMessage(message);
 
-<<<<<<< HEAD
       await realTimeSyncService.queueEvent({
         type: 'message',
-=======
-      await realTimeSyncService.broadcastEvent({
-        id: `messenger_attachment_${message.id}`,
-        type: 'message',
-        action: 'create',
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         entityId: message.id,
         organizationId,
         data: message,
@@ -547,15 +526,8 @@ export class MessengerService {
       await this.processAutoReply(message);
 
       // Broadcast real-time event
-<<<<<<< HEAD
       await realTimeSyncService.queueEvent({
         type: 'message',
-=======
-      await realTimeSyncService.broadcastEvent({
-        id: `messenger_received_${message.id}`,
-        type: 'message',
-        action: 'create',
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         entityId: message.id,
         organizationId,
         data: message,

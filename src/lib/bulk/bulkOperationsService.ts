@@ -123,7 +123,6 @@ export class BulkOperationsService {
               name: row.name,
               description: row.description || '',
               price: parseFloat(row.price) || 0,
-<<<<<<< HEAD
               costPrice: parseFloat(row.cost) || 0,
               sku: row.sku || row.barcode || '',
               weight: parseFloat(row.weight) || 0,
@@ -132,35 +131,16 @@ export class BulkOperationsService {
                 brand: row.brand || undefined,
                 barcode: row.barcode || undefined,
               } as any,
-=======
-              sku: row.sku || '',
-              weight: parseFloat(row.weight) || 0,
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
               stockQuantity: parseInt(row.stockQuantity) || 0,
               lowStockThreshold: parseInt(row.reorderPoint) || 0,
               categoryId,
               isActive: row.isActive === 'true' || row.isActive === true,
-<<<<<<< HEAD
               organizationId,
             },
           });
           successCount++;
         } catch (error: unknown) {
           const errorMessage = error instanceof Error ? error.message : String(error);
-=======
-              organization: {
-                connect: { id: organizationId }
-              },
-              slug: row.sku || row.name?.toLowerCase().replace(/\s+/g, '-') || `product-${Date.now()}`,
-              createdBy: {
-                connect: { id: process.env.DEFAULT_USER_ID || 'default' }
-              }
-            }
-          });
-          successCount++;
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           errors.push(`Row ${i + 1}: ${errorMessage}`);
           failedCount++;
         }
@@ -186,13 +166,8 @@ export class BulkOperationsService {
         failedRecords: failedCount,
         errors
       };
-<<<<<<< HEAD
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-=======
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
@@ -257,7 +232,6 @@ export class BulkOperationsService {
               name: row.name || '',
               email: row.email || '',
               phone: row.phone || '',
-<<<<<<< HEAD
               organizationId,
               tags: [
                 ...(row.address ? [`address:${row.address}`] : []),
@@ -271,22 +245,6 @@ export class BulkOperationsService {
           successCount++;
         } catch (error: unknown) {
           const errorMessage = error instanceof Error ? error.message : String(error);
-=======
-              address: fullAddress,
-              tags: row.tags ? row.tags.split(',').map((tag: string) => tag.trim()) : [],
-              source: row.source || 'bulk_import',
-              totalSpent: parseFloat(row.totalSpent) || 0,
-              points: parseInt(row.points) || 0,
-              isActive: row.isActive === 'true' || row.isActive === true,
-              organization: {
-                connect: { id: organizationId }
-              }
-            }
-          });
-          successCount++;
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           errors.push(`Row ${i + 1}: ${errorMessage}`);
           failedCount++;
         }
@@ -312,13 +270,8 @@ export class BulkOperationsService {
         failedRecords: failedCount,
         errors
       };
-<<<<<<< HEAD
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-=======
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
@@ -368,7 +321,6 @@ export class BulkOperationsService {
       let fileUrl: string;
       let fileData: any;
 
-<<<<<<< HEAD
       if (format === 'json') {
         fileContent = Buffer.from(JSON.stringify(products, null, 2));
         fileUrl = `/exports/products_${Date.now()}.json`;
@@ -407,12 +359,6 @@ export class BulkOperationsService {
         fileContent = Buffer.from(csvString);
         fileUrl = `/exports/products_${Date.now()}.csv`;
       } else {
-=======
-      if (format === 'csv') {
-        fileData = stringify(products, { header: true });
-        fileUrl = `data:text/csv;charset=utf-8,${encodeURIComponent(fileData)}`;
-      } else if (format === 'xlsx') {
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         const worksheet = XLSX.utils.json_to_sheet(products);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
@@ -442,13 +388,8 @@ export class BulkOperationsService {
         recordCount: products.length,
         format
       };
-<<<<<<< HEAD
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-=======
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
@@ -492,7 +433,6 @@ export class BulkOperationsService {
       let fileUrl: string;
       let fileData: any;
 
-<<<<<<< HEAD
       if (format === 'json') {
         fileContent = Buffer.from(JSON.stringify(customers, null, 2));
         fileUrl = `/exports/customers_${Date.now()}.json`;
@@ -515,12 +455,6 @@ export class BulkOperationsService {
         fileContent = Buffer.from(csvString);
         fileUrl = `/exports/customers_${Date.now()}.csv`;
       } else {
-=======
-      if (format === 'csv') {
-        fileData = stringify(customers, { header: true });
-        fileUrl = `data:text/csv;charset=utf-8,${encodeURIComponent(fileData)}`;
-      } else if (format === 'xlsx') {
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         const worksheet = XLSX.utils.json_to_sheet(customers);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Customers');
@@ -550,13 +484,8 @@ export class BulkOperationsService {
         recordCount: customers.length,
         format
       };
-<<<<<<< HEAD
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-=======
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {
@@ -620,7 +549,6 @@ export class BulkOperationsService {
       let fileUrl: string;
       let fileData: any;
 
-<<<<<<< HEAD
       if (format === 'json') {
         fileContent = Buffer.from(JSON.stringify(orders, null, 2));
         fileUrl = `/exports/orders_${Date.now()}.json`;
@@ -644,13 +572,6 @@ export class BulkOperationsService {
         fileUrl = `/exports/orders_${Date.now()}.csv`;
       } else {
         const worksheet = XLSX.utils.json_to_sheet(orders);
-=======
-      if (format === 'csv') {
-        fileData = stringify(exportData, { header: true });
-        fileUrl = `data:text/csv;charset=utf-8,${encodeURIComponent(fileData)}`;
-      } else if (format === 'xlsx') {
-        const worksheet = XLSX.utils.json_to_sheet(exportData);
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Orders');
         const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
@@ -679,13 +600,8 @@ export class BulkOperationsService {
         recordCount: orders.length,
         format
       };
-<<<<<<< HEAD
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-=======
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       await prisma.bulkOperation.update({
         where: { id: operation.id },
         data: {

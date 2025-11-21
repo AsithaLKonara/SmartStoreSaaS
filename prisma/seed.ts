@@ -296,7 +296,6 @@ async function main() {
   });
 
   await Promise.all([
-<<<<<<< HEAD
     existingItems.find(item => item.orderId === orders[0].id && item.productId === products[0].id)
       ? prisma.orderItem.update({
           where: { id: existingItems.find(item => item.orderId === orders[0].id && item.productId === products[0].id)!.id },
@@ -333,34 +332,6 @@ async function main() {
             productId: products[2].id,
           },
         }),
-=======
-    prisma.orderItem.upsert({
-      where: { 
-        id: 'order-item-1' 
-      },
-      update: {},
-      create: {
-        quantity: 1,
-        price: 1299.99,
-        total: 1299.99,
-        orderId: orders[0].id,
-        productId: products[0].id,
-      },
-    }),
-    prisma.orderItem.upsert({
-      where: { 
-        id: 'order-item-2' 
-      },
-      update: {},
-      create: {
-        quantity: 1,
-        price: 89.99,
-        total: 89.99,
-        orderId: orders[1].id,
-        productId: products[2].id,
-      },
-    }),
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
   ]);
 
   console.log('✅ Created order items');

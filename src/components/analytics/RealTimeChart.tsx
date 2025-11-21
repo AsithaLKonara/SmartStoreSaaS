@@ -17,10 +17,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-<<<<<<< HEAD
   // RechartsFunction, // Not exported from recharts
-=======
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 } from 'recharts';
 import { useRealTimeSync } from '@/hooks/useRealTimeSync';
 
@@ -77,7 +74,6 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-<<<<<<< HEAD
   const realTimeSync = useRealTimeSync({ organizationId });
   const { isConnected } = realTimeSync;
 
@@ -107,9 +103,6 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
   }, [eventTypes, config.refreshInterval]);
 
   const handleRealTimeUpdate = (event: any) => {
-=======
-  const handleRealTimeUpdate = useCallback((event: any) => {
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     // Process real-time event and update chart data
     setData(prevData => {
       const newData = processEventData(event, prevData);
