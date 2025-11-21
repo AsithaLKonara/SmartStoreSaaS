@@ -108,7 +108,7 @@ export class AdvancedPWAService {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: this.urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''),
+        applicationServerKey: this.urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '') as BufferSource,
       });
 
       // Send subscription to server
@@ -129,16 +129,22 @@ export class AdvancedPWAService {
 
       const serviceWorkerRegistration = await navigator.serviceWorker.ready;
       
-      await serviceWorkerRegistration.showNotification(notification.title, {
+      const notificationOptions: any = {
         body: notification.body,
         icon: notification.icon || '/icons/icon-192x192.png',
-        badge: notification.badge || '/icons/badge-72x72.png',
+        badge: notification.badge || '/badge-72x72.png',
         data: notification.data,
-        actions: notification.actions,
         requireInteraction: notification.requireInteraction,
         silent: notification.silent,
         tag: notification.id,
-      });
+      };
+
+      // Add actions if they exist
+      if (notification.actions) {
+        notificationOptions.actions = notification.actions;
+      }
+
+      await serviceWorkerRegistration.showNotification(notification.title, notificationOptions);
 
       // Store notification in IndexedDB
       await this.storeNotification(notification);
@@ -182,10 +188,11 @@ export class AdvancedPWAService {
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction(['offlineData'], 'readwrite');
       const store = transaction.objectStore('offlineData');
+      let request: IDBRequest;
       
       if (type) {
         const index = store.index('type');
-        const request = index.openCursor(IDBKeyRange.only(type));
+        request = index.openCursor(IDBKeyRange.only(type));
         
         request.onsuccess = () => {
           const cursor = request.result;
@@ -197,7 +204,7 @@ export class AdvancedPWAService {
           }
         };
       } else {
-        const request = store.clear();
+        request = store.clear();
         request.onsuccess = () => resolve();
       }
       
@@ -217,7 +224,7 @@ export class AdvancedPWAService {
 
     try {
       const registration = await navigator.serviceWorker.ready;
-      await registration.sync.register(task.id);
+      await (registration as any).sync.register(task.id);
       
       // Store task data
       await this.storeBackgroundSyncTask(task);
@@ -472,6 +479,71 @@ export class AdvancedPWAService {
       request.onsuccess = () => resolve();
       request.onerror = () => reject(request.error);
     });
+  }
+
+  private async generateFingerprint(): Promise<string> {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    // Generate a simple fingerprint
+    ctx.fillStyle = 'rgb(255, 255, 255)';
+    ctx.fillRect(0, 0, 100, 100);
+    ctx.fillStyle = 'rgb(0, 0, 0)';
+    ctx.fillText('SmartStore PWA', 10, 50);
+
+    const dataURL = canvas.toDataURL();
+    const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(dataURL));
+    return Array.from(new Uint8Array(hash))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+
+  async showNotification(title: string, options: NotificationOptions = {}): Promise<void> {
+    if (!('Notification' in window)) {
+      console.warn('Notifications not supported');
+      return;
+    }
+
+    if (Notification.permission === 'granted') {
+      const notification = new Notification(title, {
+        icon: '/icon-192x192.png',
+        badge: '/badge-72x72.png',
+        ...options
+      });
+
+      // Handle notification actions if supported
+      if ('actions' in options && Array.isArray((options as any).actions)) {
+        (options as any).actions.forEach((action: any) => {
+          // Handle action clicks
+          notification.addEventListener('click', () => {
+            console.log('Notification action clicked:', action.action);
+          });
+        });
+      }
+
+      // Don't return the notification object since method returns void
+    } else if (Notification.permission !== 'denied') {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        await this.showNotification(title, options);
+      }
+    }
+  }
+
+  async handleBackgroundSync(tag: string): Promise<void> {
+    if ('serviceWorker' in navigator && 'sync' in (navigator.serviceWorker as any)) {
+      const registration = await navigator.serviceWorker.ready;
+      
+      // Use type assertion for sync property
+      if ('sync' in registration) {
+        await (registration as any).sync.register(tag);
+      } else {
+        console.warn('Background sync not supported');
+      }
+    } else {
+      console.warn('Service Worker or Background Sync not supported');
+    }
   }
 }
 

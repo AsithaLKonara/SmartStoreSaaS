@@ -2,11 +2,15 @@ import { prisma } from '@/lib/prisma';
 import { stripeService } from '@/lib/payments/stripeService';
 import { emailService } from '@/lib/email/emailService';
 import { realTimeSyncService } from '@/lib/sync/realTimeSyncService';
+<<<<<<< HEAD
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16',
 });
+=======
+import crypto from 'crypto';
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
 export interface SubscriptionPlan {
   id: string;
@@ -35,20 +39,15 @@ export interface SubscriptionPlan {
 
 export interface Subscription {
   id: string;
-  userId: string;
-  planId: string;
-  status: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'trialing' | 'paused';
+  customerId: string;
+  status: string; // Changed to string to match Prisma schema
   currentPeriodStart: Date;
   currentPeriodEnd: Date;
-  trialStart?: Date;
-  trialEnd?: Date;
-  cancelAt?: Date;
-  canceledAt?: Date;
-  pausedAt?: Date;
-  resumeAt?: Date;
-  stripeSubscriptionId?: string;
-  paypalSubscriptionId?: string;
+  cancelAtPeriodEnd: boolean;
+  stripeSubscriptionId?: string | null;
   metadata?: Record<string, any>;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface UsageRecord {
@@ -119,11 +118,9 @@ export interface BoxSubscription {
 }
 
 export class SubscriptionService {
-  /**
-   * Create subscription plan
-   */
   async createPlan(plan: Omit<SubscriptionPlan, 'id' | 'stripePriceId' | 'paypalPlanId'>): Promise<SubscriptionPlan> {
     try {
+<<<<<<< HEAD
       // Create Stripe price
       let stripePriceId;
       try {
@@ -173,8 +170,24 @@ export class SubscriptionService {
             subscriptionPlans,
           } as any,
         },
+=======
+      // Since subscriptionPlan doesn't exist in schema, we'll store it in metadata
+      const createdPlan = await prisma.subscription.create({
+        data: {
+          customerId: 'temp', // This will need to be fixed based on actual requirements
+          status: 'active',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          cancelAtPeriodEnd: false,
+          metadata: {
+            plan: plan,
+            type: 'plan_definition'
+          }
+        }
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       });
       return {
+<<<<<<< HEAD
         id: planData.id,
         name: planData.name,
         description: planData.description,
@@ -188,23 +201,26 @@ export class SubscriptionService {
         isActive: planData.isActive,
         isPopular: planData.isPopular,
         stripePriceId: planData.stripePriceId,
+=======
+        ...plan,
+        id: createdPlan.id,
+        stripePriceId: undefined,
+        paypalPlanId: undefined
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       };
     } catch (error) {
-      console.error('Error creating subscription plan:', error);
-      throw new Error('Failed to create subscription plan');
+      throw new Error(`Failed to create subscription plan: ${error}`);
     }
   }
 
-  /**
-   * Subscribe user to plan
-   */
   async createSubscription(
-    userId: string,
+    customerId: string,
     planId: string,
     paymentMethod: 'stripe' | 'paypal' = 'stripe',
     trialDays?: number
   ): Promise<Subscription> {
     try {
+<<<<<<< HEAD
       // Get user and organization
       const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -268,22 +284,32 @@ export class SubscriptionService {
             planId,
             trialPeriodDays: trialDays || plan.trialPeriodDays,
           }
+=======
+      let stripeSubscriptionId: string | null = null;
+
+      if (paymentMethod === 'stripe') {
+        // Create Stripe subscription - fixed method call
+        const metadata: Record<string, string> = {
+          planId,
+          paymentMethod
+        };
+        
+        if (trialDays !== undefined) {
+          metadata.trialDays = trialDays.toString();
+        }
+        
+        const stripeSubscription = await stripeService.createSubscription(
+          customerId,
+          planId,
+          metadata
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         );
         stripeSubscriptionId = stripeSubscription.id;
       }
 
-      // Calculate period dates
-      const now = new Date();
-      const trialEnd = trialDays ? new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000) : undefined;
-      const periodStart = trialEnd || now;
-      const periodEnd = new Date(
-        periodStart.getTime() + 
-        this.getIntervalMilliseconds(plan.interval as any, plan.intervalCount)
-      );
-
-      // Create subscription record
       const subscription = await prisma.subscription.create({
         data: {
+<<<<<<< HEAD
           customerId: customer.id,
           status: trialDays ? 'trialing' : 'active',
           currentPeriodStart: periodStart,
@@ -345,15 +371,95 @@ export class SubscriptionService {
         paypalSubscriptionId: subMetadata.paypalSubscriptionId,
         metadata: subscription.metadata as any,
       };
+=======
+          customerId,
+          status: 'active',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          cancelAtPeriodEnd: false,
+          stripeSubscriptionId,
+          metadata: {
+            planId,
+            paymentMethod,
+            trialDays
+          }
+        }
+      });
+
+      // Broadcast real-time sync event
+      try {
+        await realTimeSyncService.broadcastEvent({
+          id: crypto.randomUUID(),
+          type: 'customer',
+          action: 'create',
+          entityId: customerId,
+          organizationId: process.env.DEFAULT_ORGANIZATION_ID || 'default',
+          timestamp: new Date(),
+          source: 'subscription-service',
+          data: {
+            subscriptionId: subscription.id,
+            customerId: subscription.customerId,
+            status: subscription.status
+          }
+        });
+      } catch (syncError) {
+        console.warn('Failed to broadcast subscription event:', syncError);
+      }
+
+      return subscription as Subscription;
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     } catch (error) {
-      console.error('Error creating subscription:', error);
-      throw new Error('Failed to create subscription');
+      throw new Error(`Failed to create subscription: ${error}`);
     }
   }
 
-  /**
-   * Cancel subscription
-   */
+  async getSubscription(subscriptionId: string): Promise<Subscription | null> {
+    try {
+      const subscription = await prisma.subscription.findUnique({
+        where: { id: subscriptionId }
+      });
+      return subscription as Subscription | null;
+    } catch (error) {
+      throw new Error(`Failed to get subscription: ${error}`);
+    }
+  }
+
+  async updateSubscription(
+    subscriptionId: string,
+    updates: Partial<Subscription>
+  ): Promise<Subscription> {
+    try {
+      const updatedSubscription = await prisma.subscription.update({
+        where: { id: subscriptionId },
+        data: updates
+      });
+
+      // Broadcast real-time sync event
+      try {
+        await realTimeSyncService.broadcastEvent({
+          id: crypto.randomUUID(),
+          type: 'customer',
+          action: 'update',
+          entityId: updatedSubscription.customerId,
+          organizationId: process.env.DEFAULT_ORGANIZATION_ID || 'default',
+          timestamp: new Date(),
+          source: 'subscription-service',
+          data: {
+            subscriptionId: updatedSubscription.id,
+            customerId: updatedSubscription.customerId,
+            status: updatedSubscription.status
+          }
+        });
+      } catch (syncError) {
+        console.warn('Failed to broadcast subscription update event:', syncError);
+      }
+
+      return updatedSubscription as Subscription;
+    } catch (error) {
+      throw new Error(`Failed to update subscription: ${error}`);
+    }
+  }
+
   async cancelSubscription(
     subscriptionId: string,
     immediate: boolean = false,
@@ -361,14 +467,19 @@ export class SubscriptionService {
   ): Promise<Subscription> {
     try {
       const subscription = await prisma.subscription.findUnique({
+<<<<<<< HEAD
         where: { id: subscriptionId },
         include: { customer: true },
+=======
+        where: { id: subscriptionId }
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       });
 
       if (!subscription) {
         throw new Error('Subscription not found');
       }
 
+<<<<<<< HEAD
       // Cancel with payment provider
       if (subscription.stripeSubscriptionId) {
         await stripeService.cancelSubscription(subscription.stripeSubscriptionId);
@@ -377,14 +488,29 @@ export class SubscriptionService {
       const now = new Date();
       const cancelAt = immediate ? now : subscription.currentPeriodEnd;
       const subMetadata = (subscription.metadata as any) || {};
+=======
+      let cancelAt: Date | undefined;
+      if (!immediate) {
+        cancelAt = new Date(subscription.currentPeriodEnd);
+      }
 
-      // Update subscription
+      // Cancel in Stripe if exists
+      if (subscription.stripeSubscriptionId) {
+        try {
+          await stripeService.cancelSubscription(subscription.stripeSubscriptionId);
+        } catch (stripeError) {
+          console.warn('Failed to cancel Stripe subscription:', stripeError);
+        }
+      }
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
+
       const updatedSubscription = await prisma.subscription.update({
         where: { id: subscriptionId },
         data: {
           status: immediate ? 'canceled' : 'active',
           cancelAtPeriodEnd: !immediate,
           metadata: {
+<<<<<<< HEAD
             ...subMetadata,
             cancelAt: cancelAt.toISOString(),
             canceledAt: immediate ? now.toISOString() : undefined,
@@ -420,15 +546,50 @@ export class SubscriptionService {
         stripeSubscriptionId: updatedSubscription.stripeSubscriptionId,
         metadata: updatedSubscription.metadata as any,
       };
+=======
+            ...(subscription.metadata as Record<string, any> || {}),
+            cancelReason: reason,
+            canceledAt: immediate ? new Date() : undefined
+          }
+        }
+      });
+
+      // Send cancellation email
+      try {
+        // Send cancellation email
+        await this.sendCancellationEmail(subscription.id);
+      } catch (emailError) {
+        console.warn('Failed to send cancellation email:', emailError);
+      }
+
+      // Broadcast real-time sync event
+      try {
+        await realTimeSyncService.broadcastEvent({
+          id: crypto.randomUUID(),
+          type: 'customer',
+          action: 'update',
+          entityId: updatedSubscription.customerId,
+          organizationId: process.env.DEFAULT_ORGANIZATION_ID || 'default',
+          timestamp: new Date(),
+          source: 'subscription-service',
+          data: {
+            subscriptionId: updatedSubscription.id,
+            customerId: updatedSubscription.customerId,
+            status: updatedSubscription.status,
+            immediate
+          }
+        });
+      } catch (syncError) {
+        console.warn('Failed to broadcast subscription cancellation event:', syncError);
+      }
+
+      return updatedSubscription as Subscription;
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     } catch (error) {
-      console.error('Error canceling subscription:', error);
-      throw new Error('Failed to cancel subscription');
+      throw new Error(`Failed to cancel subscription: ${error}`);
     }
   }
 
-  /**
-   * Track usage for metered billing
-   */
   async recordUsage(
     subscriptionId: string,
     metricType: string,
@@ -436,6 +597,7 @@ export class SubscriptionService {
     metadata?: Record<string, any>
   ): Promise<UsageRecord> {
     try {
+<<<<<<< HEAD
       // Store usage record in Subscription metadata
       const subscription = await prisma.subscription.findUnique({
         where: { id: subscriptionId },
@@ -465,27 +627,81 @@ export class SubscriptionService {
       });
 
       // Check if usage limits are exceeded
+=======
+      // Check usage limits before recording
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       await this.checkUsageLimits(subscriptionId, metricType);
 
+      // Get current subscription
+      const subscription = await prisma.subscription.findUnique({
+        where: { id: subscriptionId },
+        select: { metadata: true }
+      });
+
+      if (!subscription) {
+        throw new Error('Subscription not found');
+      }
+
+      // Update usage in subscription metadata
+      const currentUsage = (subscription.metadata as any)?.usage || {};
+      const newUsage = {
+        ...currentUsage,
+        [metricType]: (currentUsage[metricType] || 0) + quantity,
+        lastUpdated: new Date().toISOString()
+      };
+
+      await prisma.subscription.update({
+        where: { id: subscriptionId },
+        data: {
+          metadata: {
+            ...(subscription.metadata as Record<string, any> || {}),
+            usage: newUsage
+          }
+        }
+      });
+
+      // Broadcast usage update event
+      await realTimeSyncService.broadcastEvent({
+        id: crypto.randomUUID(),
+        type: 'customer',
+        action: 'update',
+        entityId: subscriptionId,
+        organizationId: process.env.DEFAULT_ORGANIZATION_ID || 'default',
+        timestamp: new Date(),
+        source: 'subscription-service',
+        data: {
+          metricType,
+          quantity,
+          totalUsage: newUsage[metricType]
+        }
+      });
+
+      // Return mock usage record since UsageRecord model doesn't exist
       return {
+<<<<<<< HEAD
         id: usageRecord.id,
         subscriptionId: usageRecord.subscriptionId,
         metricType: usageRecord.metricType,
         quantity: usageRecord.quantity,
         timestamp: new Date(usageRecord.timestamp),
         metadata: usageRecord.metadata as any,
+=======
+        id: crypto.randomUUID(),
+        subscriptionId,
+        metricType,
+        quantity,
+        timestamp: new Date(),
+        metadata
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       };
     } catch (error) {
-      console.error('Error recording usage:', error);
-      throw new Error('Failed to record usage');
+      throw new Error(`Failed to record usage: ${error}`);
     }
   }
 
-  /**
-   * Create membership tiers
-   */
   async createMembershipTier(tier: Omit<MembershipTier, 'id'>): Promise<MembershipTier> {
     try {
+<<<<<<< HEAD
       // Store membership tier in Organization settings
       if (!tier.organizationId) {
         throw new Error('Organization ID is required');
@@ -513,10 +729,26 @@ export class SubscriptionService {
             membershipTiers,
           } as any,
         },
+=======
+      // Since membershipTier doesn't exist in schema, we'll store it in metadata
+      const createdTier = await prisma.subscription.create({
+        data: {
+          customerId: 'temp', // This will need to be fixed based on actual requirements
+          status: 'active',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+          cancelAtPeriodEnd: false,
+          metadata: {
+            tier: tier,
+            type: 'membership_tier'
+          }
+        }
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       });
       const createdTier = tierData;
 
       return {
+<<<<<<< HEAD
         id: createdTier.id,
         name: createdTier.name,
         level: createdTier.level,
@@ -526,18 +758,19 @@ export class SubscriptionService {
         freeShipping: createdTier.freeShipping,
         prioritySupport: createdTier.prioritySupport,
         earlyAccess: createdTier.earlyAccess,
+=======
+        ...tier,
+        id: createdTier.id
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       };
     } catch (error) {
-      console.error('Error creating membership tier:', error);
-      throw new Error('Failed to create membership tier');
+      throw new Error(`Failed to create membership tier: ${error}`);
     }
   }
 
-  /**
-   * Update user membership status
-   */
-  async updateMembershipStatus(userId: string): Promise<MembershipStatus | null> {
+  async updateMembershipStatus(customerId: string): Promise<void> {
     try {
+<<<<<<< HEAD
       const user = await prisma.user.findUnique({
         where: { id: userId },
       });
@@ -645,17 +878,68 @@ export class SubscriptionService {
         memberSince: new Date(membershipStatus.memberSince),
         nextTierProgress,
       };
+=======
+      // Get customer with completed orders
+      const customer = await prisma.customer.findUnique({
+        where: { id: customerId },
+        include: {
+          orders: {
+            where: { status: 'COMPLETED' },
+            select: { totalAmount: true, createdAt: true }
+          }
+        }
+      });
+
+      if (!customer) {
+        throw new Error('Customer not found');
+      }
+
+      // Calculate total spent from completed orders
+      const totalSpent = customer.orders.reduce((sum: number, order: any) => sum + order.totalAmount, 0);
+
+      // Determine membership tier based on total spent
+      const currentTier = this.getTierLevel(totalSpent);
+      const nextTier = this.getNextTier(currentTier);
+      const progress = this.calculateTierProgress(totalSpent, currentTier);
+      const requiredForNextTier = this.getRequiredAmountForNextTier(nextTier);
+
+      // Update customer metadata with membership info
+      // Note: Customer model doesn't have metadata field, so we'll log this info
+      console.log(`Customer ${customerId} membership status: Tier ${currentTier}, Progress ${progress}%, Next tier requires $${requiredForNextTier}`);
+
+      // Update total spent
+      await prisma.customer.update({
+        where: { id: customerId },
+        data: { totalSpent }
+      });
+
+      // Broadcast membership update
+      realTimeSyncService.broadcastEvent({
+        id: crypto.randomUUID(),
+        type: 'customer',
+        action: 'update',
+        entityId: customerId,
+        organizationId: process.env.DEFAULT_ORGANIZATION_ID || 'default',
+        timestamp: new Date(),
+        source: 'subscription-service',
+        data: {
+          type: 'membership_updated',
+          tier: currentTier,
+          progress,
+          totalSpent
+        }
+      });
+
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     } catch (error) {
       console.error('Error updating membership status:', error);
-      throw new Error('Failed to update membership status');
+      throw error;
     }
   }
 
-  /**
-   * Create subscription box
-   */
   async createSubscriptionBox(box: Omit<SubscriptionBox, 'id'>): Promise<SubscriptionBox> {
     try {
+<<<<<<< HEAD
       // Store subscription box in Organization settings
       if (!box.organizationId) {
         throw new Error('Organization ID is required');
@@ -683,42 +967,58 @@ export class SubscriptionService {
             subscriptionBoxes,
           } as any,
         },
+=======
+      // Since subscriptionBox doesn't exist in schema, we'll store it in metadata
+      const createdBox = await prisma.subscription.create({
+        data: {
+          customerId: 'temp', // This will need to be fixed based on actual requirements
+          status: 'active',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          cancelAtPeriodEnd: false,
+          metadata: {
+            box: box,
+            type: 'subscription_box'
+          }
+        }
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       });
       const createdBox = boxData;
 
       return {
-        id: createdBox.id,
-        name: createdBox.name,
-        description: createdBox.description,
-        price: createdBox.price,
-        frequency: createdBox.frequency as any,
-        categories: createdBox.categories as string[],
-        customizable: createdBox.customizable,
-        minItems: createdBox.minItems,
-        maxItems: createdBox.maxItems,
-        isActive: createdBox.isActive,
+        ...box,
+        id: createdBox.id
       };
     } catch (error) {
-      console.error('Error creating subscription box:', error);
-      throw new Error('Failed to create subscription box');
+      throw new Error(`Failed to create subscription box: ${error}`);
     }
   }
 
-  /**
-   * Private helper methods
-   */
+  async getSubscriptionBoxes(customerId: string): Promise<any[]> {
+    try {
+      // Note: SubscriptionBox model doesn't exist in the schema
+      // This functionality needs to be implemented with actual models
+      console.warn('SubscriptionBox model not found in schema - returning empty array');
+      return [];
+    } catch (error) {
+      console.error('Error getting subscription boxes:', error);
+      throw error;
+    }
+  }
+
   private getIntervalMilliseconds(interval: 'month' | 'year' | 'week' | 'day', count: number): number {
-    const intervals = {
+    const multipliers = {
       day: 24 * 60 * 60 * 1000,
       week: 7 * 24 * 60 * 60 * 1000,
-      month: 30 * 24 * 60 * 60 * 1000, // Approximate
-      year: 365 * 24 * 60 * 60 * 1000, // Approximate
+      month: 30 * 24 * 60 * 60 * 1000,
+      year: 365 * 24 * 60 * 60 * 1000
     };
 
-    return intervals[interval] * count;
+    return multipliers[interval] * count;
   }
 
   private async checkUsageLimits(subscriptionId: string, metricType: string): Promise<void> {
+<<<<<<< HEAD
     const subscription = await prisma.subscription.findUnique({
       where: { id: subscriptionId },
       include: { customer: true },
@@ -743,9 +1043,28 @@ export class SubscriptionService {
 
     const limits = plan.limits || {};
     const limit = limits[metricType];
+=======
+    try {
+      const subscription = await prisma.subscription.findUnique({
+        where: { id: subscriptionId },
+        select: { metadata: true }
+      });
 
-    if (!limit) return;
+      if (!subscription) return;
 
+      const plan = (subscription.metadata as any)?.plan;
+      if (!plan) {
+        console.warn('No plan information found in subscription metadata');
+        return;
+      }
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
+
+      // Check usage limits based on plan
+      const limits = plan.limits || {};
+      const currentUsage = await this.getCurrentUsage(subscriptionId, metricType);
+      const limit = limits[metricType];
+
+<<<<<<< HEAD
     // Get usage for current period from metadata
     const usageRecords = subMetadata.usageRecords || [];
     const periodStart = subscription.currentPeriodStart.getTime();
@@ -763,58 +1082,181 @@ export class SubscriptionService {
     if (totalUsage >= limit) {
       // Send usage limit notification
       await this.sendUsageLimitEmail(subscription.userId, metricType, totalUsage, limit);
+=======
+      if (limit && currentUsage >= limit) {
+        throw new Error(`Usage limit exceeded for ${metricType}`);
+      }
+    } catch (error) {
+      throw new Error(`Failed to check usage limits: ${error}`);
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     }
   }
 
-  private async sendSubscriptionWelcomeEmail(userId: string, plan: any): Promise<void> {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user?.email) return;
+  async sendSubscriptionWelcomeEmail(subscriptionId: string): Promise<void> {
+    try {
+      const subscription = await prisma.subscription.findUnique({
+        where: { id: subscriptionId },
+        include: { customer: true }
+      });
 
-    await emailService.sendEmail({
-      to: user.email,
-      subject: `Welcome to ${plan.name}!`,
-      templateId: 'subscription-welcome',
-      templateData: {
-        userName: user.name,
-        planName: plan.name,
-        features: plan.features,
-        dashboardUrl: `${process.env.NEXTAUTH_URL}/dashboard/subscription`,
-      },
-    });
+      if (!subscription || !subscription.customer) {
+        throw new Error('Subscription or customer not found');
+      }
+
+      const customer = await prisma.customer.findUnique({
+        where: { id: subscription.customerId }
+      });
+
+      if (!customer) {
+        throw new Error('Customer not found');
+      }
+
+      await emailService.sendEmail({
+        to: customer.email || '',
+        subject: 'Welcome to Your Subscription!',
+        templateId: 'subscription-welcome',
+        templateData: {
+          customerName: customer.name || 'Valued Customer',
+          planName: (subscription.metadata as any)?.plan || 'Premium Plan',
+          startDate: subscription.currentPeriodStart.toLocaleDateString(),
+          endDate: subscription.currentPeriodEnd.toLocaleDateString()
+        }
+      });
+    } catch (error) {
+      console.error('Error sending welcome email:', error);
+      throw error;
+    }
   }
 
-  private async sendCancellationEmail(user: any, plan: any, immediate: boolean): Promise<void> {
-    if (!user.email) return;
+  async sendCancellationEmail(subscriptionId: string): Promise<void> {
+    try {
+      const subscription = await prisma.subscription.findUnique({
+        where: { id: subscriptionId },
+        include: { customer: true }
+      });
 
-    await emailService.sendEmail({
-      to: user.email,
-      subject: 'Subscription Canceled',
-      templateId: 'subscription-canceled',
-      templateData: {
-        userName: user.name,
-        planName: plan.name,
-        immediate,
-        endDate: immediate ? new Date() : plan.currentPeriodEnd,
-      },
-    });
+      if (!subscription || !subscription.customer) {
+        throw new Error('Subscription or customer not found');
+      }
+
+      const customer = await prisma.customer.findUnique({
+        where: { id: subscription.customerId }
+      });
+
+      if (!customer) {
+        throw new Error('Customer not found');
+      }
+
+      await emailService.sendEmail({
+        to: customer.email || '',
+        subject: 'Subscription Cancelled',
+        templateId: 'subscription-cancelled',
+        templateData: {
+          customerName: customer.name || 'Valued Customer',
+          planName: (subscription.metadata as any)?.plan || 'Premium Plan',
+          endDate: subscription.currentPeriodEnd.toLocaleDateString()
+        }
+      });
+    } catch (error) {
+      console.error('Error sending cancellation email:', error);
+      throw error;
+    }
   }
 
-  private async sendUsageLimitEmail(userId: string, metricType: string, usage: number, limit: number): Promise<void> {
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user?.email) return;
+  async sendUsageLimitEmail(subscriptionId: string): Promise<void> {
+    try {
+      const subscription = await prisma.subscription.findUnique({
+        where: { id: subscriptionId },
+        include: { customer: true }
+      });
 
-    await emailService.sendEmail({
-      to: user.email,
-      subject: 'Usage Limit Reached',
-      templateId: 'usage-limit',
-      templateData: {
-        userName: user.name,
-        metricType,
-        usage,
-        limit,
-        upgradeUrl: `${process.env.NEXTAUTH_URL}/dashboard/subscription/upgrade`,
-      },
-    });
+      if (!subscription || !subscription.customer) {
+        throw new Error('Subscription or customer not found');
+      }
+
+      const customer = await prisma.customer.findUnique({
+        where: { id: subscription.customerId }
+      });
+
+      if (!customer) {
+        throw new Error('Customer not found');
+      }
+
+      await emailService.sendEmail({
+        to: customer.email || '',
+        subject: 'Usage Limit Reached',
+        templateId: 'usage-limit-reached',
+        templateData: {
+          customerName: customer.name || 'Valued Customer',
+          planName: (subscription.metadata as any)?.plan || 'Premium Plan',
+          currentUsage: (subscription.metadata as any)?.usage || 0,
+          usageLimit: (subscription.metadata as any)?.usageLimit || 'Unlimited'
+        }
+      });
+    } catch (error) {
+      console.error('Error sending usage limit email:', error);
+      throw error;
+    }
+  }
+
+  private async getCurrentUsage(subscriptionId: string, metricType: string): Promise<number> {
+    try {
+      const subscription = await prisma.subscription.findUnique({
+        where: { id: subscriptionId },
+        select: { metadata: true }
+      });
+
+      if (!subscription) return 0;
+
+      const usage = (subscription.metadata as any)?.usage || {};
+      return usage[metricType] || 0;
+    } catch (error) {
+      console.warn('Failed to get current usage:', error);
+      return 0;
+    }
+  }
+
+  private getTierLevel(totalSpent: number): string {
+    if (totalSpent >= 10000) return 'diamond';
+    if (totalSpent >= 5000) return 'platinum';
+    if (totalSpent >= 2000) return 'gold';
+    if (totalSpent >= 500) return 'silver';
+    return 'bronze';
+  }
+
+  private getNextTier(currentTier: string): string {
+    const tierOrder = ['bronze', 'silver', 'gold', 'platinum', 'diamond'];
+    const currentIndex = tierOrder.indexOf(currentTier);
+    return currentIndex < tierOrder.length - 1 ? tierOrder[currentIndex + 1] : currentTier;
+  }
+
+  private calculateTierProgress(totalSpent: number, currentTier: string): number {
+    const tierThresholds: Record<string, number> = {
+      bronze: 0,
+      silver: 500,
+      gold: 2000,
+      platinum: 5000,
+      diamond: 10000
+    };
+    
+    const currentThreshold = tierThresholds[currentTier];
+    const nextThreshold = tierThresholds[this.getNextTier(currentTier)] || currentThreshold;
+    
+    if (nextThreshold === currentThreshold) return 100;
+    
+    const progress = ((totalSpent - currentThreshold) / (nextThreshold - currentThreshold)) * 100;
+    return Math.min(Math.max(progress, 0), 100);
+  }
+
+  private getRequiredAmountForNextTier(nextTier: string): number {
+    const tierThresholds: Record<string, number> = {
+      bronze: 500,
+      silver: 2000,
+      gold: 5000,
+      platinum: 10000,
+      diamond: 10000
+    };
+    return tierThresholds[nextTier] || 0;
   }
 }
 

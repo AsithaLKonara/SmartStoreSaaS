@@ -88,16 +88,22 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
+<<<<<<< HEAD
     const body = await _request.json();
     const { name, email, phone, vehicleType, vehicleNumber, status } = body;
+=======
+    const body = await request.json();
+    const { name, code, apiKey, apiSecret, isActive } = body;
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
-    if (!name || !email || !phone || !vehicleType || !vehicleNumber) {
-      return NextResponse.json({ message: 'All fields are required' }, { status: 400 });
+    if (!name || !code) {
+      return NextResponse.json({ message: 'Name and code are required' }, { status: 400 });
     }
 
     const courier = await prisma.courier.create({
       data: {
         name,
+<<<<<<< HEAD
         code: `${name.toUpperCase().replace(/\s+/g, '_')}_${Date.now()}`,
         settings: {
         phone,
@@ -105,6 +111,12 @@ export async function POST(_request: NextRequest) {
         vehicleNumber,
         status: status || 'ACTIVE',
         },
+=======
+        code,
+        apiKey,
+        apiSecret,
+        isActive: isActive !== undefined ? isActive : true,
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         organizationId: session.user.organizationId,
       },
     });

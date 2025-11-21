@@ -1,4 +1,13 @@
-import { prisma } from '@/lib/prisma';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// Use string literals for OrderStatus since Prisma enums might not be available
+const OrderStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  CANCELLED: 'CANCELLED'
+} as const;
 
 interface PayPalConfig {
   clientId: string;
@@ -7,7 +16,7 @@ interface PayPalConfig {
 }
 
 export interface PayPalOrder {
-  id: string;
+  id: string; // Changed back to string since we need to return a valid order
   status: string;
   amount: {
     currency_code: string;
@@ -36,6 +45,17 @@ export interface PayPalPayment {
       payer_id: string;
     };
   };
+}
+
+// PayPal API response types
+interface PayPalAPIResponse {
+  id: string | null;
+  status: string;
+  links: Array<{
+    href: string;
+    rel: string;
+    method: string;
+  }>;
 }
 
 export class PayPalService {
@@ -84,7 +104,7 @@ export class PayPalService {
       this.accessToken = data.access_token;
       this.tokenExpiry = new Date(Date.now() + (data.expires_in * 1000));
       
-      return this.accessToken;
+      return this.accessToken!; // Use non-null assertion since we just set it
     } catch (error) {
       console.error('Error getting PayPal access token:', error);
       throw new Error('Failed to authenticate with PayPal');
@@ -140,16 +160,25 @@ export class PayPalService {
         throw new Error(`PayPal API error: ${error.message}`);
       }
 
-      const order = await response.json();
+      const order = await response.json() as PayPalAPIResponse;
+      
+      // Validate that we have a valid order ID
+      if (!order.id || typeof order.id !== 'string') {
+        throw new Error('PayPal order creation failed - invalid order ID returned');
+      }
+
+      // At this point, order.id is guaranteed to be a string
+      const orderIdString = order.id;
       
       // Store PayPal order ID in database
       await prisma.order.updateMany({
         where: { id: orderId },
-        data: { paypalOrderId: order.id },
+        data: { paypalOrderId: orderIdString },
       });
 
-      return {
-        id: order.id,
+      // Create a validated order object
+      const validatedOrder: PayPalOrder = {
+        id: orderIdString, // Use the validated string
         status: order.status,
         amount: {
           currency_code: currency,
@@ -157,6 +186,8 @@ export class PayPalService {
         },
         links: order.links,
       };
+
+      return validatedOrder;
     } catch (error) {
       console.error('Error creating PayPal order:', error);
       throw new Error('Failed to create PayPal order');
@@ -190,8 +221,7 @@ export class PayPalService {
       await prisma.order.updateMany({
         where: { paypalOrderId: paypalOrderId },
         data: {
-          status: 'PAID',
-          paidAt: new Date(),
+          status: OrderStatus.CONFIRMED,
           paypalPaymentId: payment.id,
         },
       });
@@ -360,8 +390,7 @@ export class PayPalService {
       await prisma.order.updateMany({
         where: { paypalOrderId: orderId },
         data: {
-          status: 'PAID',
-          paidAt: new Date(),
+          status: OrderStatus.CONFIRMED,
           paypalPaymentId: paymentId,
         },
       });
@@ -377,7 +406,7 @@ export class PayPalService {
       await prisma.order.updateMany({
         where: { paypalOrderId: orderId },
         data: {
-          status: 'PAYMENT_FAILED',
+          status: OrderStatus.CANCELLED,
         },
       });
     }

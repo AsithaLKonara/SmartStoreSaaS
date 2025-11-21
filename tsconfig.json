@@ -12,7 +12,7 @@
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -48,6 +48,7 @@
       "@/prisma/*": [
         "./prisma/*"
       ]
+<<<<<<< HEAD
     },
     "types": [
       "react",
@@ -56,6 +57,9 @@
       "jest",
       "@testing-library/jest-dom"
     ]
+=======
+    }
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
   },
   "include": [
     "next-env.d.ts",

@@ -132,7 +132,6 @@ async function processMessageContent(message: any, customer: any): Promise<void>
     await whatsAppService.sendTextMessage(
       message.from,
       'Thank you for your message! How can I help you today? You can ask about:\n- Order status\n- Products\n- Support',
-      'text',
       message.organizationId
     );
   }
@@ -149,20 +148,22 @@ async function handleOrderQuery(message: any, customer: any): Promise<void> {
     await whatsAppService.sendTextMessage(
       message.from,
       'You don\'t have any orders yet. Would you like to browse our products?',
-      'text',
       message.organizationId
     );
     return;
   }
 
-  const orderList = orders.map(order => 
+  const orderList = orders.map((order: any) => 
     `Order #${order.orderNumber}: ${order.status} - $${order.totalAmount}`
   ).join('\n');
 
+<<<<<<< HEAD
     await whatsAppService.sendTextMessage(
+=======
+  await whatsAppService.sendTextMessage(
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     message.from,
     `Here are your recent orders:\n\n${orderList}`,
-    'text',
     message.organizationId
   );
 }
@@ -181,29 +182,34 @@ async function handleProductQuery(message: any, customer: any): Promise<void> {
     await whatsAppService.sendTextMessage(
       message.from,
       'No products available at the moment.',
-      'text',
       message.organizationId
     );
     return;
   }
 
-  const productList = products.map(product => 
+  const productList = products.map((product: any) => 
     `${product.name} - $${product.price} (${product.stockQuantity} in stock)`
   ).join('\n');
 
+<<<<<<< HEAD
     await whatsAppService.sendTextMessage(
+=======
+  await whatsAppService.sendTextMessage(
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     message.from,
     `Here are some of our products:\n\n${productList}\n\nVisit our website to see more!`,
-    'text',
     message.organizationId
   );
 }
 
 async function handleSupportQuery(message: any, customer: any): Promise<void> {
+<<<<<<< HEAD
     await whatsAppService.sendTextMessage(
+=======
+  await whatsAppService.sendTextMessage(
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     message.from,
     'Our support team is here to help! Please provide your order number or describe your issue, and we\'ll get back to you soon.',
-    'text',
     message.organizationId
   );
 } 

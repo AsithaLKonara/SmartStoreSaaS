@@ -1,10 +1,27 @@
 import OpenAI from 'openai';
+import { prisma } from '../prisma';
 
+<<<<<<< HEAD
 const openai = process.env.OPENAI_API_KEY 
   ? new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     })
   : null;
+=======
+// Lazy initialization of OpenAI client to prevent build-time errors
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openai = new OpenAI({ apiKey });
+  }
+  return openai;
+}
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
 export interface CustomerLTV {
   customerId: string;
@@ -65,6 +82,8 @@ export class CustomerIntelligenceService {
     interactionHistory: any[]
   ): Promise<CustomerLTV[]> {
     try {
+      const openaiClient = getOpenAIClient();
+      
       const prompt = `
         Predict customer lifetime value based on:
         
@@ -82,7 +101,7 @@ export class CustomerIntelligenceService {
         Return as JSON array with fields: customerId, customerName, currentLTV, predictedLTV, confidence, factors, recommendations
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await openaiClient.chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -122,7 +141,7 @@ export class CustomerIntelligenceService {
         Return as JSON array with fields: customerId, customerName, churnRisk, riskLevel, factors, retentionStrategies, lastPurchaseDate, daysSinceLastPurchase
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -161,7 +180,7 @@ export class CustomerIntelligenceService {
         Return as JSON array with fields: segmentId, segmentName, customerCount, averageLTV, characteristics, recommendations, customers
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.4,
@@ -200,7 +219,7 @@ export class CustomerIntelligenceService {
         Return as JSON array with fields: customerId, productId, productName, confidence, reason, expectedPurchaseProbability
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -215,7 +234,7 @@ export class CustomerIntelligenceService {
   }
 
   /**
-   * Analyze customer sentiment
+   * Analyze customer sentiment using Prisma models
    */
   async analyzeCustomerSentiment(
     customerData: any[],
@@ -242,7 +261,7 @@ export class CustomerIntelligenceService {
         Return as JSON array with fields: customerId, overallSentiment, sentimentScore, keyTopics, sentimentTrend, recommendations
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -253,6 +272,45 @@ export class CustomerIntelligenceService {
     } catch (error) {
       console.error('Error analyzing customer sentiment:', error);
       return [];
+    }
+  }
+
+  /**
+   * Get customer sentiment data from Prisma models
+   */
+  async getCustomerSentimentData(organizationId: string, customerId?: string): Promise<{
+    reviews: any[];
+    supportTickets: any[];
+    customerSegments: any[];
+    customerOffers: any[];
+  }> {
+    try {
+      const whereClause = customerId ? { customerId } : {};
+      const orgClause = { organizationId };
+
+      const [reviews, supportTickets, customerSegments, customerOffers] = await Promise.all([
+        prisma.review.findMany({
+          where: { ...whereClause, ...orgClause },
+          include: { customer: true, product: true }
+        }),
+        prisma.supportTicket.findMany({
+          where: { ...whereClause, ...orgClause },
+          include: { customer: true, order: true }
+        }),
+        prisma.customerSegment.findMany({
+          where: orgClause,
+          include: { customerSegmentCustomers: { include: { customer: true } } }
+        }),
+        prisma.customerOffer.findMany({
+          where: orgClause,
+          include: { customerOfferCustomers: { include: { customer: true } } }
+        })
+      ]);
+
+      return { reviews, supportTickets, customerSegments, customerOffers };
+    } catch (error) {
+      console.error('Error fetching customer sentiment data:', error);
+      return { reviews: [], supportTickets: [], customerSegments: [], customerOffers: [] };
     }
   }
 
@@ -280,7 +338,7 @@ export class CustomerIntelligenceService {
         Return as JSON array with detailed pattern analysis
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,

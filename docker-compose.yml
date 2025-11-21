@@ -1,6 +1,6 @@
 services:
   mongodb:
-    image: mongo:7.0
+    image: mongo:latest
     container_name: smartstore-mongodb
     restart: unless-stopped
     environment:
@@ -60,7 +60,7 @@ services:
     container_name: smartstore-app
     restart: unless-stopped
     environment:
-      - DATABASE_URL=mongodb://smartstore_user:smartstore_password@mongodb:27017/smartstore
+      - DATABASE_URL=mongodb://admin:password@mongodb:27017/smartstore
       - REDIS_URL=redis://redis:6379
       - NEXTAUTH_SECRET=smartstore-secret-key-2024
       - NEXTAUTH_URL=http://localhost:3000

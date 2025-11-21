@@ -44,12 +44,21 @@ interface CourierMetrics {
 }
 
 export class AIAnalyticsService {
-  private openai: OpenAI;
+  private openai: OpenAI | null = null;
 
   constructor() {
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+    // OpenAI client will be initialized lazily when needed
+  }
+
+  private getOpenAIClient(): OpenAI {
+    if (!this.openai) {
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        throw new Error('OPENAI_API_KEY environment variable is not set');
+      }
+      this.openai = new OpenAI({ apiKey });
+    }
+    return this.openai;
   }
 
   // Customer Analytics
@@ -94,6 +103,7 @@ export class AIAnalyticsService {
 
       if (!customer) return 0.5;
 
+<<<<<<< HEAD
       // Get last order date from orders
       const lastOrder = customer.orders.length > 0 
         ? customer.orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0]
@@ -102,6 +112,12 @@ export class AIAnalyticsService {
 
       const daysSinceLastOrder = lastOrderDate
         ? Math.floor((Date.now() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24))
+=======
+      // Calculate last order date from orders
+      const lastOrder = customer.orders[0]; // orders are ordered by createdAt desc
+      const daysSinceLastOrder = lastOrder
+        ? Math.floor((Date.now() - new Date(lastOrder.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         : 365;
 
       const orderFrequency = customer.orders.length / 12; // orders per month
@@ -158,6 +174,7 @@ export class AIAnalyticsService {
           id: 'regular',
           name: 'Regular Customers',
           criteria: 'Total spent $100-$1000, multiple orders',
+<<<<<<< HEAD
           customerCount: customers.filter(c => {
             const total = c.orders.reduce((sum, o) => sum + o.totalAmount, 0);
             return total >= 100 && total <= 1000 && c.orders.length > 1;
@@ -171,6 +188,10 @@ export class AIAnalyticsService {
               const total = c.orders.reduce((sum, o) => sum + o.totalAmount, 0);
               return total >= 100 && total <= 1000 && c.orders.length > 1;
             }).length, 1),
+=======
+          customerCount: customers.filter(c => c.totalSpent >= 100 && c.totalSpent <= 1000 && c.orders.length > 1).length,
+          averageValue: customers.filter(c => c.totalSpent >= 100 && c.totalSpent <= 1000 && c.orders.length > 1).reduce((sum, c) => sum + c.totalSpent, 0) / Math.max(customers.filter(c => c.totalSpent >= 100 && c.totalSpent <= 1000 && c.orders.length > 1).length, 1),
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           churnRisk: 0.3,
         },
         {
@@ -178,9 +199,13 @@ export class AIAnalyticsService {
           name: 'New Customers',
           criteria: 'First-time buyers',
           customerCount: customers.filter(c => c.orders.length === 1).length,
+<<<<<<< HEAD
           averageValue: customers
             .filter(c => c.orders.length === 1)
             .reduce((sum, c) => sum + c.orders.reduce((s, o) => s + o.totalAmount, 0), 0) / Math.max(customers.filter(c => c.orders.length === 1).length, 1),
+=======
+          averageValue: customers.filter(c => c.orders.length === 1).reduce((sum, c) => sum + c.totalSpent, 0) / Math.max(customers.filter(c => c.orders.length === 1).length, 1),
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           churnRisk: 0.6,
         },
         {
@@ -188,9 +213,15 @@ export class AIAnalyticsService {
           name: 'At Risk Customers',
           criteria: 'No orders in last 90 days',
           customerCount: customers.filter(c => {
+<<<<<<< HEAD
             if (c.orders.length === 0) return true;
             const lastOrder = c.orders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
             const daysSinceLastOrder = Math.floor((Date.now() - lastOrder.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+=======
+            if (!c.orders || c.orders.length === 0) return true;
+            const lastOrder = c.orders[0]; // Assuming orders are sorted by date
+            const daysSinceLastOrder = Math.floor((Date.now() - new Date(lastOrder.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
             return daysSinceLastOrder > 90;
           }).length,
           averageValue: 0,
@@ -230,7 +261,7 @@ export class AIAnalyticsService {
         - factors: string[] (factors affecting prediction)
       `;
 
-      const response = await this.openai.chat.completions.create({
+      const response = await this.getOpenAIClient().chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
@@ -324,9 +355,13 @@ export class AIAnalyticsService {
 
       // Simple route optimization - group by area
       const routes = orders.reduce((acc, order) => {
+<<<<<<< HEAD
         // Get address from Order metadata or shippingAddress
         const address = (order.metadata as any)?.shippingAddress || (order.metadata as any)?.address || '';
         const area = address ? address.split(',')[1]?.trim() || 'Unknown' : 'Unknown';
+=======
+        const area = order.customer.address ? order.customer.address.split(',')[1]?.trim() || 'Unknown' : 'Unknown';
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         if (!acc[area]) {
           acc[area] = [];
         }
@@ -376,7 +411,11 @@ export class AIAnalyticsService {
           const courierName = courierId || 'Unknown'; // TODO: Fetch from CourierDelivery or metadata
           acc[courierId] = {
             courierId,
+<<<<<<< HEAD
             courierName,
+=======
+            courierName: shipment.courier?.name || 'Unknown',
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
             deliveries: [],
             successfulDeliveries: 0,
             totalDeliveryTime: 0,
@@ -505,7 +544,7 @@ export class AIAnalyticsService {
         Return JSON array of recommendation strings.
       `;
 
-      const response = await this.openai.chat.completions.create({
+      const response = await this.getOpenAIClient().chat.completions.create({
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.4,

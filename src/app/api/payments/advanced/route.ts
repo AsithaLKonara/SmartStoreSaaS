@@ -55,6 +55,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ subscriptions });
 
       case 'payment-intents':
+        if (!customerId) {
+          return NextResponse.json({ error: 'Customer ID required' }, { status: 400 });
+        }
         const paymentIntents = await prisma.paymentIntent.findMany({
           where: { customerId: customerId || undefined },
           include: { customer: true, paymentMethod: true },
@@ -63,6 +66,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ paymentIntents });
 
       case 'invoices':
+        if (!customerId) {
+          return NextResponse.json({ error: 'Customer ID required' }, { status: 400 });
+        }
         const invoices = await prisma.invoice.findMany({
           where: { customerId: customerId || undefined },
           include: { customer: true, subscription: true },
@@ -94,12 +100,12 @@ export async function POST(_request: NextRequest) {
 
     switch (action) {
       case 'create-payment-intent':
-        const paymentIntent = await paymentService.createPaymentIntent(
-          data.amount,
-          data.currency,
-          data.customerId,
-          data.metadata
-        );
+        const paymentIntent = await paymentService.createPaymentIntent({
+          amount: data.amount,
+          currency: data.currency,
+          customerId: data.customerId,
+          metadata: data.metadata
+        });
         return NextResponse.json({ paymentIntent });
 
       case 'confirm-payment':

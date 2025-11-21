@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -89,7 +89,7 @@ async function main() {
     }),
   ]);
 
-  console.log('✅ Created categories:', categories.map(c => c.name));
+  console.log('✅ Created categories:', categories.map((c: any) => c.name));
 
   // Create demo products
   const products = await Promise.all([
@@ -179,7 +179,7 @@ async function main() {
     }),
   ]);
 
-  console.log('✅ Created products:', products.map(p => p.name));
+  console.log('✅ Created products:', products.map((p: any) => p.name));
 
   // Create demo customers
   const customers = await Promise.all([
@@ -242,7 +242,7 @@ async function main() {
     }),
   ]);
 
-  console.log('✅ Created customers:', customers.map(c => c.name));
+  console.log('✅ Created customers:', customers.map((c: any) => c.name));
 
   // Create demo orders
   const orders = await Promise.all([
@@ -283,7 +283,7 @@ async function main() {
     }),
   ]);
 
-  console.log('✅ Created orders:', orders.map(o => o.orderNumber));
+  console.log('✅ Created orders:', orders.map((o: any) => o.orderNumber));
 
   // Create order items
   const existingItems = await prisma.orderItem.findMany({
@@ -296,6 +296,7 @@ async function main() {
   });
 
   await Promise.all([
+<<<<<<< HEAD
     existingItems.find(item => item.orderId === orders[0].id && item.productId === products[0].id)
       ? prisma.orderItem.update({
           where: { id: existingItems.find(item => item.orderId === orders[0].id && item.productId === products[0].id)!.id },
@@ -332,6 +333,34 @@ async function main() {
             productId: products[2].id,
           },
         }),
+=======
+    prisma.orderItem.upsert({
+      where: { 
+        id: 'order-item-1' 
+      },
+      update: {},
+      create: {
+        quantity: 1,
+        price: 1299.99,
+        total: 1299.99,
+        orderId: orders[0].id,
+        productId: products[0].id,
+      },
+    }),
+    prisma.orderItem.upsert({
+      where: { 
+        id: 'order-item-2' 
+      },
+      update: {},
+      create: {
+        quantity: 1,
+        price: 89.99,
+        total: 89.99,
+        orderId: orders[1].id,
+        productId: products[2].id,
+      },
+    }),
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
   ]);
 
   console.log('✅ Created order items');
@@ -378,7 +407,7 @@ async function main() {
     }),
   ]);
 
-  console.log('✅ Created couriers:', couriers.map(c => c.name));
+  console.log('✅ Created couriers:', couriers.map((c: any) => c.name));
 
   // Create demo chat messages
   const chatMessages = await Promise.all([

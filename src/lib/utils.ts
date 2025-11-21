@@ -228,7 +228,7 @@ export function chunk<T>(array: T[], size: number): T[][] {
 }
 
 export function unique<T>(array: T[]): T[] {
-  return [...new Set(array)];
+  return Array.from(new Set(array)); // Use Array.from instead of spread to avoid Set iteration issues
 }
 
 export function removeDuplicates<T>(array: T[]): T[] {

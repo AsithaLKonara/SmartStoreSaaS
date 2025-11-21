@@ -15,6 +15,10 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type');
     const organizationId = session.user.organizationId;
 
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization ID not found' }, { status: 400 });
+    }
+
     switch (type) {
       case 'offline-data':
         const dataType = searchParams.get('dataType');
@@ -34,17 +38,22 @@ export async function GET(request: NextRequest) {
           type: qrType as any,
           data: JSON.parse(qrData || '{}'),
           size: size ? parseInt(size) : 200,
-          format: format as 'PNG' | 'SVG' || 'PNG',
+          format: (format as 'PNG' | 'SVG') || 'PNG',
         });
         return NextResponse.json({ qrCodeUrl });
 
       case 'pwa-status':
+<<<<<<< HEAD
         // Get PWA installation and usage statistics from organization metadata
         const org = await prisma.organization.findUnique({
           where: { id: organizationId || '' },
           select: { settings: true },
         });
         const currentStats = (org?.settings as any)?.pwaStats || {
+=======
+        // Get PWA installation and usage statistics
+        const currentStats = {
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           totalInstalls: 0,
           activeUsers: 0,
           offlineUsage: 0,
@@ -55,7 +64,14 @@ export async function GET(request: NextRequest) {
 
       case 'notification-history':
         const notifications = await prisma.notification.findMany({
+<<<<<<< HEAD
           where: { organizationId },
+=======
+          where: { 
+            organizationId,
+            type: 'push'
+          },
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           orderBy: { createdAt: 'desc' },
           take: 50,
         });
@@ -84,11 +100,16 @@ export async function POST(_request: NextRequest) {
     const { action, data } = body;
     const organizationId = session.user.organizationId;
 
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization ID not found' }, { status: 400 });
+    }
+
     switch (action) {
       case 'subscribe-push':
         const subscription = await advancedPWAService.subscribeToPushNotifications();
         if (subscription) {
           // Store subscription in database
+<<<<<<< HEAD
           // Store push subscription in Notification metadata
           await prisma.notification.create({
             data: {
@@ -102,6 +123,17 @@ export async function POST(_request: NextRequest) {
                 subscription: subscription.toJSON(),
                 isActive: true,
               } as any,
+=======
+          await prisma.notification.create({
+            data: {
+              type: 'push',
+              title: 'Push Notification Subscription',
+              message: 'Successfully subscribed to push notifications',
+              recipient: session.user.id,
+              organizationId,
+              status: 'sent',
+              metadata: { subscription: subscription.toJSON() as Record<string, any> },
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
             },
           });
         }
@@ -126,6 +158,7 @@ export async function POST(_request: NextRequest) {
         // Store notification in database
         await prisma.notification.create({
           data: {
+<<<<<<< HEAD
             organizationId: organizationId || undefined,
             userId: session.user.id,
             type: 'SYSTEM',
@@ -133,6 +166,15 @@ export async function POST(_request: NextRequest) {
             message: body || '',
             priority: 'MEDIUM',
             metadata: notificationData || {},
+=======
+            type: 'push',
+            title: notification.title,
+            message: notification.body,
+            recipient: session.user.id,
+            organizationId,
+            status: 'sent',
+            metadata: notification,
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           },
         });
 
@@ -178,19 +220,37 @@ export async function POST(_request: NextRequest) {
 
       case 'update-pwa-stats':
         const { installs, activeUsers, offlineUsage, pushSubscriptions } = data;
+<<<<<<< HEAD
         // Store PWA stats in organization metadata
         await prisma.organization.update({
           where: { id: organizationId || '' },
           data: {
             settings: {
+=======
+        // Store PWA stats in notification metadata for now
+        await prisma.notification.create({
+          data: {
+            type: 'push',
+            title: 'PWA Stats Updated',
+            message: 'PWA statistics have been updated',
+            recipient: session.user.id,
+            organizationId,
+            status: 'sent',
+            metadata: {
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
               pwaStats: {
                 totalInstalls: installs,
                 activeUsers,
                 offlineUsage,
                 pushSubscriptions,
                 recordedAt: new Date(),
+<<<<<<< HEAD
               },
             } as any,
+=======
+              }
+            },
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           },
         });
         return NextResponse.json({ success: true });

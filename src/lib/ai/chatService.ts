@@ -27,7 +27,25 @@ interface OrderFromChat {
   notes?: string;
 }
 
+interface ChatConversationData {
+  id: string;
+  title?: string;
+  status: string;
+  priority: string;
+  customerId: string;
+  messages: Array<{
+    id: string;
+    content: string;
+    role: 'user' | 'assistant' | 'system';
+    timestamp: Date;
+  }>;
+  assignedTo?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class AIChatService {
+<<<<<<< HEAD
   private openai: OpenAI | null;
   private ollamaBaseUrl: string;
 
@@ -37,7 +55,24 @@ export class AIChatService {
           apiKey: process.env.OPENAI_API_KEY,
         })
       : null;
+=======
+  private openai: OpenAI | null = null;
+  private ollamaBaseUrl: string;
+
+  constructor() {
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     this.ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+  }
+
+  private getOpenAIClient(): OpenAI {
+    if (!this.openai) {
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        throw new Error('OPENAI_API_KEY environment variable is not set');
+      }
+      this.openai = new OpenAI({ apiKey });
+    }
+    return this.openai;
   }
 
   // Product Discovery
@@ -55,10 +90,14 @@ export class AIChatService {
         - reason: string
       `;
 
+<<<<<<< HEAD
       if (!this.openai) {
         throw new Error('OpenAI API key not configured');
       }
       const response = await this.openai.chat.completions.create({
+=======
+      const response = await this.getOpenAIClient().chat.completions.create({
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
@@ -105,10 +144,14 @@ export class AIChatService {
         Return JSON array with product recommendations.
       `;
 
+<<<<<<< HEAD
       if (!this.openai) {
         throw new Error('OpenAI API key not configured');
       }
       const response = await this.openai.chat.completions.create({
+=======
+      const response = await this.getOpenAIClient().chat.completions.create({
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.4,
@@ -123,10 +166,10 @@ export class AIChatService {
   }
 
   // Order Processing
-  async createOrderFromChat(conversation: any): Promise<OrderFromChat | null> {
+  async createOrderFromChat(conversation: ChatConversationData): Promise<OrderFromChat | null> {
     try {
       const messages = conversation.messages
-        .map((msg: any) => `${msg.role}: ${msg.content}`)
+        .map((msg) => `${msg.role}: ${msg.content}`)
         .join('\n');
 
       const prompt = `
@@ -140,10 +183,14 @@ export class AIChatService {
         - notes: string (optional)
       `;
 
+<<<<<<< HEAD
       if (!this.openai) {
         throw new Error('OpenAI API key not configured');
       }
       const response = await this.openai.chat.completions.create({
+=======
+      const response = await this.getOpenAIClient().chat.completions.create({
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.2,
@@ -182,10 +229,14 @@ export class AIChatService {
         Provide a helpful, accurate response. If the question isn't covered in FAQs, say so politely.
       `;
 
+<<<<<<< HEAD
       if (!this.openai) {
         throw new Error('OpenAI API key not configured');
       }
       const response = await this.openai.chat.completions.create({
+=======
+      const response = await this.getOpenAIClient().chat.completions.create({
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3,
@@ -232,10 +283,14 @@ export class AIChatService {
         Be helpful and informative.
       `;
 
+<<<<<<< HEAD
       if (!this.openai) {
         throw new Error('OpenAI API key not configured');
       }
       const response = await this.openai.chat.completions.create({
+=======
+      const response = await this.getOpenAIClient().chat.completions.create({
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.4,
@@ -248,7 +303,7 @@ export class AIChatService {
     }
   }
 
-  // Sentiment Analysis
+  // Sentiment Analysis with proper data types
   async analyzeCustomerSentiment(message: string): Promise<SentimentScore> {
     try {
       const prompt = `
@@ -261,10 +316,14 @@ export class AIChatService {
         - overall: "positive" | "negative" | "neutral"
       `;
 
+<<<<<<< HEAD
       if (!this.openai) {
         throw new Error('OpenAI API key not configured');
       }
       const response = await this.openai.chat.completions.create({
+=======
+      const response = await this.getOpenAIClient().chat.completions.create({
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
@@ -283,10 +342,10 @@ export class AIChatService {
     }
   }
 
-  async detectUrgentIssues(conversation: any): Promise<boolean> {
+  async detectUrgentIssues(conversation: ChatConversationData): Promise<boolean> {
     try {
       const messages = conversation.messages
-        .map((msg: any) => msg.content)
+        .map((msg) => msg.content)
         .join(' ');
 
       const prompt = `
@@ -300,10 +359,14 @@ export class AIChatService {
         - reason: string
       `;
 
+<<<<<<< HEAD
       if (!this.openai) {
         throw new Error('OpenAI API key not configured');
       }
       const response = await this.openai.chat.completions.create({
+=======
+      const response = await this.getOpenAIClient().chat.completions.create({
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: 'gpt-4',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.2,
@@ -314,6 +377,61 @@ export class AIChatService {
     } catch (error) {
       console.error('Error detecting urgent issues:', error);
       return false;
+    }
+  }
+
+  // Chat Conversation Management
+  async getChatConversation(conversationId: string, organizationId: string): Promise<ChatConversationData | null> {
+    try {
+      const conversation = await prisma.chatConversation.findFirst({
+        where: { id: conversationId, organizationId },
+        include: {
+          customer: true,
+          messages: true,
+          assignedAgent: true
+        }
+      });
+
+      if (!conversation) return null;
+
+      return {
+        id: conversation.id,
+        title: conversation.title || undefined,
+        status: conversation.status,
+        priority: conversation.priority,
+        customerId: conversation.customerId,
+        messages: conversation.messages.map((msg: any) => ({
+          id: msg.id,
+          content: msg.content,
+          role: msg.direction === 'INBOUND' ? 'user' : 'assistant',
+          timestamp: msg.createdAt
+        })),
+        assignedTo: conversation.assignedTo || undefined,
+        createdAt: conversation.createdAt,
+        updatedAt: conversation.updatedAt
+      };
+    } catch (error) {
+      console.error('Error fetching chat conversation:', error);
+      return null;
+    }
+  }
+
+  async updateChatConversationStatus(
+    conversationId: string, 
+    status: string, 
+    priority?: string
+  ): Promise<void> {
+    try {
+      await prisma.chatConversation.update({
+        where: { id: conversationId },
+        data: { 
+          status,
+          priority: priority || undefined,
+          updatedAt: new Date()
+        }
+      });
+    } catch (error) {
+      console.error('Error updating chat conversation status:', error);
     }
   }
 
@@ -333,7 +451,7 @@ export class AIChatService {
     });
 
     return products
-      .map(p => `${p.name} (${p.category.name}) - $${p.price} - ${p.description}`)
+      .map(p => `${p.name} (${p.category?.name || 'Uncategorized'}) - $${p.price} - ${p.description}`)
       .join('\n');
   }
 

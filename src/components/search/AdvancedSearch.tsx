@@ -95,10 +95,10 @@ export function AdvancedSearch({
       if (searchFilters.category) params.append('category', searchFilters.category);
       if (searchFilters.brand) params.append('brand', searchFilters.brand);
       if (searchFilters.status) params.append('status', searchFilters.status);
-      if (searchFilters.minPrice) params.append('minPrice', searchFilters.minPrice.toString());
-      if (searchFilters.maxPrice) params.append('maxPrice', searchFilters.maxPrice.toString());
-      if (searchFilters.startDate) params.append('startDate', searchFilters.startDate.toISOString());
-      if (searchFilters.endDate) params.append('endDate', searchFilters.endDate.toISOString());
+      if (searchFilters.priceRange?.min) params.append('minPrice', searchFilters.priceRange.min.toString());
+      if (searchFilters.priceRange?.max) params.append('maxPrice', searchFilters.priceRange.max.toString());
+      if (searchFilters.dateRange?.start) params.append('startDate', searchFilters.dateRange.start.toISOString());
+      if (searchFilters.dateRange?.end) params.append('endDate', searchFilters.dateRange.end.toISOString());
 
       const response = await fetch(`/api/search?${params.toString()}`);
       const data = await response.json();
@@ -223,7 +223,11 @@ export function AdvancedSearch({
         <div className="absolute inset-y-0 right-0 flex items-center">
           <select
             value={searchType}
+<<<<<<< HEAD
             onChange={(e) => setSearchType(e.target.value as 'global' | 'products' | 'customers' | 'orders')}
+=======
+                            onChange={(e) => setSearchType(e.target.value as 'global' | 'products' | 'customers' | 'orders')}
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
             className="h-full px-3 py-2 text-sm border-l border-gray-300 dark:border-gray-600 bg-transparent text-gray-700 dark:text-gray-300 focus:outline-none"
           >
             <option value="global">All</option>

@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       }>;
       AND?: Array<{
         stockQuantity?: { lte?: number; gt?: number } | number;
-        minStock?: { lte?: number; gt?: number };
+        lowStockThreshold?: { lte?: number; gt?: number };
       }>;
       stockQuantity?: { lte?: number; gt?: number } | number;
     }
@@ -153,7 +153,12 @@ export async function POST(_request: NextRequest) {
         isActive: isActive !== false,
         images: images || [],
         organizationId: session.user.organizationId,
+<<<<<<< HEAD
         categoryId: categoryId || null,
+=======
+        categoryId,
+        slug: name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         createdById: session.user.id,
         variants: {
           create: variants?.map((variant: any) => ({

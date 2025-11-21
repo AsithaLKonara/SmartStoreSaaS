@@ -118,9 +118,15 @@ export class MFAService {
         },
         create: {
           userId,
+<<<<<<< HEAD
           notifications: {
             mfa: mfaData,
           } as any,
+=======
+          method: 'totp',
+          secret: secret.base32,
+          organizationId: await this.getUserOrganizationId(userId),
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         },
       });
 
@@ -140,13 +146,25 @@ export class MFAService {
    */
   async verifyTOTP(userId: string, token: string, window = 1): Promise<MFAVerification> {
     try {
+<<<<<<< HEAD
       const userPref = await prisma.userPreference.findUnique({
         where: { userId },
+=======
+      const mfaRecord = await prisma.userMFA.findFirst({
+        where: {
+          userId,
+          method: 'totp',
+        },
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       });
 
       const mfaData = (userPref?.notifications as any)?.mfa;
 
       if (!mfaData || mfaData.type !== 'totp' || !mfaData.isEnabled) {
+        return { isValid: false };
+      }
+
+      if (!mfaRecord.secret) {
         return { isValid: false };
       }
 
@@ -159,6 +177,7 @@ export class MFAService {
 
       if (isValid) {
         // Update last used timestamp
+<<<<<<< HEAD
         await prisma.userPreference.update({
           where: { userId },
           data: {
@@ -170,6 +189,11 @@ export class MFAService {
               },
             } as any,
           },
+=======
+        await prisma.userMFA.update({
+          where: { id: mfaRecord.id },
+          data: { lastUsed: new Date() },
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         });
 
         // Log successful verification
@@ -192,9 +216,22 @@ export class MFAService {
    */
   async enableTOTP(userId: string, token: string): Promise<boolean> {
     try {
+<<<<<<< HEAD
       const mfaData = await this.getMFAData(userId, 'totp');
+=======
+      const mfaRecord = await prisma.userMFA.findFirst({
+        where: {
+          userId,
+          method: 'totp',
+        },
+      });
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
       if (!mfaData || mfaData.isEnabled) {
+        return false;
+      }
+
+      if (!mfaRecord.secret) {
         return false;
       }
 
@@ -206,10 +243,18 @@ export class MFAService {
       });
 
       if (isValid) {
+<<<<<<< HEAD
         await this.updateMFAData(userId, {
           isEnabled: true,
           isVerified: true,
           lastUsedAt: new Date(),
+=======
+        await prisma.userMFA.update({
+          where: { id: mfaRecord.id },
+          data: {
+            lastUsed: new Date(),
+          },
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         });
 
         await this.logMFAEvent(userId, 'totp_enabled', 'success');
@@ -231,8 +276,17 @@ export class MFAService {
       const verification = await this.verifyTOTP(userId, token);
       
       if (verification.isValid) {
+<<<<<<< HEAD
         await this.updateMFAData(userId, {
           isEnabled: false,
+=======
+        // Delete TOTP MFA method
+        await prisma.userMFA.deleteMany({
+          where: {
+            userId,
+            method: 'totp',
+          },
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         });
 
         await this.logMFAEvent(userId, 'totp_disabled', 'success');
@@ -254,6 +308,7 @@ export class MFAService {
       const code = this.generateNumericCode();
       const expiresAt = new Date(Date.now() + this.codeValidityMinutes * 60 * 1000);
 
+<<<<<<< HEAD
       // Store code in UserPreference metadata
       await this.updateMFAData(userId, {
         type: 'sms',
@@ -262,6 +317,27 @@ export class MFAService {
         phone,
         isEnabled: true,
         isVerified: false,
+=======
+      // Store code in database (using secret field for temporary code)
+      await prisma.userMFA.upsert({
+        where: {
+          userId_method: {
+            userId,
+            method: 'sms',
+          },
+        },
+        update: {
+          secret: code, // Store code temporarily in secret field
+          phone,
+        },
+        create: {
+          userId,
+          method: 'sms',
+          secret: code, // Store code temporarily in secret field
+          phone,
+          organizationId: await this.getUserOrganizationId(userId),
+        },
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       });
 
       // Send SMS
@@ -281,6 +357,7 @@ export class MFAService {
    */
   async verifySMSCode(userId: string, code: string): Promise<MFAVerification> {
     try {
+<<<<<<< HEAD
       const mfaData = await this.getMFAData(userId, 'sms');
 
       if (!mfaData || !mfaData.tempCode || !mfaData.tempCodeExpiresAt || !mfaData.isEnabled) {
@@ -304,6 +381,31 @@ export class MFAService {
           tempCodeExpiresAt: null,
           isVerified: true,
           lastUsedAt: now,
+=======
+      const mfaRecord = await prisma.userMFA.findFirst({
+        where: {
+          userId,
+          method: 'sms',
+        },
+      });
+
+      if (!mfaRecord || !mfaRecord.secret) {
+        return { isValid: false };
+      }
+
+      // For SMS, we'll use a simple code comparison without expiration for now
+      // In production, you might want to add expiration logic
+      const isValid = mfaRecord.secret === code;
+
+      if (isValid) {
+        // Clear temp code and update last used
+        await prisma.userMFA.update({
+          where: { id: mfaRecord.id },
+          data: {
+            secret: null, // Clear the temporary code
+            lastUsed: new Date(),
+          },
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         });
 
         await this.logMFAEvent(userId, 'sms_verified', 'success');
@@ -327,6 +429,7 @@ export class MFAService {
       const code = this.generateNumericCode();
       const expiresAt = new Date(Date.now() + this.codeValidityMinutes * 60 * 1000);
 
+<<<<<<< HEAD
       // Store code in UserPreference metadata
       await this.updateMFAData(userId, {
         type: 'email',
@@ -335,13 +438,40 @@ export class MFAService {
         email,
         isEnabled: true,
         isVerified: false,
+=======
+      // Store code in database (using secret field for temporary code)
+      await prisma.userMFA.upsert({
+        where: {
+          userId_method: {
+            userId,
+            method: 'email',
+          },
+        },
+        update: {
+          secret: code, // Store code temporarily in secret field
+          email,
+        },
+        create: {
+          userId,
+          method: 'email',
+          secret: code, // Store code temporarily in secret field
+          email,
+          organizationId: await this.getUserOrganizationId(userId),
+        },
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       });
 
       // Send email
-      await emailService.sendEmail({
-        to: email,
-        subject: 'Your SmartStore AI Verification Code',
-        html: `
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true },
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const mfaEmailTemplate = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #333;">Verification Code</h2>
             <p>Your verification code is:</p>
@@ -351,8 +481,13 @@ export class MFAService {
             <p style="color: #666;">This code will expire in ${this.codeValidityMinutes} minutes.</p>
             <p style="color: #666; font-size: 12px;">If you didn't request this code, please ignore this email.</p>
           </div>
-        `,
-        text: `Your SmartStore AI verification code is: ${code}. This code will expire in ${this.codeValidityMinutes} minutes.`,
+        `;
+
+      await emailService.sendEmail({
+        to: user.email,
+        subject: 'MFA Code',
+        htmlContent: mfaEmailTemplate,
+        textContent: mfaEmailTemplate.replace(/<[^>]*>/g, '')
       });
 
       await this.logMFAEvent(userId, 'email_code_sent', 'success');
@@ -369,6 +504,7 @@ export class MFAService {
    */
   async verifyEmailCode(userId: string, code: string): Promise<MFAVerification> {
     try {
+<<<<<<< HEAD
       const mfaData = await this.getMFAData(userId, 'email');
 
       if (!mfaData || !mfaData.tempCode || !mfaData.tempCodeExpiresAt || !mfaData.isEnabled) {
@@ -392,6 +528,31 @@ export class MFAService {
           tempCodeExpiresAt: null,
           isVerified: true,
           lastUsedAt: now,
+=======
+      const mfaRecord = await prisma.userMFA.findFirst({
+        where: {
+          userId,
+          method: 'email',
+        },
+      });
+
+      if (!mfaRecord || !mfaRecord.secret) {
+        return { isValid: false };
+      }
+
+      // For email, we'll use a simple code comparison without expiration for now
+      // In production, you might want to add expiration logic
+      const isValid = mfaRecord.secret === code;
+
+      if (isValid) {
+        // Clear temp code and update last used
+        await prisma.userMFA.update({
+          where: { id: mfaRecord.id },
+          data: {
+            secret: null, // Clear the temporary code
+            lastUsed: new Date(),
+          },
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         });
 
         await this.logMFAEvent(userId, 'email_verified', 'success');
@@ -408,9 +569,10 @@ export class MFAService {
   }
 
   /**
-   * Verify backup code
+   * Verify backup code (not implemented in current schema)
    */
   async verifyBackupCode(userId: string, code: string): Promise<MFAVerification> {
+<<<<<<< HEAD
     try {
       const mfaData = await this.getMFAData(userId, 'totp');
 
@@ -446,6 +608,11 @@ export class MFAService {
       await this.logMFAEvent(userId, 'backup_code_verification_error', 'error');
       return { isValid: false };
     }
+=======
+    // Backup codes not implemented in current schema
+    // This would require additional fields in UserMFA model
+    return { isValid: false };
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
   }
 
   /**
@@ -463,9 +630,15 @@ export class MFAService {
       const newBackupCodes = this.generateBackupCodes();
       const hashedCodes = newBackupCodes.map(code => this.hashBackupCode(code));
 
+<<<<<<< HEAD
       await this.updateMFAData(userId, {
         backupCodes: hashedCodes,
       });
+=======
+      // Backup codes not implemented in current schema
+      // This would require additional fields in UserMFA model
+      console.warn('Backup codes not implemented in current schema');
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
       await this.logMFAEvent(userId, 'backup_codes_regenerated', 'success');
 
@@ -486,6 +659,7 @@ export class MFAService {
       });
       const mfaData = (userPref?.notifications as any)?.mfa;
 
+<<<<<<< HEAD
       if (!mfaData) return [];
 
       return [{
@@ -496,6 +670,16 @@ export class MFAService {
         createdAt: mfaData.createdAt ? new Date(mfaData.createdAt) : new Date(),
         lastUsedAt: mfaData.lastUsedAt ? new Date(mfaData.lastUsedAt) : undefined,
       }];
+=======
+      return mfaRecords.map((record: any) => ({
+        id: record.id,
+        type: record.method as 'totp' | 'sms' | 'email' | 'backup_codes',
+        isEnabled: true, // All stored MFA methods are considered enabled
+        isVerified: true, // All stored MFA methods are considered verified
+        createdAt: record.createdAt,
+        lastUsedAt: record.lastUsed || undefined,
+      }));
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     } catch (error) {
       console.error('Error getting user MFA methods:', error);
       return [];
@@ -507,8 +691,18 @@ export class MFAService {
    */
   async hasMFAEnabled(userId: string): Promise<boolean> {
     try {
+<<<<<<< HEAD
       const mfaData = await this.getMFAData(userId);
       return !!(mfaData && mfaData.isEnabled && mfaData.isVerified);
+=======
+      const count = await prisma.userMFA.count({
+        where: {
+          userId,
+        },
+      });
+
+      return count > 0;
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     } catch (error) {
       console.error('Error checking MFA status:', error);
       return false;
@@ -527,8 +721,14 @@ export class MFAService {
         return false;
       }
 
+<<<<<<< HEAD
       await this.updateMFAData(userId, {
         isEnabled: false,
+=======
+      // Delete all MFA methods for the user
+      await prisma.userMFA.deleteMany({
+        where: { userId },
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       });
 
       await this.logMFAEvent(userId, 'all_mfa_disabled', 'success');
@@ -540,9 +740,10 @@ export class MFAService {
   }
 
   /**
-   * Get MFA authentication logs
+   * Get MFA authentication logs (not implemented in current schema)
    */
   async getMFALogs(userId: string, limit = 50): Promise<any[]> {
+<<<<<<< HEAD
     try {
       // MFA logs stored in UserPreference metadata or Activity model
       // TODO: Use Activity model for MFA logs instead of mfaLog
@@ -554,7 +755,28 @@ export class MFAService {
     } catch (error) {
       console.error('Error getting MFA logs:', error);
       return [];
+=======
+    // MFA logging not implemented in current schema
+    // This would require an MfaLog model
+    console.warn('MFA logging not implemented in current schema');
+    return [];
+  }
+
+  /**
+   * Get user's organization ID
+   */
+  private async getUserOrganizationId(userId: string): Promise<string> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true },
+    });
+    
+    if (!user?.organizationId) {
+      throw new Error('User not found or has no organization');
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     }
+    
+    return user.organizationId;
   }
 
   /**
@@ -592,6 +814,7 @@ export class MFAService {
     result: 'success' | 'failure' | 'error',
     details?: any
   ): Promise<void> {
+<<<<<<< HEAD
     try {
       // Store MFA log in Activity model
       await prisma.activity.create({
@@ -612,6 +835,11 @@ export class MFAService {
     } catch (error) {
       console.error('Error logging MFA event:', error);
     }
+=======
+    // MFA logging not implemented in current schema
+    // This would require an MfaLog model
+    console.log(`MFA Event: ${action} - ${result} for user ${userId}`, details);
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
   }
 
   /**
@@ -642,7 +870,16 @@ export class MFAService {
     }
 
     try {
+<<<<<<< HEAD
       const mfaData = await this.getMFAData(userId, 'totp');
+=======
+      const mfaRecord = await prisma.userMFA.findFirst({
+        where: {
+          userId,
+          method: 'totp',
+        },
+      });
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
       if (!mfaData || mfaData.isEnabled) {
         return false;
@@ -651,6 +888,10 @@ export class MFAService {
       // Verify multiple tokens with different time windows
       let validCount = 0;
       for (let i = 0; i < tokens.length; i++) {
+        if (!mfaRecord.secret) {
+          continue;
+        }
+
         const isValid = speakeasy.totp.verify({
           secret: mfaData.secret,
           encoding: 'base32',
@@ -665,10 +906,18 @@ export class MFAService {
 
       // Require at least 2 valid tokens
       if (validCount >= 2) {
+<<<<<<< HEAD
         await this.updateMFAData(userId, {
           isEnabled: true,
           isVerified: true,
           lastUsedAt: new Date(),
+=======
+        await prisma.userMFA.update({
+          where: { id: mfaRecord.id },
+          data: {
+            lastUsed: new Date(),
+          },
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         });
 
         await this.logMFAEvent(userId, 'totp_setup_validated', 'success');

@@ -18,14 +18,17 @@ export async function DELETE(_request: NextRequest) {
     }
 
     // Delete products and their variants
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       // Delete variants first
       await tx.productVariant.deleteMany({
         where: {
           productId: { in: productIds },
+<<<<<<< HEAD
           product: { 
             organizationId: session.user.organizationId || '',
           },
+=======
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         },
       });
 

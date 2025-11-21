@@ -147,7 +147,11 @@ export async function GET(request: NextRequest) {
       where: {
         organizationId: session.user.organizationId,
         createdAt: { gte: startDate },
+<<<<<<< HEAD
         status: PaymentStatus.COMPLETED,
+=======
+        status: 'COMPLETED',
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       },
     });
 

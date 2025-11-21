@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   LineChart,
   Line,
@@ -17,7 +17,10 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+<<<<<<< HEAD
   // RechartsFunction, // Not exported from recharts
+=======
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 } from 'recharts';
 import { useRealTimeSync } from '@/hooks/useRealTimeSync';
 
@@ -74,6 +77,7 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+<<<<<<< HEAD
   const realTimeSync = useRealTimeSync({ organizationId });
   const { isConnected } = realTimeSync;
 
@@ -103,6 +107,9 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
   }, [eventTypes, config.refreshInterval]);
 
   const handleRealTimeUpdate = (event: any) => {
+=======
+  const handleRealTimeUpdate = useCallback((event: any) => {
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     // Process real-time event and update chart data
     setData(prevData => {
       const newData = processEventData(event, prevData);
@@ -114,7 +121,28 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
       
       return newData;
     });
-  };
+  }, [onDataUpdate]);
+
+  const { isConnected, events } = useRealTimeSync({
+    organizationId,
+    onEvent: handleRealTimeUpdate
+  });
+
+  useEffect(() => {
+    // Set up refresh interval if specified
+    if (config.refreshInterval && config.refreshInterval > 0) {
+      intervalRef.current = setInterval(() => {
+        refreshData();
+      }, config.refreshInterval);
+    }
+
+    return () => {
+      // Clear interval
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [config.refreshInterval]);
 
   const processEventData = (event: any, currentData: ChartData[]): ChartData[] => {
     // This is a generic processor - you might want to customize this

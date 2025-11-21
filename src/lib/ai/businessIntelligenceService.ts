@@ -1,10 +1,26 @@
 import OpenAI from 'openai';
 
+<<<<<<< HEAD
 const openai = process.env.OPENAI_API_KEY 
   ? new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     })
   : null;
+=======
+// Lazy initialization of OpenAI client to prevent build-time errors
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY environment variable is not set');
+    }
+    openai = new OpenAI({ apiKey });
+  }
+  return openai;
+}
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
 export interface RealTimeMetrics {
   timestamp: Date;
@@ -112,17 +128,46 @@ export class BusinessIntelligenceService {
         Return as JSON with all calculated metrics
       `;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAIClient().chat.completions.create({
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.2,
       });
 
       const response = completion.choices[0]?.message?.content;
-      return response ? JSON.parse(response) : {};
+      if (response) {
+        try {
+          return JSON.parse(response) as RealTimeMetrics;
+        } catch (parseError) {
+          console.error('Error parsing AI response:', parseError);
+        }
+      }
+      
+      // Return default metrics if AI fails
+      return {
+        timestamp: new Date(),
+        totalSales: 0,
+        activeOrders: 0,
+        pendingDeliveries: 0,
+        onlineCustomers: 0,
+        conversionRate: 0,
+        averageOrderValue: 0,
+        topSellingProducts: [],
+        revenueByHour: []
+      };
     } catch (error) {
       console.error('Error generating real-time metrics:', error);
-      return {} as RealTimeMetrics;
+      return {
+        timestamp: new Date(),
+        totalSales: 0,
+        activeOrders: 0,
+        pendingDeliveries: 0,
+        onlineCustomers: 0,
+        conversionRate: 0,
+        averageOrderValue: 0,
+        topSellingProducts: [],
+        revenueByHour: []
+      };
     }
   }
 
@@ -165,7 +210,11 @@ export class BusinessIntelligenceService {
         Return as JSON array with KPI details
       `;
 
+<<<<<<< HEAD
       const completion = await openai!.chat.completions.create({
+=======
+      const completion = await getOpenAIClient().chat.completions.create({
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.2,
@@ -213,7 +262,11 @@ export class BusinessIntelligenceService {
         Return as JSON array with forecast details
       `;
 
+<<<<<<< HEAD
       const completion = await openai!.chat.completions.create({
+=======
+      const completion = await getOpenAIClient().chat.completions.create({
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -262,7 +315,11 @@ export class BusinessIntelligenceService {
         Return as JSON array with trend analysis
       `;
 
+<<<<<<< HEAD
       const completion = await openai!.chat.completions.create({
+=======
+      const completion = await getOpenAIClient().chat.completions.create({
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.4,
@@ -307,7 +364,11 @@ export class BusinessIntelligenceService {
         Return as JSON array with competitive analysis
       `;
 
+<<<<<<< HEAD
       const completion = await openai!.chat.completions.create({
+=======
+      const completion = await getOpenAIClient().chat.completions.create({
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -357,7 +418,11 @@ export class BusinessIntelligenceService {
         Return as JSON array with risk assessment
       `;
 
+<<<<<<< HEAD
       const completion = await openai!.chat.completions.create({
+=======
+      const completion = await getOpenAIClient().chat.completions.create({
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
@@ -404,7 +469,11 @@ export class BusinessIntelligenceService {
         Return as JSON array with business insights
       `;
 
+<<<<<<< HEAD
       const completion = await openai!.chat.completions.create({
+=======
+      const completion = await getOpenAIClient().chat.completions.create({
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
         model: "gpt-4",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.4,

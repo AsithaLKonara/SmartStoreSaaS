@@ -36,8 +36,13 @@ export async function GET(request: NextRequest) {
     // Check Redis connection
     try {
       const redis = realTimeSyncService['redis'];
-      await redis.ping();
-      health.services.redis = 'healthy';
+      if (redis) {
+        await redis.ping();
+        health.services.redis = 'healthy';
+      } else {
+        health.services.redis = 'unhealthy';
+        health.status = 'degraded';
+      }
     } catch (error) {
       health.services.redis = 'unhealthy';
       health.status = 'degraded';

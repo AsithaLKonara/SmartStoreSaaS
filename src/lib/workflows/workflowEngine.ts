@@ -1,8 +1,8 @@
-import { prisma } from '@/lib/prisma';
-import { aiChatService } from '@/lib/ai/chatService';
-import { emailService } from '@/lib/email';
-import { whatsappService } from '@/lib/messaging';
-import { createNotification } from '@/lib/notifications';
+import { prisma } from '../prisma';
+import { AIChatService } from '../ai/chatService';
+import { emailService } from '../email';
+import { whatsAppService } from '../messaging';
+import { createNotification } from '../notifications';
 
 interface WorkflowStep {
   id: string;
@@ -344,8 +344,8 @@ export class WorkflowEngine {
     }
 
     // Validate total amount
-    const calculatedTotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    if (Math.abs(calculatedTotal - order.totalAmount) > 0.01) {
+    const totalAmount = order.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+    if (Math.abs(totalAmount - order.totalAmount) > 0.01) {
       throw new Error('Order total amount mismatch');
     }
   }
@@ -394,7 +394,14 @@ export class WorkflowEngine {
   private async sendOrderConfirmation(data: Record<string, any>): Promise<void> {
     const order = await prisma.order.findUnique({
       where: { id: data.orderId },
-      include: { customer: true },
+      include: { 
+        customer: true,
+        items: {
+          include: {
+            product: true
+          }
+        }
+      },
     });
 
     if (!order) return;
@@ -404,16 +411,37 @@ export class WorkflowEngine {
       await emailService.sendEmail({
         to: order.customer.email,
         subject: `Order Confirmation #${order.orderNumber}`,
+<<<<<<< HEAD
         templateId: 'order-confirmation',
         templateData: { order },
+=======
+        templateId: 'order_confirmation',
+        templateData: {
+          orderNumber: order.orderNumber,
+          customerName: order.customer.name,
+          totalAmount: order.totalAmount,
+          items: order.items.map((item: any) => ({
+            name: item.product.name,
+            quantity: item.quantity,
+            price: item.price
+          }))
+        }
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       });
     }
 
     // Send WhatsApp confirmation only if customer has phone
     if (order.customer.phone) {
+<<<<<<< HEAD
       await whatsappService.sendTextMessage(
         order.customer.phone,
         `Your order #${order.orderNumber} has been confirmed! Total: $${order.totalAmount}`
+=======
+      await whatsAppService.sendTextMessage(
+        order.customer.phone,
+        `Your order #${order.orderNumber} has been confirmed! Total: $${order.totalAmount}`,
+        order.organizationId
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       );
     }
   }
@@ -432,12 +460,13 @@ export class WorkflowEngine {
     });
 
     if (courier) {
-      await prisma.shipment.create({
+      // Create shipment record
+      const shipment = await prisma.shipment.create({
         data: {
           orderId: order.id,
           courierId: courier.id,
-          status: 'ASSIGNED',
-          // Removed organizationId as it doesn't exist in Shipment model
+          status: 'PENDING',
+          organizationId: order.organizationId,
         },
       });
     }
@@ -483,21 +512,41 @@ export class WorkflowEngine {
 
     if (!customer) return;
 
+    const organization = await prisma.organization.findUnique({
+      where: { id: data.organizationId },
+    });
+
+    if (!organization) return;
+
     // Send welcome email only if customer has email
     if (customer.email) {
       await emailService.sendEmail({
         to: customer.email,
         subject: 'Welcome to SmartStore AI!',
         templateId: 'welcome',
+<<<<<<< HEAD
         templateData: { customer },
+=======
+        templateData: {
+          customerName: customer.name,
+          organizationName: organization.name
+        }
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       });
     }
 
     // Send welcome WhatsApp message only if customer has phone
     if (customer.phone) {
+<<<<<<< HEAD
       await whatsappService.sendTextMessage(
         customer.phone,
         `Welcome to SmartStore AI! We're excited to have you as a customer.`
+=======
+      await whatsAppService.sendTextMessage(
+        customer.phone,
+        `Welcome to SmartStore AI! We're excited to have you as a customer.`,
+        organization.id
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
       );
     }
   }
@@ -565,4 +614,4 @@ export class WorkflowEngine {
   }
 }
 
-export const workflowEngine = new WorkflowEngine(); 
+export const workflowEngine = new WorkflowEngine();

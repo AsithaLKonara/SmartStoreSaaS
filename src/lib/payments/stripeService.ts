@@ -1,5 +1,14 @@
+import { PrismaClient } from '@prisma/client';
 import Stripe from 'stripe';
-import { prisma } from '@/lib/prisma';
+
+const prisma = new PrismaClient();
+
+// Use string literals for OrderStatus since Prisma enums might not be available
+const OrderStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  CANCELLED: 'CANCELLED'
+} as const;
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16',
@@ -24,8 +33,8 @@ export interface PaymentMethod {
     expYear: number;
   };
   billing_details: {
-    name: string;
-    email: string;
+    name: string | null; // Changed to allow null from Stripe API
+    email: string | null; // Changed to allow null from Stripe API
     address: any;
   };
 }
@@ -234,8 +243,7 @@ export class StripeService {
           stripePaymentIntentId: paymentIntent.id,
         },
         data: {
-          status: 'PAID',
-          paidAt: new Date(),
+          status: OrderStatus.CONFIRMED,
         },
       });
 
@@ -255,7 +263,7 @@ export class StripeService {
           stripePaymentIntentId: paymentIntent.id,
         },
         data: {
-          status: 'PAYMENT_FAILED',
+          status: OrderStatus.CANCELLED,
         },
       });
 
@@ -271,7 +279,7 @@ export class StripeService {
       await prisma.subscription.create({
         data: {
           stripeSubscriptionId: subscription.id,
-          stripeCustomerId: subscription.customer as string,
+          customerId: subscription.customer as string,
           status: subscription.status,
           currentPeriodStart: new Date(subscription.current_period_start * 1000),
           currentPeriodEnd: new Date(subscription.current_period_end * 1000),
@@ -311,8 +319,7 @@ export class StripeService {
           stripeSubscriptionId: subscription.id,
         },
         data: {
-          status: 'CANCELED',
-          canceledAt: new Date(),
+          status: 'canceled',
         },
       });
 

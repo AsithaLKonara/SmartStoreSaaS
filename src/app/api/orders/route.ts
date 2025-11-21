@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { generateOrderNumber } from '@/lib/utils';
+import { authOptions } from '../../../lib/auth';
+import { prisma } from '../../../lib/prisma';
+import { generateOrderNumber } from '../../../lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -141,10 +141,15 @@ export async function POST(_request: NextRequest) {
           totalAmount: totalAmount,
           subtotal: totalAmount,
           currency: 'USD',
+<<<<<<< HEAD
           notes: notes ? (typeof notes === 'string' ? notes : String(notes)) : null,
           organizationId: organizationId,
+=======
+          notes,
+          organizationId: session.user.organizationId!,
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           customerId,
-          createdById: session.user.id,
+          createdById: session.user.id!,
           items: {
             create: validatedItems.map((item) => ({
               productId: item.productId,

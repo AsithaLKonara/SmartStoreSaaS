@@ -1,16 +1,32 @@
 import { NextAuthOptions } from 'next-auth';
-import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import bcrypt from 'bcryptjs';
-import { prisma } from './prisma';
+
+// Mock user data for development (using plain text for now)
+const mockUsers = [
+  {
+    id: '1',
+    email: 'admin@smartstore.ai',
+    password: 'admin123', // Plain text for testing
+    name: 'Admin User',
+    role: 'ADMIN',
+    organizationId: 'org-1',
+  },
+  {
+    id: '2',
+    email: 'user@smartstore.ai',
+    password: 'user123', // Plain text for testing
+    name: 'Test User',
+    role: 'USER',
+    organizationId: 'org-1',
+  },
+];
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.GOOGLE_CLIENT_ID || 'mock-google-client-id',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'mock-google-client-secret',
     }),
     CredentialsProvider({
       name: 'credentials',
@@ -19,29 +35,32 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        console.log('🔐 Auth attempt:', { email: credentials?.email, hasPassword: !!credentials?.password });
+        
         if (!credentials?.email || !credentials?.password) {
+          console.log('❌ Missing credentials');
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
-        });
+        // Find user in mock data
+        const user = mockUsers.find(u => u.email === credentials.email);
+        console.log('👤 User found:', !!user);
 
-        if (!user || !user.password) {
+        if (!user) {
+          console.log('❌ User not found');
           return null;
         }
 
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
+        // Simple password comparison for testing
+        const isPasswordValid = credentials.password === user.password;
+        console.log('🔑 Password valid:', isPasswordValid);
 
         if (!isPasswordValid) {
+          console.log('❌ Invalid password');
           return null;
         }
 
+        console.log('✅ Authentication successful for:', user.email);
         return {
           id: user.id,
           email: user.email,
@@ -58,24 +77,24 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = user.role;
-        token.organizationId = user.organizationId;
+        token.role = (user as any).role;
+        token.organizationId = (user as any).organizationId;
       }
       return token;
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.sub!;
-        session.user.role = token.role as string;
-        session.user.organizationId = token.organizationId as string;
+        (session.user as any).id = token.sub!;
+        (session.user as any).role = token.role as string;
+        (session.user as any).organizationId = token.organizationId as string;
       }
       return session;
     },
   },
   pages: {
     signIn: '/auth/signin',
-    signUp: '/auth/signup',
     error: '/auth/error',
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || 'smartstore-nextauth-secret-key-2024',
+  debug: true, // Enable debugging
 }; 

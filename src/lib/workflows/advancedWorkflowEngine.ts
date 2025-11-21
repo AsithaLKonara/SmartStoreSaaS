@@ -83,11 +83,19 @@ export class AdvancedWorkflowEngine {
         data: {
           name: definition.name,
           description: definition.description,
+          type: 'custom', // Add required type field
           version: definition.version,
+<<<<<<< HEAD
           nodes: definition.nodes as any, // Store as JSON
           connections: definition.connections as any,
           triggers: definition.triggers,
+=======
+          nodes: definition.nodes as any, // Convert to JSON
+          connections: definition.connections as any, // Convert to JSON
+          triggers: definition.triggers as any, // Convert to JSON
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
           isActive: definition.isActive,
+          organizationId: definition.organizationId,
         },
       });
 
@@ -143,8 +151,16 @@ export class AdvancedWorkflowEngine {
       this.runWorkflowExecution(execution.id, definition, triggerData);
 
       return {
-        ...execution,
-        logs: [],
+        id: execution.id,
+        workflowId: execution.workflowId,
+        status: execution.status,
+        currentNodeId: execution.currentNodeId,
+        data: execution.data,
+        input: execution.input,
+        output: execution.output,
+        startedAt: execution.startedAt,
+        completedAt: execution.completedAt || undefined, // Convert null to undefined
+        logs: []
       };
     } catch (error) {
       console.error('Error executing workflow:', error);
@@ -392,14 +408,18 @@ export class AdvancedWorkflowEngine {
     const order = await prisma.order.create({
       data: {
         customerId: data.customerId,
-        status: 'PENDING',
-        totalAmount: data.totalAmount, // Changed from 'total' to 'totalAmount'
-        subtotal: data.subtotal || data.totalAmount, // Added required subtotal field
+        status: 'DRAFT',
+        totalAmount: data.totalAmount,
+        subtotal: data.subtotal || data.totalAmount,
         tax: data.tax || 0,
         shipping: data.shipping || 0,
         discount: data.discount || 0,
+        currency: 'USD',
+        paymentMethod: 'COD',
+        paymentStatus: 'PENDING',
         organizationId: data.organizationId,
-        orderNumber: `ORD-${Date.now()}`, // Added required orderNumber field
+        orderNumber: `ORD-${Date.now()}`,
+        createdById: data.createdById || process.env.DEFAULT_USER_ID || 'default',
       },
     });
     
@@ -567,7 +587,7 @@ export class AdvancedWorkflowEngine {
         include: { logs: true },
       });
 
-      return executions.map(execution => ({
+      return executions.map((execution: any) => ({
         id: execution.id,
         workflowId: execution.workflowId,
         status: execution.status,

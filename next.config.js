@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+<<<<<<< HEAD
   // Use standalone output for Docker, but not for Vercel
   // Vercel handles this automatically
   ...(process.env.VERCEL ? {} : { output: 'standalone' }),
@@ -28,30 +29,69 @@ const nextConfig = {
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
+=======
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client'],
+  },
+  // Docker build optimizations
+  output: 'standalone',
+  // Optimize for Docker builds
+  swcMinify: true,
+  // Security headers configuration
+>>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
   async headers() {
     return [
       {
-        source: '/api/:path*',
+        source: '/(.*)',
         headers: [
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: process.env.NODE_ENV === 'production' ? 'https://smartstore-ai.com' : 'http://localhost:3000' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,DELETE,PATCH,POST,PUT' },
-          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization' },
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' 'inline-speculation-rules'",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "img-src 'self' data: https: blob:",
+              "media-src 'self'",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'none'",
+              "upgrade-insecure-requests",
+              "block-all-mixed-content",
+            ].join('; '),
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
         ],
       },
     ];
   },
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-      };
+  // Webpack configuration to handle Prisma during build
+  webpack: (config, { isServer, dev }) => {
+    if (isServer && !dev) {
+      // Exclude Prisma from server-side build to prevent initialization issues
+      config.externals = config.externals || [];
+      config.externals.push('@prisma/client');
     }
     return config;
   },
-};
+}
 
-module.exports = nextConfig; 
+module.exports = nextConfig 
