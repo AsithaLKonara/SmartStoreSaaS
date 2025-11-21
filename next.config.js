@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-<<<<<<< HEAD
   // Use standalone output for Docker, but not for Vercel
   // Vercel handles this automatically
   ...(process.env.VERCEL ? {} : { output: 'standalone' }),
@@ -17,6 +16,11 @@ const nextConfig = {
     // TODO: Gradually fix remaining TypeScript issues
     ignoreBuildErrors: true, // Remove after fixing remaining type issues
   },
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client'],
+  },
+  // Optimize for Docker builds
+  swcMinify: true,
   images: {
     domains: [
       'localhost',
@@ -29,22 +33,6 @@ const nextConfig = {
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
-=======
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  experimental: {
-    serverComponentsExternalPackages: ['@prisma/client'],
-  },
-  // Docker build optimizations
-  output: 'standalone',
-  // Optimize for Docker builds
-  swcMinify: true,
-  // Security headers configuration
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
   async headers() {
     return [
       {
