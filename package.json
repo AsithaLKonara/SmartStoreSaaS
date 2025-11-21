@@ -5,12 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-<<<<<<< HEAD
     "build": "prisma generate && next build",
-=======
-    "build": "next build",
     "build:docker": "NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PRISMA_CLIENT_ENGINE_TYPE=binary SKIP_ENV_VALIDATION=1 next build",
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
@@ -22,15 +18,13 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
-<<<<<<< HEAD
     "deploy": "bash scripts/deploy.sh",
     "deploy:vercel": "bash scripts/vercel-deploy.sh",
     "deploy:vercel:prod": "bash scripts/vercel-deploy.sh --prod",
     "docker:build": "bash docker-build.sh",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f"
-=======
+    "docker:logs": "docker-compose logs -f",
     "security:audit": "npm audit --audit-level=moderate",
     "security:fix": "npm audit fix",
     "security:ci": "npm audit --audit-level=high --json > security-report.json",
@@ -47,7 +41,6 @@
     "monolithic:build": "docker-compose build --no-cache",
     "monolithic:restart": "docker-compose restart",
     "monolithic:status": "docker-compose ps"
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
@@ -156,11 +149,7 @@
     "eslint-plugin-security": "^2.1.0",
     "eslint-plugin-sonarjs": "^0.23.0",
     "jest": "^29.7.0",
-<<<<<<< HEAD
-    "jest-environment-jsdom": "^30.2.0",
-=======
     "jest-environment-jsdom": "^29.7.0",
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
     "prettier": "^3.0.3",
     "tsx": "^4.6.2",
     "typescript": "^5.2.2"
