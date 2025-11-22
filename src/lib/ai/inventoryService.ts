@@ -254,9 +254,10 @@ export class AIInventoryService {
             unitCost: 0 // Would need to get from product cost data
           }));
 
-          const totalAmount = items.reduce((sum, item) => sum + (item.quantity * item.unitCost), 0);
+          const totalAmount = items.reduce((sum: number, item: any) => sum + (item.quantity * item.unitCost), 0);
+          const leadTime = (supplier.metadata as any)?.leadTime || 7;
           const expectedDelivery = new Date();
-          expectedDelivery.setDate(expectedDelivery.getDate() + (supplier.leadTime || 7));
+          expectedDelivery.setDate(expectedDelivery.getDate() + leadTime);
 
           purchaseOrders.push({
             supplierId: supplier.id,
@@ -295,7 +296,7 @@ export class AIInventoryService {
         }),
         prisma.purchaseOrder.findMany({
           where: { organizationId },
-          include: { supplier: true, items: true }
+          include: { supplier: true }
         })
       ]);
 
