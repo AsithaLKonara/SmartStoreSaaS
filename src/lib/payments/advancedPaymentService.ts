@@ -346,7 +346,7 @@ export class AdvancedPaymentService {
         status: (refund.status || 'pending') as any,
         method: 'refund',
         currency: 'USD',
-        organizationId: paymentIntent.metadata?.organizationId as string || '',
+        organizationId: (paymentIntent.metadata as any)?.organizationId || '',
         metadata: {
           paymentIntentId: paymentIntent.id,
           reason: refund.reason || 'requested_by_customer',
