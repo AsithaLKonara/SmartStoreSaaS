@@ -285,12 +285,14 @@ export class GamificationService {
         select: { organizationId: true },
       });
       await realTimeSyncService.queueEvent({
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type: 'message',
         action: 'update',
         entityId: userId,
         organizationId: user?.organizationId || '',
         data: { userId, points, reason, newTotal, levelUp, newLevel },
         timestamp: new Date(),
+        source: 'gamification'
       });
 
       return {

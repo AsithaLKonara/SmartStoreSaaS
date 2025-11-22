@@ -46,6 +46,7 @@ export async function POST(
 
 async function processProductCreated(product: any, organizationId: string): Promise<void> {
   const syncEvent: SyncEvent = {
+    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type: 'product',
     action: 'create',
     entityId: product.id.toString(),
@@ -59,7 +60,8 @@ async function processProductCreated(product: any, organizationId: string): Prom
       organizationId
     },
     timestamp: new Date(),
-    organizationId
+    organizationId,
+    source: 'woocommerce'
   };
 
   await realTimeSyncService.queueEvent(syncEvent);
@@ -67,6 +69,7 @@ async function processProductCreated(product: any, organizationId: string): Prom
 
 async function processProductUpdated(product: any, organizationId: string): Promise<void> {
   const syncEvent: SyncEvent = {
+    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type: 'product',
     action: 'update',
     entityId: product.id.toString(),
@@ -80,7 +83,8 @@ async function processProductUpdated(product: any, organizationId: string): Prom
       organizationId
     },
     timestamp: new Date(),
-    organizationId
+    organizationId,
+    source: 'woocommerce'
   };
 
   await realTimeSyncService.queueEvent(syncEvent);
@@ -88,6 +92,7 @@ async function processProductUpdated(product: any, organizationId: string): Prom
 
 async function processProductDeleted(product: any, organizationId: string): Promise<void> {
   const syncEvent: SyncEvent = {
+    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type: 'product',
     action: 'delete',
     entityId: product.id.toString(),
@@ -96,7 +101,8 @@ async function processProductDeleted(product: any, organizationId: string): Prom
       organizationId
     },
     timestamp: new Date(),
-    organizationId
+    organizationId,
+    source: 'woocommerce'
   };
 
   await realTimeSyncService.queueEvent(syncEvent);
@@ -104,6 +110,7 @@ async function processProductDeleted(product: any, organizationId: string): Prom
 
 async function processOrderCreated(order: any, organizationId: string): Promise<void> {
   const syncEvent: SyncEvent = {
+    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type: 'order',
     action: 'create',
     entityId: order.id.toString(),
@@ -120,7 +127,8 @@ async function processOrderCreated(order: any, organizationId: string): Promise<
       }
     },
     timestamp: new Date(),
-    organizationId
+    organizationId,
+    source: 'woocommerce'
   };
 
   await realTimeSyncService.queueEvent(syncEvent);
@@ -128,6 +136,7 @@ async function processOrderCreated(order: any, organizationId: string): Promise<
 
 async function processOrderUpdated(order: any, organizationId: string): Promise<void> {
   const syncEvent: SyncEvent = {
+    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type: 'order',
     action: 'update',
     entityId: order.id.toString(),
@@ -139,7 +148,8 @@ async function processOrderUpdated(order: any, organizationId: string): Promise<
       organizationId
     },
     timestamp: new Date(),
-    organizationId
+    organizationId,
+    source: 'woocommerce'
   };
 
   await realTimeSyncService.queueEvent(syncEvent);
