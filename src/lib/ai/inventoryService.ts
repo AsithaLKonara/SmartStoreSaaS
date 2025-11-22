@@ -147,30 +147,12 @@ export class AIInventoryService {
     organizationId: string
   ): Promise<SupplierPerformance[]> {
     try {
-      const prompt = `
-        Evaluate supplier performance based on:
-        
-        Supplier Data: ${JSON.stringify(supplierData)}
-        Order History: ${JSON.stringify(orderHistory)}
-        
-        For each supplier, calculate:
-        1. Average delivery time
-        2. Quality score (0-100)
-        3. Reliability score (0-100)
-        4. Cost effectiveness (0-100)
-        5. Specific recommendations for improvement
-        
-        Return as JSON array with fields: supplierId, supplierName, averageDeliveryTime, qualityScore, reliabilityScore, costEffectiveness, recommendations
-      `;
-
-      if (!openai) {
-        throw new Error('OpenAI API key not configured');
-      }
-
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
+      // Get suppliers with purchase orders
+      const suppliers = await prisma.supplier.findMany({
+        where: { organizationId, isActive: true },
+        include: {
+          purchaseOrders: true
+        }
       });
 
       const supplierPerformance: SupplierPerformance[] = [];
