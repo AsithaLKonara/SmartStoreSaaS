@@ -803,11 +803,7 @@ export class SubscriptionService {
 
     const limits = plan.limits || {};
     const limit = limits[metricType];
-
-      // Check usage limits based on plan
-      const limits = plan.limits || {};
-      const currentUsage = await this.getCurrentUsage(subscriptionId, metricType);
-      const limit = limits[metricType];
+    const currentUsage = await this.getCurrentUsage(subscriptionId, metricType);
 
     // Get usage for current period from metadata
     const usageRecords = subMetadata.usageRecords || [];
