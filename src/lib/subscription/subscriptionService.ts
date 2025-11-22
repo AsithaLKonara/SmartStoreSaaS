@@ -249,7 +249,7 @@ export class SubscriptionService {
       // Get stripeCustomerId from UserPreference
       const userId = user?.id || '';
       const userPref = await prisma.userPreference.findUnique({
-        where: { userId },
+        where: { userId: user?.id || '' },
       });
       const stripeCustomerId = (userPref?.notifications as any)?.stripeCustomerId;
 
@@ -262,7 +262,7 @@ export class SubscriptionService {
           stripeCustomerId,
           plan.stripePriceId,
           {
-            userId,
+            userId: user?.id || '',
             planId,
             trialPeriodDays: trialDays || plan.trialPeriodDays,
           }
@@ -278,7 +278,7 @@ export class SubscriptionService {
           currentPeriodEnd: new Date(Date.now() + (plan.intervalCount || 1) * 30 * 24 * 60 * 60 * 1000),
           stripeSubscriptionId,
           metadata: {
-            userId,
+            userId: user?.id || '',
             planId,
             trialStart: trialDays ? new Date().toISOString() : undefined,
             trialEnd: trialDays ? new Date(Date.now() + (trialDays || 0) * 24 * 60 * 60 * 1000).toISOString() : undefined,
@@ -291,7 +291,7 @@ export class SubscriptionService {
 
       // Store subscriptionId in UserPreference
       await prisma.userPreference.upsert({
-        where: { userId },
+        where: { userId: user?.id || '' },
         update: {
           notifications: {
             ...(userPref?.notifications as any || {}),
@@ -628,7 +628,7 @@ export class SubscriptionService {
 
       // Get membership status from UserPreference
       const userPref = await prisma.userPreference.findUnique({
-        where: { userId },
+        where: { userId: user?.id || '' },
       });
       const membershipData = (userPref?.notifications as any)?.membershipStatus || {};
       const memberSince = membershipData.memberSince ? new Date(membershipData.memberSince) : user.createdAt;
@@ -684,7 +684,7 @@ export class SubscriptionService {
       };
 
       await prisma.userPreference.upsert({
-        where: { userId },
+        where: { userId: user?.id || '' },
         update: {
           notifications: {
             ...(userPref?.notifications as any || {}),

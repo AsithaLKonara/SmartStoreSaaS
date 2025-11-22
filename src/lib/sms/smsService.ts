@@ -171,7 +171,7 @@ export class SMSService {
         name: template.name,
         content: template.content,
         variables: template.variables,
-        organizationId: template.organizationId,
+        organizationId: (template as any).organizationId || '',
       } as any;
 
       return {
@@ -295,8 +295,9 @@ export class SMSService {
     try {
       const campaign = await prisma.campaign.findUnique({
         where: { id: campaignId },
-        include: {
-          template: true,
+        // template doesn't exist in Campaign model
+        // include: {
+        //   template: true,
           segments: {
             include: {
               customerSegment: {
@@ -369,7 +370,7 @@ export class SMSService {
       await prisma.notification.create({
         data: {
           type: 'SYSTEM',
-          subject: 'SMS Received',
+          message: `SMS received from ${from}`,
           message: `SMS received from ${from}`,
           organizationId: '', // Will need to be determined from context
           metadata: {
