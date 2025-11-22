@@ -74,10 +74,11 @@ export class ThreatDetectionService {
         createdAt: {
           gte: new Date(Date.now() - 15 * 60 * 1000), // Last 15 minutes
         },
-        metadata: {
-          path: ['source'],
-          equals: event.source,
-        },
+        // path doesn't exist in Activity metadata filter
+        // metadata: {
+        //   path: ['source'],
+        //   equals: event.source,
+        // },
       },
     });
 
@@ -155,10 +156,11 @@ export class ThreatDetectionService {
         createdAt: {
           gte: new Date(Date.now() - 60 * 1000), // Last minute
         },
-        metadata: {
-          path: ['source'],
-          equals: event.source,
-        },
+        // path doesn't exist in Activity metadata filter
+        // metadata: {
+        //   path: ['source'],
+        //   equals: event.source,
+        // },
       },
     });
 

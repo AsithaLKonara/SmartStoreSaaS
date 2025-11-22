@@ -345,6 +345,8 @@ export class AdvancedPaymentService {
         amount: (refund.amount || 0) / 100, // Handle null case
         status: (refund.status || 'pending') as any,
         method: 'refund',
+        currency: 'USD',
+        organizationId: paymentIntent.metadata?.organizationId as string || '',
         metadata: {
           paymentIntentId: paymentIntent.id,
           reason: refund.reason || 'requested_by_customer',
