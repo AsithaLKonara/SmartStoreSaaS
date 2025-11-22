@@ -277,10 +277,11 @@ export class PWAService {
       await prisma.notification.create({
         data: {
           type: 'push',
-          message: notification.body,
+          title: notification.title || 'Push Notification',
           message: notification.body,
           userId: userId,
           organizationId: 'default-org', // You'll need to get this from context
+          priority: 'MEDIUM',
           metadata: {
             ...notification.data,
           sent: true,

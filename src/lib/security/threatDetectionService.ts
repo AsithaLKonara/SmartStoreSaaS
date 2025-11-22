@@ -34,7 +34,7 @@ export class ThreatDetectionService {
     event: ThreatEvent
   ): Promise<{ isThreat: boolean; action: string }> {
     // Check for login from new location
-    const recentLogins = await prisma.userActivity.findMany({
+    const recentLogins = await prisma.activity.findMany({
       where: {
         organizationId,
         type: 'LOGIN',
@@ -65,7 +65,7 @@ export class ThreatDetectionService {
     event: ThreatEvent
   ): Promise<{ isThreat: boolean; action: string }> {
     // Count failed login attempts
-    const failedAttempts = await prisma.userActivity.count({
+    const failedAttempts = await prisma.activity.count({
       where: {
         organizationId,
         type: 'LOGIN_FAILED',
@@ -146,7 +146,7 @@ export class ThreatDetectionService {
     event: ThreatEvent
   ): Promise<{ isThreat: boolean; action: string }> {
     // Check request rate
-    const recentRequests = await prisma.userActivity.count({
+    const recentRequests = await prisma.activity.count({
       where: {
         organizationId,
         createdAt: {

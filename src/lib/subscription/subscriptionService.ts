@@ -227,16 +227,16 @@ export class SubscriptionService {
       }
 
       // Get or create customer for this user
-      let customer = await prisma.customer.findFirst({
+      let customerRecord = await prisma.customer.findFirst({
         where: {
           organizationId: user.organizationId,
           email: user.email,
         },
       });
 
-      if (!customer) {
+      if (!customerRecord) {
         // Create customer for user
-        customer = await prisma.customer.create({
+        customerRecord = await prisma.customer.create({
           data: {
             organizationId: user.organizationId,
             email: user.email,
@@ -272,7 +272,7 @@ export class SubscriptionService {
 
       const subscription = await prisma.subscription.create({
         data: {
-          customerId: customer.id,
+          customerId: customerRecord.id,
           status: trialDays ? 'trialing' : 'active',
           currentPeriodStart: new Date(),
           currentPeriodEnd: new Date(Date.now() + (plan.intervalCount || 1) * 30 * 24 * 60 * 60 * 1000),

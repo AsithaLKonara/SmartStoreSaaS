@@ -342,13 +342,14 @@ export class AdvancedPaymentService {
     // await prisma.refund.create({
     await prisma.payment.create({
       data: {
+        amount: (refund.amount || 0) / 100, // Handle null case
+        status: (refund.status || 'pending') as any,
+        method: 'refund',
         metadata: {
           paymentIntentId: paymentIntent.id,
+          reason: refund.reason || 'requested_by_customer',
+          stripeRefundId: refund.id,
         } as any,
-        amount: (refund.amount || 0) / 100, // Handle null case
-        reason: refund.reason || 'requested_by_customer',
-        status: (refund.status || 'pending') as any,
-        metadata: { stripeRefundId: refund.id } // Store Stripe refund ID in metadata
       }
     });
 
@@ -562,8 +563,8 @@ export class AdvancedPaymentService {
         status: invoice.status,
         metadata: {
           stripeInvoiceId: invoice.id,
-        } as any,
-        metadata: invoice
+          ...invoice,
+        } as any
       }
     });
   }
