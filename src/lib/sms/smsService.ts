@@ -582,17 +582,20 @@ export class SMSService {
       });
 
       // Log test SMS (smsLog model doesn't exist, using Notification)
+      // Log test SMS in notification (using metadata to store SMS log details)
       await prisma.notification.create({
         data: {
           type: 'SYSTEM',
           message: 'Test SMS sent',
-          userId: '',
+          userId: 'system',
           organizationId: process.env.DEFAULT_ORGANIZATION_ID || 'default',
           metadata: {
-            phone: process.env.TWILIO_PHONE_NUMBER!,
-            message: 'Test SMS sent',
-            status: 'SENT',
-            provider: this.provider,
+            smsLog: {
+              phone: process.env.TWILIO_PHONE_NUMBER!,
+              message: 'Test SMS sent',
+              status: 'SENT',
+              provider: this.provider,
+            },
           } as any,
         },
       });
