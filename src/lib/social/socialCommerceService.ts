@@ -343,40 +343,12 @@ export class SocialCommerceService {
         };
       }
 
-    let totalFollowers = 0;
-    let totalPosts = 0;
-    let totalEngagement = 0;
-    let totalSales = 0;
-
-    const platformBreakdown: Record<string, any> = {};
-    const productSales: Record<string, { name: string; sales: number; engagement: number }> = {};
-
-    for (const platform of platforms) {
-      const posts = platform.socialPosts;
-      const engagement = posts.reduce((sum, post) => {
-        const postEngagement = (post.engagement as any) || {};
-        return sum + (postEngagement.likes || 0) + (postEngagement.comments || 0) + (postEngagement.shares || 0);
-      }, 0);
-
-      const platformConfig = (platform.config as any) || {};
-      const followers = platformConfig.followers || 0;
-
-      platformBreakdown[platform.name] = {
-        followers,
-        posts: posts.length,
-        engagement,
-        sales: 0 // Calculate from orders
-      };
-
-      totalFollowers += followers;
-      totalPosts += posts.length;
-      totalEngagement += engagement;
-
-      // Calculate product sales from social posts
+      // Calculate top products by engagement
+      const productSales: Record<string, { name: string; sales: number; engagement: number }> = {};
       for (const post of posts) {
         for (const productId of post.productIds) {
           if (!productSales[productId]) {
-            productSales[productId] = { sales: 0, engagement: 0 };
+            productSales[productId] = { name: `Product ${productId}`, sales: 0, engagement: 0 };
           }
           
           if (post.engagement && typeof post.engagement === 'object') {
@@ -389,7 +361,7 @@ export class SocialCommerceService {
       const topProducts = Object.entries(productSales)
         .map(([productId, data]) => ({
           productId,
-          name: `Product ${productId}`, // This should be fetched from actual product data
+          name: data.name,
           sales: data.sales,
           engagement: data.engagement
         }))
@@ -400,12 +372,12 @@ export class SocialCommerceService {
         totalFollowers,
         totalPosts: posts.length,
         totalEngagement,
-        totalSales: 0, // This would need to be calculated from actual sales data
+        totalSales: 0,
         platformBreakdown,
         topProducts
       };
     } catch (error) {
-      throw new Error(`Failed to get social analytics: ${error}`);
+      throw new Error(`Failed to get social analytics: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
