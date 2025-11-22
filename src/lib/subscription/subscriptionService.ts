@@ -129,7 +129,6 @@ export class SubscriptionService {
           },
           product_data: {
             name: plan.name,
-            description: plan.description,
           },
         });
         stripePriceId = stripePrice.id;
@@ -193,9 +192,19 @@ export class SubscriptionService {
     trialDays?: number
   ): Promise<Subscription> {
     try {
-      // Get user and organization
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
+      // Get customer to find userId
+      const customer = await prisma.customer.findUnique({
+        where: { id: customerId },
+        include: { organization: true },
+      });
+      
+      if (!customer || !customer.organizationId) {
+        throw new Error('Customer not found or has no organization');
+      }
+      
+      // Get user from organization
+      const user = await prisma.user.findFirst({
+        where: { organizationId: customer.organizationId },
       });
 
       if (!user || !user.organizationId) {
@@ -238,6 +247,7 @@ export class SubscriptionService {
       }
 
       // Get stripeCustomerId from UserPreference
+      const userId = user?.id || '';
       const userPref = await prisma.userPreference.findUnique({
         where: { userId },
       });
@@ -264,14 +274,14 @@ export class SubscriptionService {
         data: {
           customerId: customer.id,
           status: trialDays ? 'trialing' : 'active',
-          currentPeriodStart: periodStart,
-          currentPeriodEnd: periodEnd,
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + (plan.intervalCount || 1) * 30 * 24 * 60 * 60 * 1000),
           stripeSubscriptionId,
           metadata: {
             userId,
             planId,
-            trialStart: trialDays ? now.toISOString() : undefined,
-            trialEnd: trialEnd?.toISOString(),
+            trialStart: trialDays ? new Date().toISOString() : undefined,
+            trialEnd: trialDays ? new Date(Date.now() + (trialDays || 0) * 24 * 60 * 60 * 1000).toISOString() : undefined,
             paypalSubscriptionId,
             createdVia: paymentMethod,
             originalPlan: plan.name,

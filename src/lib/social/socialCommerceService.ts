@@ -499,7 +499,7 @@ export class SocialCommerceService {
       case 'pinterest':
         return this.syncToPinterest(platform, product);
       case 'twitter':
-        return this.syncToTwitter(platform, product);
+        throw new Error('Twitter sync not implemented');
       default:
         throw new Error(`Unsupported platform: ${platform.name}`);
     }
@@ -516,7 +516,7 @@ export class SocialCommerceService {
       case 'pinterest':
         return this.publishToPinterest(platform, post);
       case 'twitter':
-        return this.publishToTwitter(platform, post);
+        throw new Error('Twitter publish not implemented');
       default:
         throw new Error(`Unsupported platform: ${platform.name}`);
     }
@@ -533,7 +533,7 @@ export class SocialCommerceService {
       case 'pinterest':
         return this.deleteFromPinterest(platform, platformPostId);
       case 'twitter':
-        return this.deleteFromTwitter(platform, platformPostId);
+        throw new Error('Twitter delete not implemented');
       default:
         throw new Error(`Unsupported platform: ${platform.name}`);
     }
@@ -550,7 +550,7 @@ export class SocialCommerceService {
       case 'pinterest':
         return this.updateInventoryOnPinterest(platform, socialProduct);
       case 'twitter':
-        return this.updateInventoryOnTwitter(platform, socialProduct);
+        throw new Error('Twitter inventory update not implemented');
       default:
         throw new Error(`Unsupported platform: ${platform.name}`);
     }

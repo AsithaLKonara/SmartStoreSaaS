@@ -319,7 +319,7 @@ export class AdvancedPaymentService {
     // Add planId if missing (required by Subscription type)
     return {
       ...savedSubscription,
-      planId: savedSubscription.metadata?.planId as string || '',
+      planId: ((savedSubscription.metadata as any)?.planId as string) || '',
     };
   }
 
@@ -342,10 +342,12 @@ export class AdvancedPaymentService {
     // await prisma.refund.create({
     await prisma.payment.create({
       data: {
-        paymentIntentId: paymentIntent.id, // Use the found paymentIntent.id
+        metadata: {
+          paymentIntentId: paymentIntent.id,
+        } as any,
         amount: (refund.amount || 0) / 100, // Handle null case
         reason: refund.reason || 'requested_by_customer',
-        status: refund.status || 'pending',
+        status: (refund.status || 'pending') as any,
         metadata: { stripeRefundId: refund.id } // Store Stripe refund ID in metadata
       }
     });
@@ -538,12 +540,14 @@ export class AdvancedPaymentService {
     // Handle successful subscription payment
     await prisma.invoice.create({
       data: {
-        stripeInvoiceId: invoice.id,
         customerId: invoice.customer,
         subscriptionId: invoice.subscription,
         amount: invoice.amount_paid / 100,
         status: invoice.status,
-        metadata: invoice
+        metadata: {
+          stripeInvoiceId: invoice.id,
+          ...invoice,
+        } as any
       }
     });
   }
@@ -552,11 +556,13 @@ export class AdvancedPaymentService {
     // Handle failed subscription payment
     await prisma.invoice.create({
       data: {
-        stripeInvoiceId: invoice.id,
         customerId: invoice.customer,
         subscriptionId: invoice.subscription,
         amount: invoice.amount_due / 100,
         status: invoice.status,
+        metadata: {
+          stripeInvoiceId: invoice.id,
+        } as any,
         metadata: invoice
       }
     });

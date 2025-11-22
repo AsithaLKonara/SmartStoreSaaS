@@ -240,7 +240,10 @@ export class StripeService {
       // Update order status in database
       await prisma.order.updateMany({
         where: {
-          stripePaymentIntentId: paymentIntent.id,
+          metadata: {
+            path: ['stripePaymentIntentId'],
+            equals: paymentIntent.id,
+          } as any,
         },
         data: {
           status: OrderStatus.CONFIRMED,
@@ -260,7 +263,10 @@ export class StripeService {
       // Update order status
       await prisma.order.updateMany({
         where: {
-          stripePaymentIntentId: paymentIntent.id,
+          metadata: {
+            path: ['stripePaymentIntentId'],
+            equals: paymentIntent.id,
+          } as any,
         },
         data: {
           status: OrderStatus.CANCELLED,

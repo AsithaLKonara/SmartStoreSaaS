@@ -47,7 +47,7 @@ export class ThreatDetectionService {
     });
 
     const isNewLocation = recentLogins.every(
-      login => login.metadata?.location !== event.details.location
+      (login: any) => login.metadata?.location !== event.details.location
     );
 
     if (isNewLocation && event.details.location) {

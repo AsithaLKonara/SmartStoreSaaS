@@ -223,7 +223,9 @@ export class MessengerService {
       await this.storeMessage(message);
 
       await realTimeSyncService.queueEvent({
+        id: `messenger-${Date.now()}-${Math.random()}`,
         type: 'message',
+        action: 'update',
         entityId: message.id,
         organizationId,
         data: message,
@@ -295,7 +297,9 @@ export class MessengerService {
       await this.storeMessage(message);
 
       await realTimeSyncService.queueEvent({
+        id: `messenger-${Date.now()}-${Math.random()}`,
         type: 'message',
+        action: 'update',
         entityId: message.id,
         organizationId,
         data: message,

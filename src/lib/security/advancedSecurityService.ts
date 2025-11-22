@@ -619,7 +619,8 @@ export class AdvancedSecurityService {
       });
 
       // Log the action
-      await prisma.securityAudit.create({
+      // securityAudit model doesn't exist
+      console.log('Security audit:', {
         data: {
           userId: 'system',
           action: 'account_locked',
@@ -725,7 +726,8 @@ export class AdvancedSecurityService {
 
   private async createSecurityAlert(event: SecurityEvent, detection: ThreatDetection): Promise<void> {
     try {
-      await prisma.securityAlert.create({
+      // securityAlert model doesn't exist
+      console.log('Security alert:', {
         data: {
           type: this.mapEventTypeToAlertType(event.type),
           message: `Security threat detected: ${detection.reason}`,

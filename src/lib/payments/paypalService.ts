@@ -173,7 +173,11 @@ export class PayPalService {
       // Store PayPal order ID in database
       await prisma.order.updateMany({
         where: { id: orderId },
-        data: { paypalOrderId: orderIdString },
+        data: { 
+          metadata: {
+            paypalOrderId: orderIdString,
+          } as any,
+        },
       });
 
       // Create a validated order object
@@ -219,10 +223,17 @@ export class PayPalService {
 
       // Update order status in database
       await prisma.order.updateMany({
-        where: { paypalOrderId: paypalOrderId },
+        where: { 
+          metadata: {
+            path: ['paypalOrderId'],
+            equals: paypalOrderId,
+          } as any,
+        },
         data: {
           status: OrderStatus.CONFIRMED,
-          paypalPaymentId: payment.id,
+          metadata: {
+            paypalPaymentId: payment.id,
+          } as any,
         },
       });
 

@@ -395,6 +395,7 @@ export class ShopifyService {
               price: item.price,
               total: item.total,
               metadata: item.metadata || {},
+              productId: (item.metadata as any)?.productId || '',
             })) : [],
           },
           metadata: orderData.metadata as any,
