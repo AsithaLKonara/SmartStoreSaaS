@@ -238,13 +238,8 @@ export class SecurityService {
         if (filters.endDate) where.createdAt.lte = filters.endDate;
       }
       
-      // securityAudit model doesn't exist
-      const audits: any[] = []; // await prisma.securityAudit.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      });
+      // securityAudit model doesn't exist - returning empty array
+      const audits: any[] = [];
 
       return audits.map((audit: any) => ({
         id: audit.id,
