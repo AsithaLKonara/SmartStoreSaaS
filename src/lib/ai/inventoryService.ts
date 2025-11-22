@@ -7,6 +7,14 @@ const openai = process.env.OPENAI_API_KEY
     })
   : null;
 
+// Helper function to ensure openai client is available
+function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    throw new Error("OpenAI API key is not configured.");
+  }
+  return openai;
+}
+
 export interface InventoryPrediction {
   productId: string;
   productName: string;

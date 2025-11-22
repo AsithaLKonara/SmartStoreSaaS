@@ -174,12 +174,14 @@ export class WooCommerceService extends EventEmitter {
 
   private async syncProductEvent(product: any, action: string, organizationId: string): Promise<void> {
     const syncEvent: SyncEvent = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: 'product',
       action: action as any,
       entityId: product.id || '',
       organizationId,
       data: product,
       timestamp: new Date(),
+      source: 'woocommerce'
     };
 
     await realTimeSyncService.queueEvent(syncEvent);

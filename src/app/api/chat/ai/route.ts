@@ -45,7 +45,6 @@ export async function POST(_request: NextRequest) {
     const sentiment = await aiChatService.analyzeCustomerSentiment(message);
     const isUrgent = await aiChatService.detectUrgentIssues({
       id: conversation.id,
-      title: conversation.title || undefined,
       status: conversation.status,
       priority: conversation.priority || 'MEDIUM',
       customerId: conversation.customerId,
@@ -55,7 +54,6 @@ export async function POST(_request: NextRequest) {
         role: msg.direction === 'INBOUND' ? 'user' : 'assistant',
         timestamp: msg.createdAt
       })),
-                assignedTo: conversation.assignedTo || undefined,
       createdAt: conversation.createdAt,
       updatedAt: conversation.updatedAt
     });
@@ -87,7 +85,6 @@ export async function POST(_request: NextRequest) {
       // Order creation from chat
       const orderData = await aiChatService.createOrderFromChat({
         id: conversation.id,
-        title: conversation.title || undefined,
         status: conversation.status,
         priority: conversation.priority || 'MEDIUM',
         customerId: conversation.customerId,
@@ -97,7 +94,6 @@ export async function POST(_request: NextRequest) {
           role: msg.direction === 'INBOUND' ? 'user' : 'assistant',
           timestamp: msg.createdAt
         })),
-        assignedTo: conversation.assignedTo || undefined,
         createdAt: conversation.createdAt,
         updatedAt: conversation.updatedAt
       });
