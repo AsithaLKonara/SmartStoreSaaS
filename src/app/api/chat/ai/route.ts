@@ -203,7 +203,6 @@ async function generateContextualResponse(message: string, context: string, orga
 async function createUrgentIssueNotification(conversation: any, message: string, organizationId: string): Promise<void> {
   try {
     // Create notification for urgent issues
-    // Create notification for urgent issues
     await prisma.notification.create({
       data: {
         type: 'URGENT_CHAT',
@@ -211,12 +210,12 @@ async function createUrgentIssueNotification(conversation: any, message: string,
         message: `Urgent issue in conversation #${conversation.id}: ${message.substring(0, 100)}...`,
         organizationId,
         priority: 'HIGH',
+        recipient: conversation.customerId,
         metadata: {
           conversationId: conversation.id,
           customerId: conversation.customerId,
           priority: 'high',
         },
-        organizationId: session.user.organizationId,
       },
     });
 

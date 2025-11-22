@@ -348,7 +348,7 @@ export class AIChatService {
   // Chat Conversation Management
   async getChatConversation(conversationId: string, organizationId: string): Promise<ChatConversationData | null> {
     try {
-      const conversation = await prisma.chatConversation.findFirst({
+      const conversation = await prisma.chatConversation.findUnique({
         where: { id: conversationId, organizationId },
         include: {
           customer: true,
