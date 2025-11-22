@@ -175,10 +175,9 @@ export class ThreatDetectionService {
   }
 
   async logThreat(organizationId: string, threat: ThreatEvent): Promise<void> {
-    await prisma.securityEvent.create({
+      await prisma.securityEvent.create({
       data: {
-        // organizationId doesn't exist in Activity model
-        // organizationId,
+        organizationId,
         type: threat.type,
         severity: threat.severity,
         source: threat.source,
