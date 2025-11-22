@@ -185,7 +185,8 @@ export class AIInventoryService {
         const averageDeliveryTime = deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length;
 
         // Calculate reliability score based on on-time deliveries
-        const onTimeDeliveries = deliveryTimes.filter(time => time <= (supplier.leadTime || 7));
+        const leadTime = (supplier.metadata as any)?.leadTime || 7;
+        const onTimeDeliveries = deliveryTimes.filter(time => time <= leadTime);
         const reliabilityScore = (onTimeDeliveries.length / deliveryTimes.length) * 100;
 
         // Calculate cost effectiveness (placeholder - would need more data)
