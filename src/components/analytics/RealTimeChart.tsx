@@ -102,7 +102,7 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
     };
   }, [eventTypes, config.refreshInterval]);
 
-  const handleRealTimeUpdate = (event: any) => {
+  const handleRealTimeUpdate = useCallback((event: any) => {
     // Process real-time event and update chart data
     setData(prevData => {
       const newData = processEventData(event, prevData);
