@@ -325,7 +325,6 @@ export class SubscriptionService {
       return {
         id: subscription.id,
         customerId: subscription.customerId,
-        planId: subMetadata.planId || '',
         status: subscription.status as any,
         currentPeriodStart: subscription.currentPeriodStart,
         currentPeriodEnd: subscription.currentPeriodEnd,
@@ -435,9 +434,7 @@ export class SubscriptionService {
       const plan = planId && organization ? ((organization.settings as any)?.subscriptionPlans || []).find((p: any) => p.id === planId) : null;
 
       // Send cancellation email
-      if (user && plan) {
-        await this.sendCancellationEmail(user, plan, immediate);
-      }
+      await this.sendCancellationEmail(updatedSubscription.id);
 
       const updatedMetadata = (updatedSubscription.metadata as any) || {};
       return {
@@ -556,11 +553,12 @@ export class SubscriptionService {
   async createMembershipTier(tier: Omit<MembershipTier, 'id'>): Promise<MembershipTier> {
     try {
       // Store membership tier in Organization settings
-      if (!tier.organizationId) {
+      const orgId = (tier as any).organizationId;
+      if (!orgId) {
         throw new Error('Organization ID is required');
       }
       const organization = await prisma.organization.findUnique({
-        where: { id: tier.organizationId },
+        where: { id: orgId },
       });
       if (!organization) {
         throw new Error('Organization not found');
