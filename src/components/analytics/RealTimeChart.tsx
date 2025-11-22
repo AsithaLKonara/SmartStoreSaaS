@@ -74,6 +74,19 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const refreshData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Fetch latest data - this would be replaced with actual API call
+      // For now, just update the last update time
+      setLastUpdate(new Date());
+    } catch (error) {
+      console.error('Error refreshing chart data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const handleRealTimeUpdate = useCallback((event: any) => {
     // Process real-time event and update chart data
     setData(prevData => {
@@ -224,20 +237,6 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
         value: inventoryData.stock || 0,
         category: inventoryData.category,
       }];
-    }
-  };
-
-  const refreshData = async () => {
-    setIsLoading(true);
-    try {
-      // Implement data refresh logic here
-      // This would typically fetch fresh data from your API
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulated delay
-      setLastUpdate(new Date());
-    } catch (error) {
-      console.error('Error refreshing chart data:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 

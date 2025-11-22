@@ -30,10 +30,10 @@ export async function POST(_request: NextRequest) {
     }
 
     const body = await _request.json();
-    const { title, description, amount, category, type, paymentMethod, vendor, tags } = body;
+    const { title, description, amount, category, type, paymentMethod, vendor, tags, date } = body;
 
-    if (!description || !amount || !date) {
-      return NextResponse.json({ message: 'Description, amount, and date are required' }, { status: 400 });
+    if (!description || !amount) {
+      return NextResponse.json({ message: 'Description and amount are required' }, { status: 400 });
     }
 
     const expense = await prisma.expense.create({

@@ -68,6 +68,14 @@ export interface RiskAssessment {
   monitoringMetrics: string[];
 }
 
+// Helper function to ensure openai client is available
+function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    throw new Error("OpenAI API key is not configured.");
+  }
+  return openai;
+}
+
 export class BusinessIntelligenceService {
   private checkOpenAI(): boolean {
     if (!openai) {
