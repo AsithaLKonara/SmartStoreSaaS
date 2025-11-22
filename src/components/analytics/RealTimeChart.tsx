@@ -74,8 +74,24 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const realTimeSync = useRealTimeSync({ organizationId });
-  const { isConnected } = realTimeSync;
+  const handleRealTimeUpdate = useCallback((event: any) => {
+    // Process real-time event and update chart data
+    setData(prevData => {
+      const newData = processEventData(event, prevData);
+      setLastUpdate(new Date());
+      
+      if (onDataUpdate) {
+        onDataUpdate(newData);
+      }
+      
+      return newData;
+    });
+  }, [onDataUpdate]);
+
+  const { isConnected, events } = useRealTimeSync({
+    organizationId,
+    onEvent: handleRealTimeUpdate
+  });
 
   useEffect(() => {
     // Subscribe to real-time events via WebSocket
@@ -100,26 +116,7 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
         clearInterval(intervalRef.current);
       }
     };
-  }, [eventTypes, config.refreshInterval]);
-
-  const handleRealTimeUpdate = useCallback((event: any) => {
-    // Process real-time event and update chart data
-    setData(prevData => {
-      const newData = processEventData(event, prevData);
-      setLastUpdate(new Date());
-      
-      if (onDataUpdate) {
-        onDataUpdate(newData);
-      }
-      
-      return newData;
-    });
-  }, [onDataUpdate]);
-
-  const { isConnected, events } = useRealTimeSync({
-    organizationId,
-    onEvent: handleRealTimeUpdate
-  });
+  }, [eventTypes, config.refreshInterval, isConnected, refreshData]);
 
   useEffect(() => {
     // Set up refresh interval if specified
