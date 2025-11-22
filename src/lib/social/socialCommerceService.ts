@@ -179,8 +179,9 @@ export class SocialCommerceService {
           }
         });
       }
+    }
 
-      return socialProducts;
+    return socialProducts;
     } catch (error) {
       throw new Error(`Failed to sync products to platform: ${error instanceof Error ? error.message : String(error)}`);
     }
