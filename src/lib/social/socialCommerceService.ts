@@ -180,71 +180,9 @@ export class SocialCommerceService {
         });
       }
 
-      const products = await prisma.product.findMany({
-        where: { id: { in: productIds } }
-      });
-
-      const socialProducts: SocialProduct[] = [];
-
-      for (const product of products) {
-        try {
-          const platformProductId = await this.syncProductToPlatform(platform, product);
-          
-          const socialProduct = await prisma.socialProduct.upsert({
-            where: {
-              productId_platformId: { productId: product.id, platformId }
-            },
-            update: {
-              status: 'active',
-              lastSync: new Date(),
-              metadata: { lastSync: new Date() }
-            },
-            create: {
-              platformId,
-              productId: product.id,
-              platformProductId,
-              status: 'active',
-              lastSync: new Date(),
-              metadata: { lastSync: new Date() }
-            }
-          });
-
-          socialProducts.push({
-            id: socialProduct.id,
-            productId: socialProduct.productId,
-            platformId: socialProduct.platformId,
-            platformProductId: socialProduct.platformProductId,
-            status: socialProduct.status as 'active' | 'inactive' | 'syncing' | 'error',
-            metadata: socialProduct.metadata,
-            lastSync: socialProduct.lastSync
-          });
-        } catch (error) {
-          console.error(`Failed to sync product ${product.id} to platform:`, error);
-          
-          // Update social product with error status
-          await prisma.socialProduct.upsert({
-            where: {
-              productId_platformId: { productId: product.id, platformId }
-            },
-            update: {
-              status: 'error',
-              metadata: { error: (error as Error).message }
-            },
-            create: {
-              platformId,
-              productId: product.id,
-              platformProductId: 'error',
-              status: 'error',
-              lastSync: new Date(),
-              metadata: { error: (error as Error).message }
-            }
-          });
-        }
-      }
-
       return socialProducts;
     } catch (error) {
-      throw new Error(`Failed to sync products to platform: ${error}`);
+      throw new Error(`Failed to sync products to platform: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -269,29 +207,50 @@ export class SocialCommerceService {
         }
       });
 
-    return {
-      id: post.id,
-      platformId: post.platformId,
-      type: post.type as 'product' | 'story' | 'reel' | 'post',
-      content: post.content,
-      mediaUrls: post.mediaUrls,
-      productIds: post.productIds,
-      scheduledAt: post.scheduledAt || undefined,
-      publishedAt: post.publishedAt || undefined,
-      status: post.status as 'draft' | 'scheduled' | 'published' | 'failed',
-      engagement: (post.engagement as any) || {
-        likes: 0,
-        comments: 0,
-        shares: 0,
-        clicks: 0,
-      },
-    };
+      return {
+        id: post.id,
+        platformId: post.platformId,
+        type: post.type as 'product' | 'story' | 'reel' | 'post',
+        content: post.content,
+        mediaUrls: post.mediaUrls,
+        productIds: post.productIds,
+        scheduledAt: post.scheduledAt || undefined,
+        publishedAt: post.publishedAt || undefined,
+        status: post.status as 'draft' | 'scheduled' | 'published' | 'failed',
+        engagement: (post.engagement as any) || {
+          likes: 0,
+          comments: 0,
+          shares: 0,
+          clicks: 0,
+        },
+      };
+    } catch (error) {
+      throw new Error(`Failed to create social post: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   async publishPost(postId: string): Promise<SocialPost> {
     try {
+      // Get the post first
+      const post = await prisma.socialPost.findUnique({
+        where: { id: postId },
+        include: { platform: true }
+      });
+
+      if (!post) {
+        throw new Error('Post not found');
+      }
+
       // Publish to social platform
-      const platformPostId = await this.publishToPlatform(post.platform, post);
+      const platform = await prisma.socialPlatform.findUnique({
+        where: { id: post.platformId }
+      });
+
+      if (!platform) {
+        throw new Error('Platform not found');
+      }
+
+      const platformPostId = await this.publishToPlatform(platform, post);
 
       const updatedPost = await prisma.socialPost.update({
         where: { id: postId },

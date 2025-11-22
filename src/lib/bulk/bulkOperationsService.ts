@@ -365,7 +365,9 @@ export class BulkOperationsService {
         const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
         fileData = buffer;
         fileUrl = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${buffer.toString('base64')}`;
-      } else {
+      }
+      
+      if (format === 'json') {
         fileData = JSON.stringify(products, null, 2);
         fileUrl = `data:application/json;charset=utf-8,${encodeURIComponent(fileData)}`;
       }
@@ -461,7 +463,9 @@ export class BulkOperationsService {
         const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
         fileData = buffer;
         fileUrl = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${buffer.toString('base64')}`;
-      } else {
+      }
+      
+      if (format === 'json') {
         fileData = JSON.stringify(customers, null, 2);
         fileUrl = `data:application/json;charset=utf-8,${encodeURIComponent(fileData)}`;
       }
@@ -577,7 +581,9 @@ export class BulkOperationsService {
         const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
         fileData = buffer;
         fileUrl = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${buffer.toString('base64')}`;
-      } else {
+      }
+      
+      if (format === 'json') {
         fileData = JSON.stringify(exportData, null, 2);
         fileUrl = `data:application/json;charset=utf-8,${encodeURIComponent(fileData)}`;
       }
