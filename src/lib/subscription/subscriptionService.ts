@@ -307,22 +307,24 @@ export class SubscriptionService {
       });
 
       // Send welcome email
-      await this.sendSubscriptionWelcomeEmail(userId, plan);
+      await this.sendSubscriptionWelcomeEmail(subscription.id);
 
       // Broadcast event
       await realTimeSyncService.queueEvent({
+        id: crypto.randomUUID(),
         type: 'message',
         action: 'create',
         entityId: subscription.id,
         organizationId: user.organizationId || '',
         data: subscription,
         timestamp: new Date(),
+        source: 'subscription-service',
       });
 
       const subMetadata = (subscription.metadata as any) || {};
       return {
         id: subscription.id,
-        userId: subMetadata.userId || '',
+        customerId: subscription.customerId,
         planId: subMetadata.planId || '',
         status: subscription.status as any,
         currentPeriodStart: subscription.currentPeriodStart,
@@ -494,7 +496,7 @@ export class SubscriptionService {
       await this.checkUsageLimits(subscriptionId, metricType);
 
       // Get current subscription
-      const subscription = await prisma.subscription.findUnique({
+      const subscriptionRecord2 = await prisma.subscription.findUnique({
         where: { id: subscriptionId },
         select: { metadata: true }
       });
@@ -605,7 +607,7 @@ export class SubscriptionService {
         where: { id: userId },
       });
 
-      if (!user || !user.organizationId) return null;
+      if (!user || !user.organizationId) return null as any;
 
       // Get customer and their orders
       const customer = await prisma.customer.findFirst({
@@ -620,7 +622,7 @@ export class SubscriptionService {
         },
       });
 
-      if (!customer) return null;
+      if (!customer) return null as any;
 
       // Calculate totals
       const totalSpent = customer.orders.reduce((sum, order) => sum + order.totalAmount, 0);
@@ -637,9 +639,9 @@ export class SubscriptionService {
       const organization = await prisma.organization.findUnique({
         where: { id: user.organizationId },
       });
-      if (!organization) return null;
+      if (!organization) return null as any;
       const settings = (organization.settings as any) || {};
-      const tiers = (settings.membershipTiers || []).sort((a: any, b: any) => a.level - b.level);
+      const tiers = (settings.membershipTiers || []).sort((a: any, b: any) => (a.level || 0) - (b.level || 0));
 
       // Find appropriate tier
       let currentTier = tiers[0]; // Default to lowest tier
@@ -657,7 +659,7 @@ export class SubscriptionService {
       }
 
       // Find next tier
-      const nextTier = tiers.find(tier => tier.level > currentTier.level);
+      const nextTier = tiers.find((tier: any) => (tier.level || 0) > (currentTier.level || 0));
       
       let nextTierProgress;
       if (nextTier) {
@@ -674,7 +676,7 @@ export class SubscriptionService {
 
       // Store membership status in UserPreference
       const membershipStatus = {
-        userId,
+        userId: user?.id || '',
         tierId: currentTier.id,
         level: currentTier.level,
         totalSpent,
@@ -692,7 +694,7 @@ export class SubscriptionService {
           } as any,
         },
         create: {
-          userId,
+          userId: user?.id || '',
           notifications: {
             membershipStatus,
           } as any,
@@ -717,11 +719,12 @@ export class SubscriptionService {
   async createSubscriptionBox(box: Omit<SubscriptionBox, 'id'>): Promise<SubscriptionBox> {
     try {
       // Store subscription box in Organization settings
-      if (!box.organizationId) {
+      const orgId = (box as any).organizationId;
+      if (!orgId) {
         throw new Error('Organization ID is required');
       }
       const organization = await prisma.organization.findUnique({
-        where: { id: box.organizationId },
+        where: { id: orgId },
       });
       if (!organization) {
         throw new Error('Organization not found');
@@ -807,8 +810,8 @@ export class SubscriptionService {
 
     // Get usage for current period from metadata
     const usageRecords = subMetadata.usageRecords || [];
-    const periodStart = subscription.currentPeriodStart.getTime();
-    const periodEnd = subscription.currentPeriodEnd.getTime();
+    const periodStart = subscriptionRecord2.currentPeriodStart.getTime();
+    const periodEnd = subscriptionRecord2.currentPeriodEnd.getTime();
     const periodUsage = usageRecords
       .filter((r: any) => {
         const timestamp = new Date(r.timestamp).getTime();
@@ -821,8 +824,7 @@ export class SubscriptionService {
 
     if (totalUsage >= limit) {
       // Send usage limit notification
-      // Note: sendUsageLimitEmail expects subscriptionId, not individual parameters
-      // await this.sendUsageLimitEmail(subscription.id);
+      await this.sendUsageLimitEmail(subscriptionId);
       console.log('Usage limit reached:', { subscriptionId: subscription.id, metricType, totalUsage, limit });
     }
   }
