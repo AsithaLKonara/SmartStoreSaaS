@@ -5,12 +5,11 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
   BarChart3, Download, Calendar, TrendingUp, TrendingDown, DollarSign,
-  Users, Package, ShoppingCart, Filter, Search, FileText, PieChart,
-  LineChart, BarChart, Activity, Target, Award, Clock, CheckCircle,
+  Users, Package, FileText, Activity, Clock, CheckCircle,
   XCircle, AlertTriangle, Plus, Eye, Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
+import { formatRelativeTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface Report {
@@ -42,7 +41,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'reports' | 'templates' | 'scheduled'>('reports');
   const [selectedReportType, setSelectedReportType] = useState<string>('all');
-  const [dateRange, setDateRange] = useState<string>('30d');
+  const [dateRange] = useState<string>('30d');
 
   useEffect(() => {
     if (!session?.user?.organizationId) {
@@ -306,7 +305,7 @@ export default function ReportsPage() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'reports' | 'templates' | 'scheduled')}
                 className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'

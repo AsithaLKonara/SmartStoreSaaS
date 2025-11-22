@@ -16,7 +16,7 @@ export interface EmailOptions {
   subject: string;
   htmlContent?: string; // Make optional for template usage
   textContent?: string;
-  attachments?: EmailAttachment[];
+  attachments?: Array<{ filename: string; content: Buffer | string; contentType?: string }>;
   metadata?: any;
   replyTo?: string;
   templateId?: string;
@@ -331,7 +331,7 @@ export class EmailService {
       customerName: order.customer.name,
       orderId: order.id,
       orderTotal: order.totalAmount,
-      orderItems: order.items.map(item => ({
+      orderItems: order.items.map((item: { product: { name: string }; quantity: number; price: number }) => ({
         name: item.product.name,
         quantity: item.quantity,
         price: item.price,
@@ -430,8 +430,7 @@ export class EmailService {
       attachments: [{
         filename: `invoice-${order.id}.pdf`,
         content: invoicePdf.toString('base64'),
-        type: 'application/pdf',
-        disposition: 'attachment',
+        contentType: 'application/pdf',
       }],
     });
   }
@@ -561,20 +560,20 @@ export class EmailService {
       const users = await prisma.user.findMany({
         where: { organizationId },
         include: {
-          userPreference: true,
+          preferences: true,
         },
       });
 
       const recipients = users
         .filter(user => {
-          const emailSubscriptions = (user.userPreference?.notifications as any)?.emailSubscriptions || {};
+          const emailSubscriptions = (user.preferences?.notifications as any)?.emailSubscriptions || {};
           return campaign.segmentIds?.some((segmentId: string) => 
             emailSubscriptions[segmentId]?.isActive
           );
         })
         .map(user => ({
           email: user.email,
-          templateData: ((user.userPreference?.notifications as any)?.emailSubscriptions || {})[campaign.segmentIds?.[0]]?.customFields || {},
+          templateData: ((user.preferences?.notifications as any)?.emailSubscriptions || {})[campaign.segmentIds?.[0]]?.customFields || {},
         }));
 
       const result = await this.sendBulkEmail({
@@ -622,10 +621,7 @@ export class EmailService {
       subject: 'SmartStore Notification',
       htmlContent: '<p>Default email template</p>',
       textContent: 'Default email template',
-      variables: [],
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      variables: []
     };
   }
 

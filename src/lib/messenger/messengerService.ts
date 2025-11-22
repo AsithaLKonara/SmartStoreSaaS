@@ -155,7 +155,9 @@ export class MessengerService {
 
       // Broadcast real-time event
       await realTimeSyncService.queueEvent({
+        id: `message-${Date.now()}-${Math.random()}`,
         type: 'message',
+        action: 'create',
         entityId: message.id,
         organizationId,
         data: message,
@@ -527,7 +529,9 @@ export class MessengerService {
 
       // Broadcast real-time event
       await realTimeSyncService.queueEvent({
+        id: `message-${Date.now()}-${Math.random()}`,
         type: 'message',
+        action: 'create',
         entityId: message.id,
         organizationId,
         data: message,
@@ -807,11 +811,12 @@ How would you prefer to get help?`;
     await prisma.supportTicket.create({
       data: {
         customerId: senderId,
-        title: 'Customer initiated chat',
+        subject: 'Customer initiated chat',
         description: 'Customer started a conversation via messenger',
         status: 'OPEN',
         priority: 'MEDIUM',
         organizationId,
+        ticketNumber: `TICKET-${Date.now()}`,
       },
     });
 

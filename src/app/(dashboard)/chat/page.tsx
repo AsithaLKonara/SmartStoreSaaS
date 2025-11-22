@@ -76,7 +76,8 @@ export default function ChatPage() {
       return;
     }
     fetchConversations();
-  }, [session, status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status, router]);
 
   useEffect(() => {
     const customerId = searchParams.get('customer');

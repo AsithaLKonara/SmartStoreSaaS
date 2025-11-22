@@ -7,7 +7,7 @@ export class CRMSyncService {
     organizationId: string,
     type: 'customers' | 'leads' | 'opportunities' | 'all' = 'all'
   ): Promise<{ success: number; failed: number }> {
-    const integration = await prisma.crmIntegration.findFirst({
+    const integration = await prisma.cRMIntegration.findFirst({
       where: { organizationId },
     });
 

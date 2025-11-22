@@ -179,7 +179,7 @@ export class ThemeService {
         const config = JSON.parse(saved);
         return { ...this.defaultConfig, ...config };
       }
-    } catch {
+    } catch (error) {
       console.warn('Failed to load theme from localStorage:', error);
     }
 
@@ -191,7 +191,7 @@ export class ThemeService {
 
     try {
       localStorage.setItem('smartstore-theme', JSON.stringify(config));
-    } catch {
+    } catch (error) {
       console.warn('Failed to save theme to localStorage:', error);
     }
   }

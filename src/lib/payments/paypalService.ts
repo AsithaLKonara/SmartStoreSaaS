@@ -388,10 +388,17 @@ export class PayPalService {
 
     if (orderId) {
       await prisma.order.updateMany({
-        where: { paypalOrderId: orderId },
+        where: { 
+        metadata: {
+          path: ['paypalOrderId'],
+          equals: orderId,
+        } as any,
+      },
         data: {
           status: OrderStatus.CONFIRMED,
+          metadata: {
           paypalPaymentId: paymentId,
+        } as any,
         },
       });
     }
@@ -404,7 +411,12 @@ export class PayPalService {
 
     if (orderId) {
       await prisma.order.updateMany({
-        where: { paypalOrderId: orderId },
+        where: { 
+        metadata: {
+          path: ['paypalOrderId'],
+          equals: orderId,
+        } as any,
+      },
         data: {
           status: OrderStatus.CANCELLED,
         },

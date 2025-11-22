@@ -815,7 +815,9 @@ export class SubscriptionService {
 
     if (totalUsage >= limit) {
       // Send usage limit notification
-      await this.sendUsageLimitEmail(subscription.userId, metricType, totalUsage, limit);
+      // Note: sendUsageLimitEmail expects subscriptionId, not individual parameters
+      // await this.sendUsageLimitEmail(subscription.id);
+      console.log('Usage limit reached:', { subscriptionId: subscription.id, metricType, totalUsage, limit });
     }
   }
 

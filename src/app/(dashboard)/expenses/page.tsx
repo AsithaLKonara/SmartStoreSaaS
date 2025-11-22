@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
-  DollarSign, Plus, Search, Download, Upload, AlertTriangle,
-  CheckCircle, XCircle, Clock, TrendingUp, BarChart3, Settings, Edit,
-  Trash2, Eye, Receipt, CreditCard, Banknote, ShoppingCart, Truck,
+  DollarSign, Plus, Search, Download, Upload,
+  CheckCircle, XCircle, Clock, TrendingUp, BarChart3, Edit,
+  Eye, Receipt, Truck, Settings,
   Building2, Users, PieChart, LineChart, FileText, Tag
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -221,7 +221,7 @@ export default function ExpensesPage() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'expenses' | 'reports' | 'approvals')}
                 className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'

@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
-  Upload, Download, FileText, CheckCircle, XCircle, Clock, AlertTriangle,
-  Users, Package, ShoppingCart, DollarSign, Settings, Plus, Eye, Trash2,
+  Upload, Download, FileText, CheckCircle, XCircle, Clock,
+  Users, Package, ShoppingCart, DollarSign, Plus, Eye, Trash2,
   BarChart3, Database, RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -318,7 +318,7 @@ export default function BulkOperationsPage() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'operations' | 'templates' | 'history')}
                 className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'

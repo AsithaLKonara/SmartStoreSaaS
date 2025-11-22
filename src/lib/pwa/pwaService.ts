@@ -279,7 +279,7 @@ export class PWAService {
           type: 'push',
           title: notification.title,
           message: notification.body,
-          recipient: userId,
+          userId: userId,
           organizationId: 'default-org', // You'll need to get this from context
           metadata: {
             ...notification.data,

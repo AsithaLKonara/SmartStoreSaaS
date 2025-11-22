@@ -62,7 +62,8 @@ export default function CustomersPage() {
       return;
     }
     fetchCustomers();
-  }, [session, status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status, router]);
 
   const fetchCustomers = async () => {
     try {

@@ -50,7 +50,7 @@ export class SalesforceService {
         }
       }
 
-      await prisma.crmIntegration.update({
+      await prisma.cRMIntegration.update({
         where: { id: this.integrationId },
         data: { lastSync: new Date() },
       });
@@ -189,7 +189,7 @@ export class SalesforceService {
 
     const newAccessToken = response.data.access_token;
 
-    await prisma.crmIntegration.update({
+    await prisma.cRMIntegration.update({
       where: { id: this.integrationId },
       data: {
         accessToken: newAccessToken,

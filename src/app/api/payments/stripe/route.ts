@@ -50,7 +50,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function createPaymentIntent(data: any, userId: string) {
+interface PaymentIntentData {
+  amount: number;
+  currency: string;
+  orderId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+async function createPaymentIntent(data: PaymentIntentData, userId: string) {
   const { amount, currency, orderId, metadata } = data;
   
   // Get or create Stripe customer
@@ -93,7 +100,7 @@ async function createPaymentIntent(data: any, userId: string) {
     amount,
     currency,
     stripeCustomerId,
-    { ...metadata, orderId, userId }
+    { ...metadata, ...(orderId ? { orderId } : {}), userId }
   );
 
   // Update order with payment intent ID
@@ -111,7 +118,12 @@ async function createPaymentIntent(data: any, userId: string) {
   return NextResponse.json(paymentIntent);
 }
 
-async function createCustomer(data: any, userId: string) {
+interface CustomerData {
+  email: string;
+  name: string;
+}
+
+async function createCustomer(data: CustomerData, userId: string) {
   const { email, name } = data;
   
   const customerId = await stripeService.createCustomer(email, name, { userId });
@@ -135,7 +147,7 @@ async function createCustomer(data: any, userId: string) {
   return NextResponse.json({ customerId });
 }
 
-async function getPaymentMethods(data: any, userId: string) {
+async function getPaymentMethods(_data: unknown, userId: string) {
   const userPref = await prisma.userPreference.findUnique({
     where: { userId },
   });
@@ -149,7 +161,12 @@ async function getPaymentMethods(data: any, userId: string) {
   return NextResponse.json({ paymentMethods });
 }
 
-async function createSubscription(data: any, userId: string) {
+interface SubscriptionData {
+  priceId: string;
+  metadata?: Record<string, unknown>;
+}
+
+async function createSubscription(data: SubscriptionData, userId: string) {
   const { priceId, metadata } = data;
   
   const userPref = await prisma.userPreference.findUnique({
@@ -170,7 +187,11 @@ async function createSubscription(data: any, userId: string) {
   return NextResponse.json(subscription);
 }
 
-async function cancelSubscription(data: any, userId: string) {
+interface CancelSubscriptionData {
+  subscriptionId: string;
+}
+
+async function cancelSubscription(data: CancelSubscriptionData, userId: string) {
   const { subscriptionId } = data;
   
   // Verify user owns this subscription
@@ -189,7 +210,13 @@ async function cancelSubscription(data: any, userId: string) {
   return NextResponse.json(canceledSubscription);
 }
 
-async function createRefund(data: any, userId: string) {
+interface RefundData {
+  paymentIntentId: string;
+  amount?: number;
+  reason?: string;
+}
+
+async function createRefund(data: RefundData, userId: string) {
   const { paymentIntentId, amount, reason } = data;
   
   // Verify user owns this payment
@@ -207,7 +234,8 @@ async function createRefund(data: any, userId: string) {
     return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
   }
 
-  const refund = await stripeService.createRefund(paymentIntentId, amount, reason);
+  const refundReason = reason as 'duplicate' | 'fraudulent' | 'requested_by_customer' | undefined;
+  const refund = await stripeService.createRefund(paymentIntentId, amount, refundReason);
   return NextResponse.json(refund);
 }
 
@@ -216,7 +244,7 @@ async function getSubscriptionPlans() {
   return NextResponse.json({ plans });
 }
 
-async function createSetupIntent(data: any, userId: string) {
+async function createSetupIntent(_data: unknown, userId: string) {
   const userPref = await prisma.userPreference.findUnique({
     where: { userId },
   });

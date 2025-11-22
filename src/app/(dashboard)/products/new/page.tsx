@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { 
@@ -69,7 +70,8 @@ export default function NewProductPage() {
     }
     fetchCategories();
     generateNewSKU();
-  }, [session, status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status, router]);
 
   const fetchCategories = async () => {
     try {
@@ -555,9 +557,11 @@ export default function NewProductPage() {
                   <div className="grid grid-cols-2 gap-2">
                     {formData.images.map((image, index) => (
                       <div key={index} className="relative">
-                        <img
+                        <Image
                           src={image}
                           alt={`Product ${index + 1}`}
+                          width={96}
+                          height={96}
                           className="w-full h-24 object-cover rounded-lg"
                         />
                         <button

@@ -135,15 +135,18 @@ export class TikTokShopService {
         },
       });
     } else {
+      const slug = productData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       await prisma.product.create({
         data: {
           name: productData.name,
+          slug: slug || `product-${Date.now()}`,
           description: productData.description,
           price: productData.price,
           stockQuantity: productData.stockQuantity,
           images: productData.images,
           isActive: productData.isActive,
           organizationId: productData.organizationId,
+          createdById: productData.organizationId, // Use organizationId as fallback
           dimensions: {
             currency: productData.currency,
             tiktokId: tiktokProduct.id,
@@ -245,9 +248,11 @@ export class TikTokShopService {
           orderNumber: orderData.orderNumber,
           status: orderData.status as any,
           totalAmount: orderData.totalAmount,
+          subtotal: orderData.totalAmount, // Use totalAmount as subtotal if not provided
           currency: orderData.currency,
           customerId: orderData.customerId,
           organizationId: orderData.organizationId,
+          createdById: orderData.organizationId, // Use organizationId as fallback
           metadata: {
             tiktokOrderId: orderData.metadata.tiktokOrderId,
           } as any,

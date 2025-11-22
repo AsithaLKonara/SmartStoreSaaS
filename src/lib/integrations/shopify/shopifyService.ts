@@ -228,9 +228,11 @@ export class ShopifyService {
         },
       });
     } else {
+      const slug = productData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       await prisma.product.create({
         data: {
           name: productData.name,
+          slug: slug || `product-${Date.now()}`,
           description: productData.description,
           sku: productData.sku,
           price: productData.price,
@@ -239,6 +241,7 @@ export class ShopifyService {
           images: productData.images,
           isActive: productData.isActive,
           organizationId: productData.organizationId,
+          createdById: productData.organizationId, // Use organizationId as fallback
           dimensions: {
             shopifyId: String(shopifyProduct.id),
             shopifyHandle: shopifyProduct.handle,
@@ -385,7 +388,15 @@ export class ShopifyService {
           paymentStatus: orderData.paymentStatus as any,
           customerId: orderData.customerId,
           organizationId: orderData.organizationId,
-          items: orderData.items,
+          createdById: orderData.organizationId, // Use organizationId as fallback
+          items: {
+            create: Array.isArray(orderData.items) ? orderData.items.map((item: { quantity: number; price: number; total: number; metadata?: { shopifyLineItemId?: string; variantId?: string } }) => ({
+              quantity: item.quantity,
+              price: item.price,
+              total: item.total,
+              metadata: item.metadata || {},
+            })) : [],
+          },
           metadata: orderData.metadata as any,
         },
       });

@@ -132,13 +132,16 @@ export class MagentoService {
         },
       });
     } else {
+      const slug = productData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       await prisma.product.create({
         data: {
           name: productData.name,
+          slug: slug || `product-${Date.now()}`,
           sku: productData.sku,
           price: productData.price,
           isActive: productData.isActive,
           organizationId: productData.organizationId,
+          createdById: productData.organizationId, // Use organizationId as fallback
           dimensions: {
             magentoId: String(magentoProduct.id),
             magentoType: magentoProduct.type_id,
@@ -241,6 +244,7 @@ export class MagentoService {
           subtotal: orderData.subtotal,
           customerId: orderData.customerId,
           organizationId: orderData.organizationId,
+          createdById: orderData.organizationId, // Use organizationId as fallback
           metadata: {
             magentoId: orderData.metadata.magentoId,
             magentoIncrementId: orderData.metadata.magentoIncrementId,

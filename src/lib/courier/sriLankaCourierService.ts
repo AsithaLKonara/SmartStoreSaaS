@@ -399,7 +399,6 @@ export class SriLankaCourierService extends EventEmitter {
           status: shipment.status as any, // Cast to any to bypass type constraint
           courierId: courier.code,
           orderId: request.orderId,
-          organizationId: request.organizationId,
           metadata: {
             cost: shipment.cost,
             estimatedDelivery: shipment.estimatedDelivery,
@@ -738,31 +737,34 @@ export class SriLankaCourierService extends EventEmitter {
   // Sync Methods
   private async syncTrackingEvent(trackingInfo: TrackingInfo, organizationId: string): Promise<void> {
     const syncEvent: SyncEvent = {
+      id: `tracking-${Date.now()}-${Math.random()}`,
       type: 'order',
       action: 'update',
       entityId: trackingInfo.trackingNumber || '',
-      organizationId: trackingInfo.organizationId || '',
+      organizationId: organizationId,
       data: {
         trackingNumber: trackingInfo.trackingNumber,
         status: trackingInfo.status,
         location: trackingInfo.location,
         estimatedDelivery: trackingInfo.estimatedDelivery,
-        organizationId: organizationId // Add organizationId to data
       },
       timestamp: new Date(),
+      source: 'courier-service',
     };
 
     await realTimeSyncService.queueEvent(syncEvent);
   }
 
-  private async syncShipmentEvent(shipmentResponse: ShipmentResponse, organizationId: string): Promise<void> {
+  private async syncShipmentEvent(shipmentResponse: ShipmentResponse, organizationId: string, action: 'create' | 'update' = 'update'): Promise<void> {
     const syncEvent: SyncEvent = {
+      id: `shipment-${Date.now()}-${Math.random()}`,
       type: 'order',
-      action: action as any,
-      entityId: shipment.id || '',
+      action: action,
+      entityId: shipmentResponse.trackingNumber || '',
       organizationId,
-      data: shipment,
+      data: shipmentResponse,
       timestamp: new Date(),
+      source: 'courier-service',
     };
 
     await realTimeSyncService.queueEvent(syncEvent);

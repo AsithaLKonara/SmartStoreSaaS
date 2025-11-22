@@ -150,7 +150,7 @@ export class MFAService {
         return { isValid: false };
       }
 
-      if (!mfaRecord.secret) {
+      if (!mfaData.secret) {
         return { isValid: false };
       }
 
@@ -202,7 +202,7 @@ export class MFAService {
         return false;
       }
 
-      if (!mfaRecord.secret) {
+      if (!mfaData.secret) {
         return false;
       }
 
@@ -574,8 +574,6 @@ export class MFAService {
       console.error('Error getting MFA logs:', error);
       return [];
     }
-    
-    return user.organizationId;
   }
 
   /**
@@ -672,7 +670,7 @@ export class MFAService {
       // Verify multiple tokens with different time windows
       let validCount = 0;
       for (let i = 0; i < tokens.length; i++) {
-        if (!mfaRecord.secret) {
+        if (!mfaData.secret) {
           continue;
         }
 

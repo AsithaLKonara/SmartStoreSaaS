@@ -418,9 +418,10 @@ export class WorkflowEngine {
 
     // Send WhatsApp confirmation only if customer has phone
     if (order.customer.phone) {
-      await whatsappService.sendTextMessage(
+      await whatsAppService.sendTextMessage(
         order.customer.phone,
-        `Your order #${order.orderNumber} has been confirmed! Total: $${order.totalAmount}`
+        `Your order #${order.orderNumber} has been confirmed! Total: $${order.totalAmount}`,
+        order.organizationId
       );
     }
   }
@@ -445,7 +446,6 @@ export class WorkflowEngine {
           orderId: order.id,
           courierId: courier.id,
           status: 'PENDING',
-          organizationId: order.organizationId,
         },
       });
     }
@@ -509,9 +509,10 @@ export class WorkflowEngine {
 
     // Send welcome WhatsApp message only if customer has phone
     if (customer.phone) {
-      await whatsappService.sendTextMessage(
+      await whatsAppService.sendTextMessage(
         customer.phone,
-        `Welcome to SmartStore AI! We're excited to have you as a customer.`
+        `Welcome to SmartStore AI! We're excited to have you as a customer.`,
+        customer.organizationId || ''
       );
     }
   }

@@ -168,11 +168,14 @@ export class WhatsAppService extends EventEmitter {
 
       // Emit sync event
       await realTimeSyncService.queueEvent({
+        id: `whatsapp-${Date.now()}-${Math.random()}`,
         type: 'message',
+        action: 'create',
         entityId: whatsappMessage.id,
         organizationId,
         data: whatsappMessage,
         timestamp: new Date(),
+        source: 'whatsapp-service',
       });
 
       return whatsappMessage;
@@ -223,11 +226,14 @@ export class WhatsAppService extends EventEmitter {
       await this.storeMessage(whatsappMessage);
 
       await realTimeSyncService.queueEvent({
+        id: `whatsapp-${Date.now()}-${Math.random()}`,
         type: 'message',
+        action: 'create',
         entityId: whatsappMessage.id,
         organizationId,
         data: whatsappMessage,
         timestamp: new Date(),
+        source: 'whatsapp-service',
       });
 
       return whatsappMessage;
@@ -283,11 +289,14 @@ export class WhatsAppService extends EventEmitter {
       await this.storeMessage(whatsappMessage);
 
       await realTimeSyncService.queueEvent({
+        id: `whatsapp-${Date.now()}-${Math.random()}`,
         type: 'message',
+        action: 'create',
         entityId: whatsappMessage.id,
         organizationId,
         data: whatsappMessage,
         timestamp: new Date(),
+        source: 'whatsapp-service',
       });
 
       return whatsappMessage;
@@ -329,11 +338,14 @@ export class WhatsAppService extends EventEmitter {
       await this.storeMessage(whatsappMessage);
 
       await realTimeSyncService.queueEvent({
+        id: `whatsapp-${Date.now()}-${Math.random()}`,
         type: 'message',
+        action: 'create',
         entityId: whatsappMessage.id,
         organizationId,
         data: whatsappMessage,
         timestamp: new Date(),
+        source: 'whatsapp-service',
       });
 
       return whatsappMessage;
@@ -491,7 +503,7 @@ export class WhatsAppService extends EventEmitter {
         data: {
           name: catalog.name,
           description: catalog.description,
-          products: catalog.products || [], // Store products as JSON
+          products: (catalog.products || []) as any, // Store products as JSON
           organizationId: catalog.organizationId,
           isActive: catalog.isActive,
         },
@@ -907,24 +919,28 @@ For immediate assistance, visit our website or call customer service.
   private async handleIncomingMessage(message: WhatsAppMessage): Promise<void> {
     // Broadcast to real-time sync
     await realTimeSyncService.queueEvent({
+      id: `whatsapp-${Date.now()}-${Math.random()}`,
       type: 'message',
       action: 'create',
       entityId: message.id,
       organizationId: message.organizationId,
       data: message,
       timestamp: new Date(),
+      source: 'whatsapp-service',
     });
   }
 
   private async handleMessageStatus(status: any): Promise<void> {
     // Broadcast status update
     await realTimeSyncService.queueEvent({
+      id: `whatsapp-status-${Date.now()}-${Math.random()}`,
       type: 'message',
       action: 'update',
-      entityId: status.id,
-      organizationId: '', // Will need to be determined
+      entityId: status.id || '',
+      organizationId: (status as any)?.organizationId || '',
       data: status,
       timestamp: new Date(),
+      source: 'whatsapp-service',
     });
   }
 

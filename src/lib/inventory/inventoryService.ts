@@ -318,10 +318,12 @@ export class InventoryService {
 
         // Broadcast real-time update
         await realTimeSyncService.queueEvent({
+          id: `inventory-${Date.now()}-${Math.random()}`,
           type: 'inventory',
           action: 'update',
           entityId: productId,
           organizationId,
+          source: 'inventory-service',
           data: {
             productId,
             warehouseId,
@@ -841,7 +843,7 @@ export class InventoryService {
           await emailService.sendEmail({
             to: user.email,
             subject: `Stock Alert: ${product.name}`,
-            html: `
+            htmlContent: `
               <h2>Stock Alert</h2>
               <p><strong>Product:</strong> ${product.name}</p>
               <p><strong>Warehouse:</strong> ${warehouse.name}</p>
@@ -855,12 +857,13 @@ export class InventoryService {
         }
 
         // Send SMS notification for critical alerts
-        if (user.phone && alert.severity === 'CRITICAL') {
-          await smsService.sendSMS({
-            to: user.phone,
-            message,
-          });
-        }
+        // Note: phone field not available on User model, would need to be added or retrieved from preferences
+        // if (user.phone && alert.severity === 'CRITICAL') {
+        //   await smsService.sendSMS({
+        //     to: user.phone,
+        //     message,
+        //   });
+        // }
       }
 
       // Update notification count

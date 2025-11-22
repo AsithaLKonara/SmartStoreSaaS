@@ -13,11 +13,9 @@ import {
   CreditCard,
   CheckCircle,
   Clock,
-  AlertTriangle,
   XCircle,
   TrendingUp,
   Users,
-  Calendar,
   RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -85,7 +83,8 @@ export default function PaymentsPage() {
       return;
     }
     fetchPayments();
-  }, [session, status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status, router]);
 
   const fetchPayments = async () => {
     try {

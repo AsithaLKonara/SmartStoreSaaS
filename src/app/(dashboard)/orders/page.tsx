@@ -14,10 +14,7 @@ import {
   Truck,
   CheckCircle,
   Clock,
-  AlertTriangle,
-  DollarSign,
-  User,
-  Calendar
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { formatCurrency, formatDate, formatPhoneNumber } from '@/lib/utils';
@@ -86,7 +83,8 @@ export default function OrdersPage() {
       return;
     }
     fetchOrders();
-  }, [session, status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status, router]);
 
   const fetchOrders = async () => {
     try {

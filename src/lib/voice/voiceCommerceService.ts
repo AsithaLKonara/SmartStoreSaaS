@@ -205,6 +205,7 @@ export class VoiceCommerceService {
         subtotal: product.price * quantity,
         customerId: customer.id,
         organizationId,
+        createdById: userId, // Use userId as createdById
         metadata: {
           source: 'voice',
           userId,

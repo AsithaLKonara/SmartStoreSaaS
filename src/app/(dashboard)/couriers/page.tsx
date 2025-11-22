@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
-  Truck, Clock, User, Phone, Mail, Plus, Search,
-  Download, Upload, AlertTriangle, CheckCircle, XCircle, TrendingUp,
-  BarChart3, Settings, Edit, Trash2, Eye, Navigation, Route, Package,
+  Truck, Clock, User, Plus, Search,
+  Download, CheckCircle, XCircle,
+  BarChart3, Edit, Eye, Navigation, Route, Package,
   DollarSign, Star, Wifi, WifiOff
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -230,7 +230,7 @@ export default function CouriersPage() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'couriers' | 'deliveries' | 'analytics')}
                 className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'

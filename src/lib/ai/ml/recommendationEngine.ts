@@ -283,7 +283,7 @@ export class RecommendationEngine {
     if (product1.description && product2.description) {
       const words1 = product1.description.toLowerCase().split(/\s+/);
       const words2 = product2.description.toLowerCase().split(/\s+/);
-      const commonWords = words1.filter(w => words2.includes(w));
+      const commonWords = words1.filter((w: string) => words2.includes(w));
       similarity += 0.3 * (commonWords.length / Math.max(words1.length, words2.length));
     }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { 
@@ -18,7 +19,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface Product {
@@ -63,7 +64,8 @@ export default function ProductsPage() {
       return;
     }
     fetchProducts();
-  }, [session, status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status, router]);
 
   const fetchProducts = async () => {
     try {
@@ -272,9 +274,11 @@ export default function ProductsPage() {
             {/* Product Image */}
             <div className="relative h-48 bg-gray-100">
               {product.images.length > 0 ? (
-                <img
+                <Image
                   src={product.images[0]}
                   alt={product.name}
+                  width={200}
+                  height={200}
                   className="w-full h-full object-cover"
                 />
               ) : (

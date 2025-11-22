@@ -291,11 +291,11 @@ export class CustomerIntelligenceService {
         }),
         prisma.customerSegment.findMany({
           where: orgClause,
-          include: { customerSegmentCustomers: { include: { customer: true } } }
+          include: { customerSegmentCustomers: { include: { customer: true } } } as any
         }),
         prisma.customerOffer.findMany({
           where: orgClause,
-          include: { customerOfferCustomers: { include: { customer: true } } }
+          include: { customerOfferCustomers: { include: { customer: true } } } as any
         })
       ]);
 

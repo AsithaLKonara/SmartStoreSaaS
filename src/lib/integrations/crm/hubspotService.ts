@@ -50,7 +50,7 @@ export class HubSpotService {
         }
       }
 
-      await prisma.crmIntegration.update({
+      await prisma.cRMIntegration.update({
         where: { id: this.integrationId },
         data: { lastSync: new Date() },
       });

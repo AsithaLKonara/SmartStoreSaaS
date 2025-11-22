@@ -521,6 +521,7 @@ export class PersonalizationEngine {
         select: { organizationId: true },
       });
       await realTimeSyncService.queueEvent({
+        id: `personalization-${Date.now()}-${Math.random()}`,
         type: 'message',
         action: 'create',
         entityId: userId,

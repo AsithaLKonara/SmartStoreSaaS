@@ -56,6 +56,20 @@ interface CustomerSegment {
   growthRate: number;
 }
 
+interface BusinessInsights {
+  salesInsights?: {
+    totalRevenue?: number;
+    totalOrders?: number;
+    topProducts?: Array<{ id: string; name: string; revenue: number }>;
+  };
+  customerInsights?: {
+    totalCustomers?: number;
+    averageCLV?: number;
+    segments?: Array<{ id: string; name: string; customerCount: number }>;
+  };
+  recommendations?: string[];
+}
+
 export default function EnhancedAnalyticsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -64,7 +78,7 @@ export default function EnhancedAnalyticsPage() {
   const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
   const [predictiveMetrics, setPredictiveMetrics] = useState<PredictiveMetric[]>([]);
   const [customerSegments, setCustomerSegments] = useState<CustomerSegment[]>([]);
-  const [businessInsights, setBusinessInsights] = useState<any>({});
+  const [businessInsights, setBusinessInsights] = useState<BusinessInsights>({});
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -73,7 +87,8 @@ export default function EnhancedAnalyticsPage() {
       return;
     }
     fetchEnhancedAnalytics();
-  }, [session, status, timeRange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status, timeRange, router]);
 
   const fetchEnhancedAnalytics = async () => {
     try {
@@ -382,7 +397,7 @@ export default function EnhancedAnalyticsPage() {
               </div>
               <div className="space-y-2">
                 <h4 className="font-medium text-gray-900">Top Performing Products</h4>
-                {(businessInsights.salesInsights.topProducts || []).slice(0, 3).map((product: any) => (
+                {(businessInsights.salesInsights?.topProducts || []).slice(0, 3).map((product: { id: string; name: string; revenue: number }) => (
                   <div key={product.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                     <span className="text-sm font-medium">{product.name}</span>
                     <span className="text-sm text-gray-600">{formatCurrency(product.revenue)}</span>
@@ -417,7 +432,7 @@ export default function EnhancedAnalyticsPage() {
               </div>
               <div className="space-y-2">
                 <h4 className="font-medium text-gray-900">Customer Segments</h4>
-                {(businessInsights.customerInsights.segments || []).slice(0, 3).map((segment: any) => (
+                {(businessInsights.customerInsights?.segments || []).slice(0, 3).map((segment: { id: string; name: string; customerCount: number }) => (
                   <div key={segment.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                     <span className="text-sm font-medium">{segment.name}</span>
                     <span className="text-sm text-gray-600">{segment.customerCount} customers</span>

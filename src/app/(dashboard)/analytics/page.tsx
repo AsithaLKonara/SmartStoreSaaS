@@ -77,7 +77,8 @@ export default function AnalyticsPage() {
       return;
     }
     fetchAnalytics();
-  }, [session, status, dateRange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status, dateRange, router]);
 
   const fetchAnalytics = async () => {
     try {

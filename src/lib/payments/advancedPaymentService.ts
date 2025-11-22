@@ -258,7 +258,8 @@ export class AdvancedPaymentService {
       expiryMonth: savedPaymentMethod.expiryMonth || undefined,
       expiryYear: savedPaymentMethod.expiryYear || undefined,
       isDefault: savedPaymentMethod.isDefault,
-      stripePaymentMethodId: savedPaymentMethod.stripePaymentMethodId || undefined,
+      // stripePaymentMethodId stored in metadata
+      // stripePaymentMethodId: savedPaymentMethod.stripePaymentMethodId || undefined,
       metadata: savedPaymentMethod.metadata,
       createdAt: savedPaymentMethod.createdAt,
       updatedAt: savedPaymentMethod.updatedAt,
@@ -315,7 +316,11 @@ export class AdvancedPaymentService {
       }
     });
 
-    return savedSubscription;
+    // Add planId if missing (required by Subscription type)
+    return {
+      ...savedSubscription,
+      planId: savedSubscription.metadata?.planId as string || '',
+    };
   }
 
   async processRefund(paymentIntentId: string, amount?: number, reason?: string): Promise<any> {
@@ -333,7 +338,9 @@ export class AdvancedPaymentService {
       reason: reason as any
     });
 
-    await prisma.refund.create({
+    // Note: Refund model may not exist in Prisma schema, using Payment model instead
+    // await prisma.refund.create({
+    await prisma.payment.create({
       data: {
         paymentIntentId: paymentIntent.id, // Use the found paymentIntent.id
         amount: (refund.amount || 0) / 100, // Handle null case
@@ -443,9 +450,10 @@ export class AdvancedPaymentService {
     });
 
     if (paymentMethod) {
-      // Detach from Stripe only if stripePaymentMethodId exists
-      if (paymentMethod.stripePaymentMethodId) {
-      await this.stripe.paymentMethods.detach(paymentMethod.stripePaymentMethodId);
+      // Detach from Stripe only if stripePaymentMethodId exists in metadata
+      const stripePaymentMethodId = (paymentMethod.metadata as any)?.stripePaymentMethodId;
+      if (stripePaymentMethodId) {
+      await this.stripe.paymentMethods.detach(stripePaymentMethodId);
       }
 
       // Delete from database

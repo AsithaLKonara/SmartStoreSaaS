@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRealTimeSync } from '@/hooks/useRealTimeSync';
+import { SyncEvent, SyncConflict } from '@/lib/sync/realTimeSyncService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  CheckCircle, 
-  XCircle, 
   AlertTriangle,
   RefreshCw,
   Clock,
@@ -22,38 +21,24 @@ interface SyncStatus {
   isOnline: boolean;
 }
 
-interface SyncEvent {
-  id: string;
-  type: string;
-  action: string;
-  source: string;
-  timestamp: string;
-  status: string;
-}
-
 export default function SyncPage() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
-  const [events, setEvents] = useState<SyncEvent[]>([]);
-  const [conflicts, setConflicts] = useState<any[]>([]);
+  const [events] = useState<SyncEvent[]>([]);
+  const [conflicts] = useState<SyncConflict[]>([]);
   const [loading, setLoading] = useState(true);
   const [organizationId, setOrganizationId] = useState<string>('');
 
   const {
     isConnected,
-    syncStatus: realTimeStatus,
-    events: realTimeEvents,
-    conflicts: realTimeConflicts,
     connect,
-    disconnect,
-    forceSync,
-    resolveConflict
+    disconnect
   } = useRealTimeSync({
     organizationId,
     autoConnect: true,
-    onEvent: (event) => {
+    onEvent: (event: SyncEvent) => {
       console.log('Sync event received:', event);
     },
-    onStatusChange: (status) => {
+    onStatusChange: (status: SyncStatus) => {
       setSyncStatus(status);
     }
   });
@@ -79,6 +64,7 @@ export default function SyncPage() {
     if (organizationId) {
       loadSyncStatus();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationId]);
 
   const loadSyncStatus = async () => {
@@ -286,7 +272,7 @@ export default function SyncPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {conflicts.map((conflict) => (
+              {conflicts.map((conflict: SyncConflict) => (
                 <div key={conflict.id} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium">
@@ -336,7 +322,7 @@ export default function SyncPage() {
             {events.length === 0 ? (
               <p className="text-gray-500 text-center py-4">No recent events</p>
             ) : (
-              events.slice(0, 10).map((event) => (
+              events.slice(0, 10).map((event: SyncEvent) => (
                 <div key={event.id} className="flex items-center justify-between p-2 border rounded">
                   <div>
                     <span className="font-medium">{event.type}</span>

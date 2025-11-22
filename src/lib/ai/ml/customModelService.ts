@@ -31,7 +31,7 @@ export class CustomModelService {
         organizationId,
         modelType: config.modelType,
         status: 'training',
-        config: config,
+        config: config as any,
         startedAt: new Date(),
       },
     });
@@ -80,12 +80,12 @@ export class CustomModelService {
         metadata: model.metadata || {},
         createdAt: new Date(),
       };
-    } catch {
+    } catch (error) {
       await prisma.mLTrainingJob.update({
         where: { id: trainingJob.id },
         data: {
           status: 'failed',
-          errorMessage: String(error),
+          errorMessage: error instanceof Error ? error.message : String(error),
           completedAt: new Date(),
         },
       });
@@ -178,6 +178,10 @@ export class CustomModelService {
 
     if (!trainingJob || trainingJob.status !== 'completed') {
       throw new Error('Model not ready for predictions');
+    }
+
+    if (!trainingJob.modelPath) {
+      throw new Error('Model path not found');
     }
 
     const model = await this.loadModel(trainingJob.modelPath);
