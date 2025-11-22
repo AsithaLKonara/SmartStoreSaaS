@@ -348,7 +348,7 @@ export class AIChatService {
   // Chat Conversation Management
   async getChatConversation(conversationId: string, organizationId: string): Promise<ChatConversationData | null> {
     try {
-      const conversation = await prisma.chatConversation.findUnique({
+      const conversation = await prisma.customerConversation.findFirst({
         where: { id: conversationId, organizationId },
         include: {
           customer: true,
@@ -361,17 +361,15 @@ export class AIChatService {
 
       return {
         id: conversation.id,
-        title: conversation.title || undefined,
         status: conversation.status,
         priority: conversation.priority,
         customerId: conversation.customerId,
         messages: conversation.messages.map((msg: any) => ({
           id: msg.id,
-          content: msg.content,
-          role: msg.direction === 'INBOUND' ? 'user' : 'assistant',
-          timestamp: msg.createdAt
+          content: msg.message,
+          role: msg.isIncoming ? 'user' : 'assistant',
+          timestamp: msg.timestamp
         })),
-        assignedTo: conversation.assignedTo || undefined,
         createdAt: conversation.createdAt,
         updatedAt: conversation.updatedAt
       };
@@ -387,7 +385,7 @@ export class AIChatService {
     priority?: string
   ): Promise<void> {
     try {
-      await prisma.chatConversation.update({
+      await prisma.customerConversation.update({
         where: { id: conversationId },
         data: { 
           status,

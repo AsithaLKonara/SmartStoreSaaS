@@ -209,7 +209,6 @@ async function createUrgentIssueNotification(conversation: any, message: string,
         title: 'Urgent Customer Issue',
         message: `Urgent issue in conversation #${conversation.id}: ${message.substring(0, 100)}...`,
         organizationId,
-        priority: 'HIGH',
         recipient: conversation.customerId,
         metadata: {
           conversationId: conversation.id,

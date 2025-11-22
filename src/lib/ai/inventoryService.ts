@@ -176,9 +176,10 @@ export class AIInventoryService {
         }
 
         // Calculate average delivery time
-        const deliveryTimes = completedOrders.map(po => {
+        const deliveryTimes = completedOrders.map((po: any) => {
           const created = new Date(po.createdAt);
-          const delivered = po.expectedDelivery ? new Date(po.expectedDelivery) : new Date(po.updatedAt);
+          const expectedDelivery = (po.metadata as any)?.expectedDelivery;
+          const delivered = expectedDelivery ? new Date(expectedDelivery) : new Date(po.updatedAt);
           return Math.ceil((delivered.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
         });
 
@@ -201,7 +202,7 @@ export class AIInventoryService {
           costEffectiveness,
           recommendations: [
             reliabilityScore < 80 ? 'Improve delivery reliability' : 'Maintain current performance',
-            averageDeliveryTime > (supplier.leadTime || 7) ? 'Optimize supply chain processes' : 'Good delivery performance'
+            averageDeliveryTime > leadTime ? 'Optimize supply chain processes' : 'Good delivery performance'
           ]
         });
       }
