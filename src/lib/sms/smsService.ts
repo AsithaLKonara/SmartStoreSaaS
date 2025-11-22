@@ -330,7 +330,7 @@ export class SMSService {
         where: { id: campaignId },
         data: {
           status: 'COMPLETED' as any,
-          completedAt: new Date(),
+          // completedAt doesn't exist in Campaign model
         },
       });
 
@@ -415,19 +415,16 @@ export class SMSService {
       // Create support ticket
       await prisma.supportTicket.create({
         data: {
+          ticketNumber: `SMS-${Date.now()}`,
           subject: `SMS Support Request from ${phone}`,
           description: message,
           priority: 'MEDIUM',
           status: 'OPEN',
-          // phone doesn't exist in SupportTicket - storing in metadata
+          organizationId: process.env.DEFAULT_ORGANIZATION_ID || 'default',
+          tags: [],
           metadata: {
             phone,
           } as any,
-          organization: {
-            connect: {
-              id: process.env.DEFAULT_ORGANIZATION_ID || 'default'
-            }
-          }
         },
       });
 
