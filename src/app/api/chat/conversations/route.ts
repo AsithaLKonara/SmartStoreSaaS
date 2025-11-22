@@ -21,7 +21,13 @@ export async function GET(_request: NextRequest) {
       _max: {
         createdAt: true,
       },
-      orderBy: { createdAt: 'desc' },
+    });
+    
+    // Sort by most recent message after grouping
+    conversations.sort((a, b) => {
+      const aDate = a._max.createdAt || new Date(0);
+      const bDate = b._max.createdAt || new Date(0);
+      return bDate.getTime() - aDate.getTime();
     });
 
     // Get conversation details with customer info
