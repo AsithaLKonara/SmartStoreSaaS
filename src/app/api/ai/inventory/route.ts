@@ -83,9 +83,6 @@ export async function GET(request: NextRequest) {
         const purchaseOrders = await aiInventoryService.generatePurchaseOrders(
           organizationId,
           predictionsForPO
-            costEffectiveness: 0,
-            recommendations: [],
-          }))
         );
         return NextResponse.json({ purchaseOrders });
 
