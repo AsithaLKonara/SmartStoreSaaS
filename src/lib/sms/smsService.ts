@@ -585,18 +585,19 @@ export class SMSService {
         message: 'This is a test SMS from SmartStore AI. If you receive this, SMS integration is working correctly!',
       });
 
-      // Log test SMS
-      await prisma.smsLog.create({
+      // Log test SMS (smsLog model doesn't exist, using Notification)
+      await prisma.notification.create({
         data: {
-          phone: process.env.TWILIO_PHONE_NUMBER!,
+          type: 'SYSTEM',
           message: 'Test SMS sent',
-          status: 'SENT',
-          provider: this.provider,
-          organization: {
-            connect: {
-              id: process.env.DEFAULT_ORGANIZATION_ID || 'default'
-            }
-          }
+          userId: '',
+          organizationId: process.env.DEFAULT_ORGANIZATION_ID || 'default',
+          metadata: {
+            phone: process.env.TWILIO_PHONE_NUMBER!,
+            message: 'Test SMS sent',
+            status: 'SENT',
+            provider: this.provider,
+          } as any,
         },
       });
 
