@@ -64,16 +64,7 @@ export async function GET(request: NextRequest) {
           where: { organizationId },
         });
         const supplierPerformance = await aiInventoryService.evaluateSupplierPerformance(
-          suppliers.map(s => ({
-            supplierId: s.id,
-            supplierName: s.name,
-            averageDeliveryTime: 0,
-            qualityScore: s.rating || 0,
-            reliabilityScore: s.rating || 0,
-            costEffectiveness: 0,
-            recommendations: [],
-          })),
-          orders
+          organizationId
         );
         return NextResponse.json({ supplierPerformance });
 
@@ -90,13 +81,8 @@ export async function GET(request: NextRequest) {
           where: { organizationId },
         });
         const purchaseOrders = await aiInventoryService.generatePurchaseOrders(
-          predictionsForPO,
-          suppliersForPO.map(s => ({
-            supplierId: s.id,
-            supplierName: s.name,
-            averageDeliveryTime: 0,
-            qualityScore: s.rating || 0,
-            reliabilityScore: s.rating || 0,
+          organizationId,
+          predictionsForPO
             costEffectiveness: 0,
             recommendations: [],
           }))
