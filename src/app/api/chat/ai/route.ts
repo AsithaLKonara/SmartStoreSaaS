@@ -216,7 +216,7 @@ async function createUrgentIssueNotification(conversation: any, message: string,
           customerId: conversation.customerId,
           priority: 'high',
         },
-        organizationId: conversation.organizationId,
+        organizationId: session.user.organizationId,
       },
     });
 
