@@ -72,7 +72,7 @@ export function generateSKU(prefix = 'SKU'): string {
 }
 
 // Debounce function
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -84,7 +84,7 @@ export function debounce<T extends (...args: any[]) => any>(
 }
 
 // Throttle function
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
@@ -160,7 +160,7 @@ export function deepClone<T>(obj: T): T {
 }
 
 // Check if object is empty
-export function isEmpty(obj: any): boolean {
+export function isEmpty(obj: unknown): boolean {
   if (obj == null) return true;
   if (Array.isArray(obj) || typeof obj === 'string') return obj.length === 0;
   if (obj instanceof Map || obj instanceof Set) return obj.size === 0;
@@ -198,7 +198,7 @@ export function getStatusColor(status: string): string {
 }
 
 // Validation helpers
-export function validateRequired(value: any): boolean {
+export function validateRequired(value: unknown): boolean {
   return value !== null && value !== undefined && value !== '';
 }
 
@@ -210,7 +210,7 @@ export function validateMaxLength(value: string, maxLength: number): boolean {
   return value.length <= maxLength;
 }
 
-export function validateNumber(value: any): boolean {
+export function validateNumber(value: unknown): boolean {
   return !isNaN(value) && isFinite(value);
 }
 
@@ -245,7 +245,7 @@ export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
 }
 
 // Local storage utilities
-export function setLocalStorage(key: string, value: any): void {
+export function setLocalStorage(key: string, value: unknown): void {
   if (typeof window !== 'undefined') {
     localStorage.setItem(key, JSON.stringify(value));
   }
@@ -266,7 +266,7 @@ export function removeLocalStorage(key: string): void {
 }
 
 // Session storage utilities
-export function setSessionStorage(key: string, value: any): void {
+export function setSessionStorage(key: string, value: unknown): void {
   if (typeof window !== 'undefined') {
     sessionStorage.setItem(key, JSON.stringify(value));
   }

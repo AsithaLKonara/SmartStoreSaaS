@@ -344,7 +344,7 @@ export class WorkflowEngine {
     }
 
     // Validate total amount
-    const totalAmount = order.items.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+    const totalAmount = order.items.reduce((sum: number, item: { price?: number; quantity?: number }) => sum + ((item.price || 0) * (item.quantity || 0)), 0);
     if (Math.abs(totalAmount - order.totalAmount) > 0.01) {
       throw new Error('Order total amount mismatch');
     }
