@@ -61,7 +61,7 @@ async function createPaymentIntent(data: PaymentIntentData, userId: string) {
   const { amount, currency, orderId, metadata } = data;
   
   // Get or create Stripe customer
-  let customer = await prisma.user.findUnique({
+  const customer = await prisma.user.findUnique({
     where: { id: userId },
     select: { email: true, name: true },
   });

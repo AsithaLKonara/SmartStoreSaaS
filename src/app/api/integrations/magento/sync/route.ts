@@ -31,7 +31,7 @@ export async function POST(_request: NextRequest) {
       integration.accessToken
     );
 
-    let results: any = {};
+    const results: any = {};
 
     if (type === 'products' || type === 'all') {
       results.products = await magentoService.syncProducts();

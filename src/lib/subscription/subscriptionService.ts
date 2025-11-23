@@ -328,9 +328,11 @@ export class SubscriptionService {
         status: subscription.status as any,
         currentPeriodStart: subscription.currentPeriodStart,
         currentPeriodEnd: subscription.currentPeriodEnd,
-        // trialStart/trialEnd not in Subscription interface - stored in metadata
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
         stripeSubscriptionId: subscription.stripeSubscriptionId,
-        paypalSubscriptionId: subMetadata.paypalSubscriptionId,
+        createdAt: subscription.createdAt,
+        updatedAt: subscription.updatedAt,
+        // trialStart/trialEnd and paypalSubscriptionId not in Subscription interface - stored in metadata
         metadata: subscription.metadata as any,
       };
     } catch (error) {
@@ -442,8 +444,11 @@ export class SubscriptionService {
         status: updatedSubscription.status as any,
         currentPeriodStart: updatedSubscription.currentPeriodStart,
         currentPeriodEnd: updatedSubscription.currentPeriodEnd,
-        // cancelAt/canceledAt not in Subscription interface - stored in metadata
+        cancelAtPeriodEnd: updatedSubscription.cancelAtPeriodEnd,
         stripeSubscriptionId: updatedSubscription.stripeSubscriptionId,
+        createdAt: updatedSubscription.createdAt,
+        updatedAt: updatedSubscription.updatedAt,
+        // cancelAt/canceledAt not in Subscription interface - stored in metadata
         metadata: updatedSubscription.metadata as any,
       };
     } catch (error) {
