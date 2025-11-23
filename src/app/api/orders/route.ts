@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId || session.user.organizationId === null) {
@@ -84,7 +84,7 @@ export async function POST() {
     
     const organizationId = session.user.organizationId;
 
-    const body = await _request.json();
+    const body = await request.json();
     const {
       customerId,
       items,

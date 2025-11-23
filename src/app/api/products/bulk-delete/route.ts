@@ -10,7 +10,7 @@ export async function DELETE() {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await _request.json();
+    const body = await request.json();
     const { productIds } = body;
 
     if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {

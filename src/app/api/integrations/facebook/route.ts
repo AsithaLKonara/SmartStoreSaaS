@@ -32,14 +32,14 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await _request.json();
+    const body = await request.json();
     const { pageId, accessToken } = body;
 
     if (!pageId || !accessToken) {
@@ -111,14 +111,14 @@ export async function POST() {
   }
 }
 
-export async function PUT() {
+export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await _request.json();
+    const body = await request.json();
     const { isActive } = body;
 
     const integration = await prisma.facebookIntegration.findFirst({

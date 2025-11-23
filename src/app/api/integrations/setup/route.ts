@@ -6,14 +6,14 @@ import { whatsAppService } from '@/lib/whatsapp/whatsappService';
 import { wooCommerceService } from '@/lib/woocommerce/woocommerceService';
 import { sriLankaCourierService } from '@/lib/courier/sriLankaCourierService';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await _request.json();
+    const body = await request.json();
     const { type, config, organizationId } = body;
 
     if (!organizationId) {
