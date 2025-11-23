@@ -164,7 +164,7 @@ export class FacebookCommerceService {
     }
   }
 
-  private productToFacebookCatalogItem(product: any): FacebookCatalogItem {
+  private productToFacebookCatalogItem(product: Record<string, unknown>): FacebookCatalogItem {
     return {
       retailer_id: product.sku || product.id,
       name: product.name,
@@ -249,7 +249,7 @@ export class FacebookCommerceService {
     }
   }
 
-  async getPageInsights(): Promise<any> {
+  async getPageInsights(): Promise<Record<string, unknown>> {
     try {
       const response = await this.client.get(`/${this.pageId}/insights`, {
         params: {

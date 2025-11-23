@@ -100,12 +100,12 @@ export interface ShopifyOrder {
   cancel_reason: string | null;
   total_line_items_price: string;
   total_duties: string | null;
-  billing_address: any;
-  shipping_address: any;
-  customer: any;
-  line_items: any[];
-  fulfillments: any[];
-  refunds: any[];
+  billing_address: Record<string, unknown>;
+  shipping_address: Record<string, unknown>;
+  customer: Record<string, unknown>;
+  line_items: Array<Record<string, unknown>>;
+  fulfillments: Array<Record<string, unknown>>;
+  refunds: Array<Record<string, unknown>>;
 }
 
 export class ShopifyService {
@@ -347,7 +347,7 @@ export class ShopifyService {
         shopifyToken: shopifyOrder.token,
       },
       items: {
-        create: shopifyOrder.line_items.map((item: any) => ({
+        create: shopifyOrder.line_items.map((item: Record<string, unknown>) => ({
           quantity: item.quantity,
           price: parseFloat(item.price),
           total: parseFloat(item.price) * item.quantity,
@@ -395,10 +395,10 @@ export class ShopifyService {
               price: item.price,
               total: item.total,
               metadata: item.metadata || {},
-              productId: (item.metadata as any)?.productId || '',
+              productId: ((item.metadata as Record<string, unknown>)?.productId as string) || '',
             })) : [],
           },
-          metadata: orderData.metadata as any,
+          metadata: orderData.metadata as Record<string, unknown>,
         },
       });
     }
