@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { OrderStatus } from '@prisma/client';
 import axios, { AxiosInstance } from 'axios';
 
 export interface ShopifyProduct {
@@ -377,7 +378,7 @@ export class ShopifyService {
       await prisma.order.create({
         data: {
           orderNumber: orderData.orderNumber,
-          status: orderData.status as any,
+          status: orderData.status,
           totalAmount: orderData.totalAmount,
           subtotal: orderData.subtotal,
           tax: orderData.tax,
@@ -385,7 +386,7 @@ export class ShopifyService {
           discount: orderData.discount,
           currency: orderData.currency,
           paymentMethod: orderData.paymentMethod,
-          paymentStatus: orderData.paymentStatus as any,
+          paymentStatus: orderData.paymentStatus,
           customerId: orderData.customerId,
           organizationId: orderData.organizationId,
           createdById: orderData.organizationId, // Use organizationId as fallback
@@ -449,17 +450,17 @@ export class ShopifyService {
     }
   }
 
-  private mapShopifyStatusToOrderStatus(financialStatus: string): string {
-    const statusMap: Record<string, string> = {
-      'pending': 'PENDING',
-      'authorized': 'CONFIRMED',
-      'partially_paid': 'CONFIRMED',
-      'paid': 'CONFIRMED',
-      'partially_refunded': 'REFUNDED',
-      'refunded': 'REFUNDED',
-      'voided': 'CANCELLED',
+  private mapShopifyStatusToOrderStatus(financialStatus: string): OrderStatus {
+    const statusMap: Record<string, OrderStatus> = {
+      'pending': OrderStatus.PENDING,
+      'authorized': OrderStatus.CONFIRMED,
+      'partially_paid': OrderStatus.CONFIRMED,
+      'paid': OrderStatus.CONFIRMED,
+      'partially_refunded': OrderStatus.CANCELLED,
+      'refunded': OrderStatus.CANCELLED,
+      'voided': OrderStatus.CANCELLED,
     };
-    return statusMap[financialStatus] || 'PENDING';
+    return statusMap[financialStatus] || OrderStatus.PENDING;
   }
 
   private mapShopifyFinancialStatus(financialStatus: string): string {

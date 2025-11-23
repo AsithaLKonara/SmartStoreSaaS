@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       status: conversation.status,
       priority: conversation.priority || 'MEDIUM',
       customerId: conversation.customerId,
-      messages: conversation.messages.map((msg: any) => ({
+      messages: conversation.messages.map((msg: { id: string; content: string; direction: string; createdAt: Date }) => ({
         id: msg.id,
         content: msg.content,
         role: msg.direction === 'INBOUND' ? 'user' : 'assistant',
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
         status: conversation.status,
         priority: conversation.priority || 'MEDIUM',
         customerId: conversation.customerId,
-        messages: conversation.messages.map((msg: any) => ({
+        messages: conversation.messages.map((msg: { id: string; content: string; direction: string; createdAt: Date }) => ({
           id: msg.id,
           content: msg.content,
           role: msg.direction === 'INBOUND' ? 'user' : 'assistant',

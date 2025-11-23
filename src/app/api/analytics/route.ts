@@ -64,8 +64,8 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate metrics
-    const currentRevenue = currentOrders.reduce((sum: number, order: any) => sum + order.totalAmount, 0);
-    const previousRevenue = previousOrders.reduce((sum: number, order: any) => sum + order.totalAmount, 0);
+    const currentRevenue = currentOrders.reduce((sum: number, order) => sum + (order.totalAmount || 0), 0);
+    const previousRevenue = previousOrders.reduce((sum: number, order) => sum + (order.totalAmount || 0), 0);
     const revenueChange = previousRevenue > 0 ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 : 0;
 
     const currentOrderCount = currentOrders.length;
@@ -77,7 +77,6 @@ export async function GET(request: NextRequest) {
     const customerChange = previousCustomerCount > 0 ? ((currentCustomerCount - previousCustomerCount) / previousCustomerCount) * 100 : 0;
 
     const currentProductCount = currentProducts.length;
-    const previousProductCount = currentProductCount; // For simplicity, assuming no change in product count
     const productChange = 0;
 
     // Sales by day
@@ -87,13 +86,13 @@ export async function GET(request: NextRequest) {
       const dayStart = new Date(date.setHours(0, 0, 0, 0));
       const dayEnd = new Date(date.setHours(23, 59, 59, 999));
 
-      const dayOrders = currentOrders.filter((order: any) => 
+      const dayOrders = currentOrders.filter((order) => 
         order.createdAt >= dayStart && order.createdAt <= dayEnd
       );
 
       salesByDay.push({
         date: dayStart.toISOString(),
-        revenue: dayOrders.reduce((sum: number, order: any) => sum + order.totalAmount, 0),
+        revenue: dayOrders.reduce((sum: number, order) => sum + (order.totalAmount || 0), 0),
         orders: dayOrders.length,
       });
     }
@@ -101,16 +100,16 @@ export async function GET(request: NextRequest) {
     // Top products
     const productRevenue = new Map<string, { name: string; revenue: number; orders: number }>();
     
-    currentOrders.forEach((order: any) => {
-      order.items.forEach((item: any) => {
-        const productId = item.productId;
+    currentOrders.forEach((order) => {
+      (order.items || []).forEach((item) => {
+        const productId = item.productId || '';
         const existing = productRevenue.get(productId) || { 
-          name: item.product.name, 
+          name: (item.product?.name as string) || 'Unknown', 
           revenue: 0, 
           orders: 0 
         };
         
-        existing.revenue += item.price * item.quantity;
+        existing.revenue += (item.price || 0) * (item.quantity || 0);
         existing.orders += 1;
         
         productRevenue.set(productId, existing);
@@ -124,15 +123,15 @@ export async function GET(request: NextRequest) {
     // Top customers
     const customerRevenue = new Map<string, { name: string; revenue: number; orders: number }>();
     
-    currentOrders.forEach((order: any) => {
-      const customerId = order.customerId;
+    currentOrders.forEach((order) => {
+      const customerId = order.customerId || '';
       const existing = customerRevenue.get(customerId) || { 
-        name: order.customer.name, 
+        name: (order.customer?.name as string) || 'Unknown', 
         revenue: 0, 
         orders: 0 
       };
       
-      existing.revenue += order.totalAmount;
+      existing.revenue += (order.totalAmount || 0);
       existing.orders += 1;
       
       customerRevenue.set(customerId, existing);
@@ -152,9 +151,9 @@ export async function GET(request: NextRequest) {
     });
 
     const paymentMethods = new Map<string, number>();
-    payments.forEach((payment: any) => {
-      const method = payment.method;
-      paymentMethods.set(method, (paymentMethods.get(method) || 0) + payment.amount);
+    payments.forEach((payment) => {
+      const method = (payment.method as string) || 'unknown';
+      paymentMethods.set(method, (paymentMethods.get(method) || 0) + (payment.amount || 0));
     });
 
     const totalPaymentAmount = Array.from(paymentMethods.values()).reduce((sum, amount) => sum + amount, 0);
