@@ -137,7 +137,7 @@ export class InstagramShoppingService {
     }
   }
 
-  private productToInstagramProduct(product: any): InstagramProduct {
+  private productToInstagramProduct(product: Record<string, unknown>): InstagramProduct {
     return {
       id: product.sku || product.id,
       name: product.name,
@@ -174,7 +174,7 @@ export class InstagramShoppingService {
     }
   }
 
-  async createCheckoutSession(productIds: string[], customerInfo: any): Promise<string> {
+  async createCheckoutSession(productIds: string[], customerInfo: Record<string, unknown>): Promise<string> {
     try {
       const response = await this.client.post(`/${this.businessAccountId}/checkout_sessions`, {
         product_ids: productIds,

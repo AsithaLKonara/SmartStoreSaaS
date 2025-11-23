@@ -8,7 +8,7 @@ export class InstagramCatalogService {
     this.shoppingService = shoppingService;
   }
 
-  async syncProductCatalog(organizationId: string): Promise<{ success: number; failed: number }> {
+  async syncProductCatalog(_organizationId: string): Promise<{ success: number; failed: number }> {
     return await this.shoppingService.syncProducts();
   }
 

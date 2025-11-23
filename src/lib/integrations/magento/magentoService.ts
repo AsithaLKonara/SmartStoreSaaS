@@ -22,7 +22,7 @@ export interface MagentoOrder {
   subtotal: number;
   created_at: string;
   customer_email: string;
-  items: any[];
+  items: Array<Record<string, unknown>>;
 }
 
 export class MagentoService {
@@ -115,8 +115,8 @@ export class MagentoService {
       where: { organizationId },
     });
     const existingProduct = allProducts.find(p => {
-      const dimensions = (p.dimensions as any) || {};
-      return dimensions.magentoId === String(magentoProduct.id);
+      const dimensions = (p.dimensions as Record<string, unknown>) || {};
+      return (dimensions.magentoId as string) === String(magentoProduct.id);
     });
 
     if (existingProduct) {
@@ -125,10 +125,10 @@ export class MagentoService {
         data: {
           ...productData,
           dimensions: {
-            ...(existingProduct.dimensions as any || {}),
+            ...((existingProduct.dimensions as Record<string, unknown>) || {}),
             magentoId: String(magentoProduct.id),
             magentoType: magentoProduct.type_id,
-          } as any,
+          },
         },
       });
     } else {
