@@ -44,6 +44,33 @@ export interface SupplierPerformance {
   recommendations: string[];
 }
 
+export interface ProductData {
+  id: string;
+  name: string;
+  stockQuantity: number | null;
+  price: number;
+  sku?: string | null;
+}
+
+export interface SalesHistoryItem {
+  orderId: string;
+  date: Date;
+  items: Array<{ productId: string; quantity: number; price: number }>;
+  total: number;
+}
+
+export interface CurrentStockItem {
+  productId: string;
+  currentStock: number;
+}
+
+export interface PurchaseOrderItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitCost: number;
+}
+
 export interface PurchaseOrderRecommendation {
   supplierId: string;
   supplierName: string;
@@ -63,9 +90,9 @@ export class AIInventoryService {
    * Predict stockout risk and recommend reorder quantities
    */
   async predictStockoutRisk(
-    productData: any[],
-    salesHistory: any[],
-    currentStock: any[]
+    productData: ProductData[],
+    salesHistory: SalesHistoryItem[],
+    currentStock: CurrentStockItem[]
   ): Promise<InventoryPrediction[]> {
     try {
       const prompt = `
@@ -108,7 +135,7 @@ export class AIInventoryService {
    * Analyze seasonal demand patterns
    */
   async analyzeSeasonalTrends(
-    salesHistory: any[],
+    salesHistory: SalesHistoryItem[],
     timeRange: { start: Date; end: Date }
   ): Promise<SeasonalTrend[]> {
     try {
@@ -176,9 +203,15 @@ export class AIInventoryService {
         }
 
         // Calculate average delivery time
-        const deliveryTimes = completedOrders.map((po: any) => {
+        interface PurchaseOrderWithDate {
+          expectedDate?: Date;
+          expectedDelivery?: Date;
+          metadata?: { expectedDelivery?: Date };
+        }
+
+        const deliveryTimes = completedOrders.map((po: PurchaseOrderWithDate) => {
           const created = new Date(po.createdAt);
-          const expectedDate = po.expectedDate || po.expectedDelivery || (po.metadata as any)?.expectedDelivery;
+          const expectedDate = po.expectedDate || po.expectedDelivery || po.metadata?.expectedDelivery;
           const delivered = expectedDate ? new Date(expectedDate) : po.receivedDate ? new Date(po.receivedDate) : new Date(po.updatedAt);
           return Math.ceil((delivered.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
         });
@@ -186,7 +219,10 @@ export class AIInventoryService {
         const averageDeliveryTime = deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length;
 
         // Calculate reliability score based on on-time deliveries
-        const leadTime = (supplier.metadata as any)?.leadTime || 7;
+        interface SupplierWithMetadata {
+          metadata?: { leadTime?: number };
+        }
+        const leadTime = ((supplier as SupplierWithMetadata).metadata?.leadTime) || 7;
         const onTimeDeliveries = deliveryTimes.filter(time => time <= leadTime);
         const reliabilityScore = (onTimeDeliveries.length / deliveryTimes.length) * 100;
 
@@ -254,8 +290,11 @@ export class AIInventoryService {
             unitCost: 0 // Would need to get from product cost data
           }));
 
-          const totalAmount = items.reduce((sum: number, item: any) => sum + (item.quantity * item.unitCost), 0);
-          const leadTime = (supplier.metadata as any)?.leadTime || 7;
+          const totalAmount = items.reduce((sum: number, item: PurchaseOrderItem) => sum + (item.quantity * item.unitCost), 0);
+          interface SupplierWithMetadata {
+          metadata?: { leadTime?: number };
+        }
+        const leadTime = ((supplier as SupplierWithMetadata).metadata?.leadTime) || 7;
           const expectedDelivery = new Date();
           expectedDelivery.setDate(expectedDelivery.getDate() + leadTime);
 
@@ -280,11 +319,13 @@ export class AIInventoryService {
   /**
    * Get inventory data from Prisma models
    */
-  async getInventoryData(organizationId: string): Promise<{
-    products: any[];
-    suppliers: any[];
-    purchaseOrders: any[];
-  }> {
+  interface InventoryData {
+    products: ProductData[];
+    suppliers: Array<{ id: string; name: string; isActive: boolean; metadata?: Record<string, unknown> }>;
+    purchaseOrders: Array<{ id: string; supplier: { id: string; name: string } }>;
+  }
+
+  async getInventoryData(organizationId: string): Promise<InventoryData> {
     try {
       const [products, suppliers, purchaseOrders] = await Promise.all([
         prisma.product.findMany({
@@ -310,11 +351,24 @@ export class AIInventoryService {
   /**
    * Optimize pricing based on demand and competition
    */
+  interface CompetitorPrice {
+    productId: string;
+    price: number;
+    competitor: string;
+  }
+
+  interface PricingRecommendation {
+    productId: string;
+    currentPrice: number;
+    recommendedPrice: number;
+    reason: string;
+  }
+
   async optimizePricing(
-    productData: any[],
-    salesHistory: any[],
-    competitorPrices: any[]
-  ): Promise<any[]> {
+    productData: ProductData[],
+    salesHistory: SalesHistoryItem[],
+    competitorPrices: CompetitorPrice[]
+  ): Promise<PricingRecommendation[]> {
     try {
       const prompt = `
         Optimize product pricing based on:

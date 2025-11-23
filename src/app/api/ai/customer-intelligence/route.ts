@@ -30,12 +30,20 @@ export async function GET(request: NextRequest) {
       include: { items: true, customer: true },
     });
 
-    const purchaseHistory = orders.map((order: any) => ({
+    interface OrderForHistory {
+      id: string;
+      customerId: string;
+      createdAt: Date;
+      items: Array<{ productId: string; quantity: number; price: number }>;
+      totalAmount: number;
+    }
+
+    const purchaseHistory = orders.map((order: OrderForHistory) => ({
       orderId: order.id,
       customerId: order.customerId,
       date: order.createdAt,
       items: order.items,
-      total: order.total,
+      total: order.totalAmount,
     }));
 
     const interactionHistory = await prisma.customerActivity.findMany({
@@ -64,12 +72,18 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ churnRisk });
 
       case 'customer-segments':
-        const behaviorData = customers.map((customer: any) => ({
+        interface CustomerWithOrders {
+          id: string;
+          orders: Array<{ createdAt: Date }>;
+          totalSpent?: number;
+        }
+
+        const behaviorData = customers.map((customer: CustomerWithOrders) => ({
           customerId: customer.id,
           totalOrders: customer.orders.length,
-          totalSpent: customer.totalSpent,
+          totalSpent: customer.totalSpent || 0,
           lastPurchaseDate: customer.orders[0]?.createdAt,
-          averageOrderValue: customer.totalSpent / customer.orders.length || 0,
+          averageOrderValue: customer.totalSpent && customer.orders.length > 0 ? customer.totalSpent / customer.orders.length : 0,
         }));
         const segments = await customerIntelligenceService.createCustomerSegments(
           customers,
@@ -96,7 +110,12 @@ export async function GET(request: NextRequest) {
         const supportTickets = await prisma.supportTicket.findMany({
           where: { organizationId },
         });
-        const socialMediaData: any[] = []; // This would come from social media APIs
+        interface SocialMediaData {
+          platform: string;
+          sentiment: string;
+          mentions: number;
+        }
+        const socialMediaData: SocialMediaData[] = []; // This would come from social media APIs
         const sentiment = await customerIntelligenceService.analyzeCustomerSentiment(
           customers,
           reviews,
@@ -117,21 +136,21 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ error: 'Customer ID required' }, { status: 400 });
         }
         
-        const customer = customers.find((c: any) => c.id === customerId);
+        const customer = customers.find((c: { id: string }) => c.id === customerId);
         if (!customer) {
           return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
         }
 
         const customerLTV = await customerIntelligenceService.predictCustomerLTV(
           [customer],
-          purchaseHistory.filter((p: any) => p.customerId === customerId),
-          interactionHistory.filter((i: any) => i.customerId === customerId)
+          purchaseHistory.filter((p: { customerId: string }) => p.customerId === customerId),
+          interactionHistory.filter((i: { customerId?: string }) => (i.customerId || '') === customerId)
         );
 
         const customerChurnRisk = await customerIntelligenceService.assessChurnRisk(
           [customer],
-          purchaseHistory.filter((p: any) => p.customerId === customerId),
-          interactionHistory.filter((i: any) => i.customerId === customerId)
+          purchaseHistory.filter((p: { customerId: string }) => p.customerId === customerId),
+          interactionHistory.filter((i: { customerId?: string }) => (i.customerId || '') === customerId)
         );
 
         const customerRecommendations = await customerIntelligenceService.generateProductRecommendations(

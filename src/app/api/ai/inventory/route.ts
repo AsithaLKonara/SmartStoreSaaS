@@ -29,11 +29,18 @@ export async function GET(request: NextRequest) {
       include: { items: true },
     });
 
-    const salesHistory = orders.map((order: any) => ({
+    interface OrderForHistory {
+      id: string;
+      createdAt: Date;
+      items: Array<{ productId: string; quantity: number; price: number }>;
+      totalAmount: number;
+    }
+
+    const salesHistory = orders.map((order: OrderForHistory) => ({
       orderId: order.id,
       date: order.createdAt,
       items: order.items,
-      total: order.total,
+      total: order.totalAmount,
     }));
 
     switch (type) {
@@ -41,7 +48,7 @@ export async function GET(request: NextRequest) {
         const predictions = await aiInventoryService.predictStockoutRisk(
           products,
           salesHistory,
-          products.map((p: any) => ({ productId: p.id, currentStock: p.stock }))
+          products.map((p: { id: string; stockQuantity: number | null }) => ({ productId: p.id, currentStock: p.stockQuantity || 0 }))
         );
         return NextResponse.json({ predictions });
 
@@ -60,9 +67,7 @@ export async function GET(request: NextRequest) {
         if (!organizationId) {
           return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
         }
-        const suppliers = await prisma.supplier.findMany({
-          where: { organizationId },
-        });
+        // suppliers variable is not used, removed
         const supplierPerformance = await aiInventoryService.evaluateSupplierPerformance(
           organizationId
         );
@@ -72,14 +77,12 @@ export async function GET(request: NextRequest) {
         const predictionsForPO = await aiInventoryService.predictStockoutRisk(
           products,
           salesHistory,
-          products.map((p: any) => ({ productId: p.id, currentStock: p.stockQuantity }))
+          products.map((p: { id: string; stockQuantity: number | null }) => ({ productId: p.id, currentStock: p.stockQuantity || 0 }))
         );
         if (!organizationId) {
           return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
         }
-        const suppliersForPO = await prisma.supplier.findMany({
-          where: { organizationId },
-        });
+        // suppliersForPO variable is not used, removed
         const purchaseOrders = await aiInventoryService.generatePurchaseOrders(
           organizationId,
           predictionsForPO
@@ -87,7 +90,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ purchaseOrders });
 
       case 'pricing-optimization':
-        const competitorPrices: any[] = []; // This would come from competitor data
+        interface CompetitorPrice {
+          productId: string;
+          price: number;
+          competitor: string;
+        }
+        const competitorPrices: CompetitorPrice[] = []; // This would come from competitor data
         const pricingRecommendations = await aiInventoryService.optimizePricing(
           products,
           salesHistory,
