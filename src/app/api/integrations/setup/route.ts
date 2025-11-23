@@ -6,7 +6,7 @@ import { whatsAppService } from '@/lib/whatsapp/whatsappService';
 import { wooCommerceService } from '@/lib/woocommerce/woocommerceService';
 import { sriLankaCourierService } from '@/lib/courier/sriLankaCourierService';
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {

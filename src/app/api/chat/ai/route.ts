@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { aiChatService } from '@/lib/ai/chatService';
 import { prisma } from '@/lib/prisma';
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {

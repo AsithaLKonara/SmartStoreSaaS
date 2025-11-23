@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { whatsAppService } from '@/lib/whatsapp/whatsappService';
 import { prisma } from '@/lib/prisma';
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     const body = await _request.json();
     
