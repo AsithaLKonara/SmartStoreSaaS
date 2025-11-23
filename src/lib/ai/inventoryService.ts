@@ -203,15 +203,9 @@ export class AIInventoryService {
         }
 
         // Calculate average delivery time
-        interface PurchaseOrderWithDate {
-          expectedDate?: Date;
-          expectedDelivery?: Date;
-          metadata?: { expectedDelivery?: Date };
-        }
-
-        const deliveryTimes = completedOrders.map((po: PurchaseOrderWithDate) => {
-          const created = new Date(po.createdAt);
+        const deliveryTimes = completedOrders.map((po) => {
           const poWithDate = po as { createdAt: Date; expectedDate?: Date; expectedDelivery?: Date; metadata?: { expectedDelivery?: Date }; receivedDate?: Date; updatedAt: Date };
+          const created = new Date(poWithDate.createdAt);
           const expectedDate = poWithDate.expectedDate || poWithDate.expectedDelivery || poWithDate.metadata?.expectedDelivery;
           const delivered = expectedDate ? new Date(expectedDate) : poWithDate.receivedDate ? new Date(poWithDate.receivedDate) : new Date(poWithDate.updatedAt);
           return Math.ceil((delivered.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
