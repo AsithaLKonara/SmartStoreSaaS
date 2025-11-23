@@ -48,11 +48,11 @@ export async function POST(request: NextRequest) {
       status: conversation.status,
       priority: conversation.priority || 'MEDIUM',
       customerId: conversation.customerId,
-      messages: conversation.messages.map((msg: { id: string; content: string; direction: string; createdAt: Date }) => ({
+      messages: conversation.messages.map((msg) => ({
         id: msg.id,
-        content: msg.content,
-        role: msg.direction === 'INBOUND' ? 'user' : 'assistant',
-        timestamp: msg.createdAt
+        content: msg.message || '',
+        role: msg.isIncoming ? 'user' : 'assistant',
+        timestamp: msg.timestamp
       })),
       createdAt: conversation.createdAt,
       updatedAt: conversation.updatedAt
