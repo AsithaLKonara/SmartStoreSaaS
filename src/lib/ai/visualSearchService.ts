@@ -185,7 +185,7 @@ export class VisualSearchService {
 
       // Calculate similarities
       const similarities = products
-        .filter(p => {
+        .filter((_p) => {
           // Check if product has embedding in metadata (if Product model has metadata field)
           // Otherwise, store embeddings in Organization settings
           return true; // Simplified - would need to check actual embedding storage
@@ -319,7 +319,7 @@ export class VisualSearchService {
     subcategories?: string[];
   }> {
     try {
-      const features = await this.extractImageFeatures(imageBuffer);
+      await this.extractImageFeatures(imageBuffer);
       
       // This would use a classification model trained on product categories
       // For now, return a mock classification
@@ -347,7 +347,7 @@ export class VisualSearchService {
    */
   async generateProductDescription(imageBuffer: Buffer | string): Promise<string> {
     try {
-      const features = await this.extractImageFeatures(imageBuffer);
+      await this.extractImageFeatures(imageBuffer);
       const category = await this.categorizeProduct(imageBuffer);
 
       // This would integrate with a vision-language model like CLIP + GPT
@@ -421,14 +421,14 @@ export class VisualSearchService {
    */
   async batchProcessImages(
     images: Array<{ productId: string; imageUrl: string }>,
-    organizationId: string
+    _organizationId: string
   ): Promise<void> {
     try {
       console.log(`Batch processing ${images.length} images...`);
 
       for (const image of images) {
         try {
-          const features = await this.extractImageFeatures(image.imageUrl);
+          await this.extractImageFeatures(image.imageUrl);
           
           // Store embedding in Product metadata
           const product = await prisma.product.findUnique({
