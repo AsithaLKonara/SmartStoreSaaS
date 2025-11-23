@@ -8,21 +8,17 @@ import {
   MapPin,
   Plus,
   Search,
-  Filter,
   Download,
   Upload,
   AlertTriangle,
   CheckCircle,
   Clock,
-  TrendingUp,
-  TrendingDown,
   BarChart3,
   Settings,
   Edit,
   Trash2,
   Eye,
   Move,
-  Box,
   Warehouse
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
