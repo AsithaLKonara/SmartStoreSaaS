@@ -35,7 +35,7 @@ export interface PaymentMethod {
   billing_details: {
     name: string | null; // Changed to allow null from Stripe API
     email: string | null; // Changed to allow null from Stripe API
-    address: any;
+    address: Record<string, unknown>;
   };
 }
 
@@ -179,7 +179,7 @@ export class StripeService {
     reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer'
   ): Promise<any> {
     try {
-      const refundData: any = {
+      const refundData: Record<string, unknown> = {
         payment_intent: paymentIntentId,
         reason,
       };
@@ -243,7 +243,7 @@ export class StripeService {
           metadata: {
             path: ['stripePaymentIntentId'],
             equals: paymentIntent.id,
-          } as any,
+          } as { path: string[]; equals: string },
         },
         data: {
           status: OrderStatus.CONFIRMED,
@@ -266,7 +266,7 @@ export class StripeService {
           metadata: {
             path: ['stripePaymentIntentId'],
             equals: paymentIntent.id,
-          } as any,
+          } as { path: string[]; equals: string },
         },
         data: {
           status: OrderStatus.CANCELLED,

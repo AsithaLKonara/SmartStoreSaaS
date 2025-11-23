@@ -176,7 +176,7 @@ export class PayPalService {
         data: { 
           metadata: {
             paypalOrderId: orderIdString,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -227,13 +227,13 @@ export class PayPalService {
           metadata: {
             path: ['paypalOrderId'],
             equals: paypalOrderId,
-          } as any,
+          } as Record<string, unknown>,
         },
         data: {
           status: OrderStatus.CONFIRMED,
           metadata: {
             paypalPaymentId: payment.id,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -272,7 +272,7 @@ export class PayPalService {
     try {
       const accessToken = await this.getAccessToken();
 
-      const refundData: any = {
+      const refundData: Record<string, unknown> = {
         note_to_payer: note || 'Refund processed',
       };
 
@@ -393,7 +393,7 @@ export class PayPalService {
     }
   }
 
-  private async handlePaymentCaptured(event: any): Promise<void> {
+  private async handlePaymentCaptured(event: Record<string, unknown> & { resource?: { id?: string; supplementary_data?: { related_ids?: { order_id?: string } } } }): Promise<void> {
     const paymentId = event.resource.id;
     const orderId = event.resource.supplementary_data?.related_ids?.order_id;
 
@@ -417,7 +417,7 @@ export class PayPalService {
     console.log(`PayPal payment captured: ${paymentId}`);
   }
 
-  private async handlePaymentDenied(event: any): Promise<void> {
+  private async handlePaymentDenied(event: Record<string, unknown> & { resource?: { id?: string; supplementary_data?: { related_ids?: { order_id?: string } } } }): Promise<void> {
     const orderId = event.resource.supplementary_data?.related_ids?.order_id;
 
     if (orderId) {
@@ -437,7 +437,7 @@ export class PayPalService {
     console.log(`PayPal payment denied: ${event.resource.id}`);
   }
 
-  private async handlePaymentRefunded(event: any): Promise<void> {
+  private async handlePaymentRefunded(event: Record<string, unknown> & { resource?: { id?: string } }): Promise<void> {
     const paymentId = event.resource.id;
     
     // Update refund status in database

@@ -73,7 +73,7 @@ export interface MessengerWebhookEntry {
     message?: {
       mid: string;
       text?: string;
-      attachments?: any[];
+      attachments?: Array<Record<string, unknown>>;
       quick_reply?: {
         payload: string;
       };
@@ -124,7 +124,7 @@ export class MessengerService {
     }>
   ): Promise<MessengerMessage> {
     try {
-      const messageData: any = {
+      const messageData: Record<string, unknown> = {
         recipient: { id: recipientId },
         message: { text },
       };
@@ -168,13 +168,13 @@ export class MessengerService {
       // Log the message activity
       await prisma.activity.create({
         data: {
-          type: 'messenger_message_sent' as any, // Use type assertion to bypass constraint
+          type: 'messenger_message_sent' as 'ORDER_CREATED' | 'ORDER_UPDATED' | 'ORDER_CANCELLED' | 'PAYMENT_RECEIVED' | 'SHIPMENT_CREATED' | 'SHIPMENT_DELIVERED' | 'CUSTOMER_CREATED' | 'CUSTOMER_UPDATED', // Use type assertion to bypass constraint
           description: `Messenger message sent to ${recipientId}`,
           metadata: {
             platform: 'messenger',
             recipientId,
             messageType: 'text',
-            content: message as any, // Cast to any to bypass type constraint
+            content: message as Record<string, unknown>, // Cast to Record to bypass type constraint
             timestamp: new Date()
           },
           userId: 'page' // Assuming senderId is 'page' for Facebook messages
@@ -242,7 +242,7 @@ export class MessengerService {
             platform: 'messenger',
             recipientId,
             templateName: 'generic', // Assuming a default template name
-            templateData: template as any, // Cast to any to bypass type constraint
+            templateData: template as Record<string, unknown>, // Cast to Record to bypass type constraint
             timestamp: new Date()
           },
           userId: 'page' // Assuming senderId is 'page' for Facebook messages
@@ -454,7 +454,7 @@ export class MessengerService {
   /**
    * Handle incoming webhook
    */
-  async handleWebhook(body: any, signature: string): Promise<void> {
+  async handleWebhook(body: Record<string, unknown>, signature: string): Promise<void> {
     try {
       // Verify webhook signature
       if (!this.verifyWebhookSignature(body, signature)) {
@@ -474,7 +474,7 @@ export class MessengerService {
     }
   }
 
-  private verifyWebhookSignature(body: any, signature: string): boolean {
+  private verifyWebhookSignature(body: Record<string, unknown>, signature: string): boolean {
     try {
       const expectedSignature = crypto
         .createHmac('sha256', this.appSecret)
@@ -488,7 +488,7 @@ export class MessengerService {
     }
   }
 
-  private async processMessagingEvent(event: any, pageId: string): Promise<void> {
+  private async processMessagingEvent(event: Record<string, unknown> & { sender?: { id?: string }; recipient?: { id?: string }; message?: Record<string, unknown>; postback?: Record<string, unknown> }, pageId: string): Promise<void> {
     try {
       const senderId = event.sender.id;
       const recipientId = event.recipient.id;
@@ -511,7 +511,7 @@ export class MessengerService {
     }
   }
 
-  private async processIncomingMessage(event: any, organizationId: string): Promise<void> {
+  private async processIncomingMessage(event: Record<string, unknown> & { sender?: { id?: string }; message?: { text?: string } }, organizationId: string): Promise<void> {
     try {
       const message: MessengerMessage = {
         id: event.message.mid,
@@ -552,7 +552,7 @@ export class MessengerService {
             platform: 'messenger',
             senderId: message.senderId || 'unknown',
             messageType: 'text',
-            content: message as any, // Cast to any to bypass type constraint
+            content: message as Record<string, unknown>, // Cast to Record to bypass type constraint
             timestamp: new Date()
           },
           userId: 'page' // Using 'page' as the user ID for Facebook messages
@@ -564,7 +564,7 @@ export class MessengerService {
     }
   }
 
-  private async processPostback(event: any, organizationId: string): Promise<void> {
+  private async processPostback(event: Record<string, unknown> & { sender?: { id?: string }; postback?: { payload?: string } }, organizationId: string): Promise<void> {
     try {
       const senderId = event.sender.id;
       const payload = event.postback.payload;

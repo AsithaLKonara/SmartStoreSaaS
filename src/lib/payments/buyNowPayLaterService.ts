@@ -22,7 +22,7 @@ export class BuyNowPayLaterService {
     amount: number,
     currency: string,
     orderId: string,
-    customerInfo: any
+    customerInfo: Record<string, unknown>
   ): Promise<BNPLSession> {
     switch (provider.name) {
       case 'klarna':
@@ -43,7 +43,7 @@ export class BuyNowPayLaterService {
     amount: number,
     currency: string,
     orderId: string,
-    customerInfo: any
+    customerInfo: Record<string, unknown>
   ): Promise<BNPLSession> {
     const baseUrl = provider.environment === 'production'
       ? 'https://api.klarna.com'
@@ -90,7 +90,7 @@ export class BuyNowPayLaterService {
     amount: number,
     currency: string,
     orderId: string,
-    customerInfo: any
+    customerInfo: Record<string, unknown>
   ): Promise<BNPLSession> {
     const baseUrl = provider.environment === 'production'
       ? 'https://api.afterpay.com'
@@ -138,7 +138,7 @@ export class BuyNowPayLaterService {
     amount: number,
     currency: string,
     orderId: string,
-    customerInfo: any
+    customerInfo: Record<string, unknown>
   ): Promise<BNPLSession> {
     const baseUrl = provider.environment === 'production'
       ? 'https://api.affirm.com'
@@ -200,7 +200,7 @@ export class BuyNowPayLaterService {
     amount: number,
     currency: string,
     orderId: string,
-    customerInfo: any
+    customerInfo: Record<string, unknown>
   ): Promise<BNPLSession> {
     // PayPal Pay Later uses PayPal Orders API
     const baseUrl = provider.environment === 'production'
@@ -259,7 +259,7 @@ export class BuyNowPayLaterService {
       amount,
       currency,
       status: 'pending',
-      checkoutUrl: orderResponse.data.links?.find((link: any) => link.rel === 'approve')?.href,
+      checkoutUrl: orderResponse.data.links?.find((link: { rel?: string; href?: string }) => link.rel === 'approve')?.href,
     };
   }
 

@@ -160,12 +160,12 @@ export class IoTService {
     }
   }
 
-  private async triggerLowInventoryAlert(sensor: any): Promise<void> {
+  private async triggerLowInventoryAlert(sensor: Record<string, unknown>): Promise<void> {
     // In production, would send notification or trigger reorder
     console.log(`Low inventory alert for sensor ${sensor.id}`);
   }
 
-  private async triggerMotionAlert(sensor: any): Promise<void> {
+  private async triggerMotionAlert(sensor: Record<string, unknown>): Promise<void> {
     // In production, would send security alert
     console.log(`Motion detected on sensor ${sensor.id}`);
   }

@@ -7,7 +7,7 @@ export interface ChannelMessage {
   timestamp: Date;
   isIncoming: boolean;
   status: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export interface CustomerConversation {
@@ -35,7 +35,7 @@ export interface UnifiedInbox {
 export interface ChannelIntegration {
   channel: string;
   isActive: boolean;
-  config: any;
+  config: Record<string, unknown>;
   lastSync: Date;
 }
 
@@ -55,7 +55,7 @@ export class OmnichannelService {
     });
 
     // Transform Prisma results to match interface
-    const transformedConversations: CustomerConversation[] = conversations.map((c: any) => ({
+    const transformedConversations: CustomerConversation[] = conversations.map((c) => ({
       id: c.id,
       customerId: c.customerId,
       channel: c.channel,
@@ -70,12 +70,12 @@ export class OmnichannelService {
       assignedAgentId: c.assignedAgentId
     }));
 
-    const unreadCount = transformedConversations.filter((c: any) => 
-      c.messages.some((m: any) => !m.isIncoming && m.status === 'sent')
+    const unreadCount = transformedConversations.filter((c) => 
+      c.messages.some((m) => !m.isIncoming && m.status === 'sent')
     ).length;
 
-    const pendingCount = transformedConversations.filter((c: any) => c.status === 'pending').length;
-    const urgentCount = transformedConversations.filter((c: any) => c.priority === 'urgent').length;
+    const pendingCount = transformedConversations.filter((c) => c.status === 'pending').length;
+    const urgentCount = transformedConversations.filter((c) => c.priority === 'urgent').length;
 
     return {
       conversations: transformedConversations,
@@ -184,7 +184,7 @@ export class OmnichannelService {
       where: { organizationId }
     });
 
-    return integrations.map((integration: any) => ({
+    return integrations.map((integration) => ({
       channel: integration.channel,
       isActive: integration.isActive,
       config: integration.config,
@@ -192,7 +192,7 @@ export class OmnichannelService {
     }));
   }
 
-  async updateChannelIntegration(organizationId: string, channel: string, config: any): Promise<void> {
+  async updateChannelIntegration(organizationId: string, channel: string, config: Record<string, unknown>): Promise<void> {
     await prisma.channelIntegration.upsert({
       where: { 
         organizationId_channel: { organizationId, channel }
@@ -302,7 +302,7 @@ export class OmnichannelService {
     }
   }
 
-  private async fetchChannelMessages(channel: string, config: any): Promise<any[]> {
+  private async fetchChannelMessages(channel: string, config: Record<string, unknown>): Promise<Array<Record<string, unknown>>> {
     // Implementation for fetching messages from different channels
     switch (channel) {
       case 'whatsapp':
@@ -316,9 +316,9 @@ export class OmnichannelService {
     }
   }
 
-  private async processIncomingMessage(organizationId: string, channel: string, message: any): Promise<void> {
+  private async processIncomingMessage(organizationId: string, channel: string, message: Record<string, unknown> & { customerId?: string; content?: string; senderId?: string }): Promise<void> {
     // Find or create conversation
-    let conversation: any = await prisma.customerConversation.findFirst({
+    let conversation = await prisma.customerConversation.findFirst({
       where: {
         customerId: message.customerId,
         channel,
@@ -404,12 +404,12 @@ export class OmnichannelService {
     return { status: 'sent', messageId: `sms_${Date.now()}` };
   }
 
-  private async fetchWhatsAppMessages(config: any): Promise<any[]> {
+  private async fetchWhatsAppMessages(config: Record<string, unknown>): Promise<Array<Record<string, unknown>>> {
     // WhatsApp Business API message fetching
     return [];
   }
 
-  private async fetchFacebookMessages(config: any): Promise<any[]> {
+  private async fetchFacebookMessages(config: Record<string, unknown>): Promise<Array<Record<string, unknown>>> {
     // Facebook Messenger API message fetching
     return [];
   }

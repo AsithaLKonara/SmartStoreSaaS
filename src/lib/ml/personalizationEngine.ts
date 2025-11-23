@@ -400,17 +400,17 @@ export class PersonalizationEngine {
     trigger: 'page_view' | 'product_view' | 'add_to_cart' | 'search' | 'idle'
   ): Promise<{
     recommendations: PersonalizationRecommendation[];
-    popups: any[];
+    popups: Array<Record<string, unknown>>;
     messages: string[];
-    offers: any[];
+    offers: Array<Record<string, unknown>>;
   }> {
     try {
       const userProfile = await this.getUserProfile(userId);
       
       let recommendations: PersonalizationRecommendation[] = [];
-      let popups: any[] = [];
+      let popups: Array<Record<string, unknown>> = [];
       let messages: string[] = [];
-      let offers: any[] = [];
+      let offers: Array<Record<string, unknown>> = [];
 
       switch (trigger) {
         case 'page_view':
@@ -577,27 +577,27 @@ export class PersonalizationEngine {
     return defaultProfile;
   }
 
-  private inferAge(user: any): number | undefined {
+  private inferAge(_user: Record<string, unknown>): number | undefined {
     // Implement age inference logic based on behavior, purchase history, etc.
     return undefined;
   }
 
-  private inferGender(user: any): string | undefined {
+  private inferGender(_user: Record<string, unknown>): string | undefined {
     // Implement gender inference logic
     return undefined;
   }
 
-  private inferOccupation(user: any): string | undefined {
+  private inferOccupation(_user: Record<string, unknown>): string | undefined {
     // Implement occupation inference logic
     return undefined;
   }
 
-  private inferIncomeRange(user: any): string | undefined {
+  private inferIncomeRange(_user: Record<string, unknown>): string | undefined {
     // Implement income range inference logic
     return undefined;
   }
 
-  private async extractPreferences(user: any): Promise<UserProfile['preferences']> {
+  private async extractPreferences(user: { orders: Array<{ items: Array<{ product: { category?: { name?: string }; brand?: string }; price?: number }> }> }): Promise<UserProfile['preferences']> {
     const categories: string[] = [];
     const brands: string[] = [];
     const colors: string[] = [];
@@ -618,8 +618,8 @@ export class PersonalizationEngine {
     }
 
     // Calculate price range
-    const prices = user.orders.flatMap((order: any) => 
-      order.items.map((item: any) => item.price)
+    const prices = user.orders.flatMap((order) => 
+      order.items.map((item) => item.price || 0)
     );
 
     const priceRange = {
@@ -637,9 +637,9 @@ export class PersonalizationEngine {
     };
   }
 
-  private async analyzeBehavior(user: any): Promise<UserProfile['behavior']> {
+  private async analyzeBehavior(user: { browsingHistory?: Array<{ productId?: string; timestamp?: Date; duration?: number; actions?: unknown[] }>; orders?: Array<{ items: Array<{ productId?: string; quantity?: number; price?: number }>; createdAt?: Date }> }): Promise<UserProfile['behavior']> {
     // Analyze browsing history
-    const browsingHistory = user.browsingHistory?.map((item: any) => ({
+    const browsingHistory = user.browsingHistory?.map((item) => ({
       productId: item.productId,
       timestamp: item.timestamp,
       duration: item.duration || 0,
@@ -647,8 +647,8 @@ export class PersonalizationEngine {
     })) || [];
 
     // Analyze purchase history
-    const purchaseHistory = user.orders?.flatMap((order: any) =>
-      order.items.map((item: any) => ({
+    const purchaseHistory = user.orders?.flatMap((order) =>
+      order.items.map((item) => ({
         productId: item.productId,
         categoryId: item.product.categoryId,
         price: item.price,

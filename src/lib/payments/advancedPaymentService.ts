@@ -19,7 +19,7 @@ export interface PaymentMethod {
   expiryYear?: number | null; // Changed to allow null to match Prisma model
   isDefault: boolean;
   stripePaymentMethodId?: string | null; // Changed to allow null to match Prisma model
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
   customerId: string;
@@ -33,7 +33,7 @@ export interface PaymentIntent {
   paymentMethodId?: string; // Made optional to match Prisma model
   customerId: string;
   orderId?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
   stripePaymentIntentId?: string; // Added to match Prisma model
@@ -47,13 +47,13 @@ export interface Subscription {
   currentPeriodStart: Date;
   currentPeriodEnd: Date;
   cancelAtPeriodEnd: boolean;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export interface PaymentGateway {
   name: string;
   isActive: boolean;
-  config: any;
+  config: Record<string, unknown>;
   supportedCurrencies: string[];
   supportedMethods: string[];
 }
@@ -82,7 +82,7 @@ export class AdvancedPaymentService {
     customerId: string;
     orderId?: string;
     paymentMethodId?: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
   }): Promise<PaymentIntent> {
     const paymentIntent = await prisma.paymentIntent.create({
       data: {
@@ -164,7 +164,7 @@ export class AdvancedPaymentService {
     return mappedPaymentIntent;
   }
 
-  async createCustomer(email: string, name?: string, metadata?: any): Promise<string> {
+  async createCustomer(email: string, name?: string, metadata?: Record<string, unknown>): Promise<string> {
     const customer = await this.stripe.customers.create({
       email,
       name,
@@ -236,7 +236,7 @@ export class AdvancedPaymentService {
     const savedPaymentMethod = await prisma.paymentMethod.create({
       data: {
         customerId,
-        type: paymentMethod.type as any,
+        type: paymentMethod.type as 'CASH_ON_DELIVERY' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'BANK_TRANSFER' | 'DIGITAL_WALLET' | 'PAYPAL' | 'STRIPE',
         last4: paymentMethod.card?.last4,
         brand: paymentMethod.card?.brand,
         expiryMonth: paymentMethod.card?.exp_month,
@@ -244,7 +244,7 @@ export class AdvancedPaymentService {
         isDefault,
         metadata: {
           stripePaymentMethodId: paymentMethodId,
-          stripePaymentMethod: paymentMethod as any
+          stripePaymentMethod: paymentMethod as Record<string, unknown>
         }
       }
     });
@@ -269,7 +269,7 @@ export class AdvancedPaymentService {
     return mappedPaymentMethod;
   }
 
-  async createSubscription(customerId: string, priceId: string, metadata?: any): Promise<Subscription> {
+  async createSubscription(customerId: string, priceId: string, metadata?: Record<string, unknown>): Promise<Subscription> {
     const subscription = await this.stripe.subscriptions.create({
       customer: customerId,
       items: [{ price: priceId }],
@@ -284,7 +284,7 @@ export class AdvancedPaymentService {
         currentPeriodStart: new Date(subscription.current_period_start * 1000),
         currentPeriodEnd: new Date(subscription.current_period_end * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
-        metadata: subscription as any // Convert Stripe Response to JSON
+        metadata: subscription as Record<string, unknown> // Convert Stripe Response to JSON
       }
     });
 
@@ -319,11 +319,11 @@ export class AdvancedPaymentService {
     // Add planId if missing (required by Subscription type)
     return {
       ...savedSubscription,
-      planId: ((savedSubscription.metadata as any)?.planId as string) || '',
+      planId: ((savedSubscription.metadata as Record<string, unknown> & { planId?: string })?.planId) || '',
     };
   }
 
-  async processRefund(paymentIntentId: string, amount?: number, reason?: string): Promise<any> {
+  async processRefund(paymentIntentId: string, amount?: number, reason?: string): Promise<Record<string, unknown>> {
     const paymentIntent = await prisma.paymentIntent.findUnique({
       where: { id: paymentIntentId }
     });
@@ -335,7 +335,7 @@ export class AdvancedPaymentService {
     const refund = await this.stripe.refunds.create({
       payment_intent: paymentIntentId,
       amount: amount ? Math.round(amount * 100) : undefined,
-      reason: reason as any
+      reason: reason as 'duplicate' | 'fraudulent' | 'requested_by_customer' | undefined
     });
 
     // Note: Refund model may not exist in Prisma schema, using Payment model instead
@@ -343,10 +343,10 @@ export class AdvancedPaymentService {
     await prisma.payment.create({
       data: {
         amount: (refund.amount || 0) / 100, // Handle null case
-        status: (refund.status || 'pending') as any,
+        status: (refund.status || 'pending') as 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'REFUNDED' | 'CANCELLED',
         method: 'refund',
         currency: 'USD',
-        organizationId: (paymentIntent.metadata as any)?.organizationId || '',
+        organizationId: (paymentIntent.metadata as Record<string, unknown> & { organizationId?: string })?.organizationId || '',
         metadata: {
           paymentIntentId: paymentIntent.id,
           reason: refund.reason || 'requested_by_customer',
