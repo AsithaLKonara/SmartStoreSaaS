@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Test file - jest types are not available in this context
 import { GET } from '../route';
 import { NextRequest } from 'next/server';

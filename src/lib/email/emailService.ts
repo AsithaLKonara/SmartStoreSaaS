@@ -17,7 +17,7 @@ export interface EmailOptions {
   htmlContent?: string; // Make optional for template usage
   textContent?: string;
   attachments?: Array<{ filename: string; content: Buffer | string; contentType?: string }>;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   replyTo?: string;
   templateId?: string;
   templateData?: Record<string, any>;
@@ -105,7 +105,7 @@ export class EmailService {
   }
 
   private async sendWithSendGrid(options: EmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const msg: any = {
+    const msg: Record<string, unknown> = {
       to: Array.isArray(options.to) ? options.to : [options.to],
       from: options.from || {
         email: process.env.FROM_EMAIL!,
@@ -171,7 +171,7 @@ export class EmailService {
   /**
    * Send bulk emails using templates
    */
-  async sendBulkEmail(options: BulkEmailOptions): Promise<{ success: boolean; results: any[]; error?: string }> {
+  async sendBulkEmail(options: BulkEmailOptions): Promise<{ success: boolean; results: Array<Record<string, unknown>>; error?: string }> {
     try {
       if (this.provider === 'sendgrid') {
         return await this.sendBulkWithSendGrid(options);
@@ -184,7 +184,7 @@ export class EmailService {
     }
   }
 
-  private async sendBulkWithSendGrid(options: BulkEmailOptions): Promise<{ success: boolean; results: any[] }> {
+  private async sendBulkWithSendGrid(options: BulkEmailOptions): Promise<{ success: boolean; results: Array<Record<string, unknown>> }> {
     const msg = {
       from: options.from,
       templateId: options.templateId,
@@ -204,7 +204,7 @@ export class EmailService {
     return { success: true, results: ['mock-message-id'] }; // Mock response
   }
 
-  private async sendBulkWithSES(options: BulkEmailOptions): Promise<{ success: boolean; results: any[] }> {
+  private async sendBulkWithSES(options: BulkEmailOptions): Promise<{ success: boolean; results: Array<Record<string, unknown>> }> {
     // This part of the code was removed as per the edit hint.
     // const command = new SendBulkTemplatedEmailCommand({
     //   Source: options.from.email,
@@ -243,7 +243,7 @@ export class EmailService {
       if (!organization) {
         throw new Error('Organization not found');
       }
-      const settings = (organization.settings as any) || {};
+      const settings = (organization.settings as Record<string, unknown>) || {};
       const emailTemplates = settings.emailTemplates || [];
       const templateData = {
         id: `template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -258,7 +258,7 @@ export class EmailService {
           settings: {
             ...settings,
             emailTemplates,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
       const createdTemplate = templateData;
@@ -284,7 +284,7 @@ export class EmailService {
     }
   }
 
-  private async createSendGridTemplate(template: any): Promise<void> {
+  private async createSendGridTemplate(template: Record<string, unknown>): Promise<void> {
     // SendGrid template creation logic
     const templateData = {
       name: template.name,
@@ -295,7 +295,7 @@ export class EmailService {
     console.log('Creating SendGrid template:', templateData);
   }
 
-  private async createSESTemplate(template: any): Promise<void> {
+  private async createSESTemplate(template: Record<string, unknown>): Promise<void> {
     // AWS SES template creation logic
     const templateData = {
       TemplateName: template.id,
@@ -312,7 +312,7 @@ export class EmailService {
   /**
    * Send transactional emails
    */
-  async sendOrderConfirmation(order: any, customer: any): Promise<void> {
+  async sendOrderConfirmation(order: { totalAmount?: number; orderNumber?: string; items?: Array<{ name?: string; quantity?: number; price?: number }>; customer?: { name?: string; email?: string } }, customer: { name?: string; email?: string }): Promise<void> {
     const orderTotal = order.totalAmount || 0; // Use totalAmount instead of total
     
     const emailContent = `
@@ -465,7 +465,7 @@ export class EmailService {
         const userPref = await prisma.userPreference.findUnique({
           where: { userId: user.id },
         });
-        const emailSubscriptions = (userPref?.notifications as any)?.emailSubscriptions || {};
+        const emailSubscriptions = (userPref?.notifications as Record<string, unknown> & { emailSubscriptions?: Record<string, unknown> })?.emailSubscriptions || {};
         emailSubscriptions[listId] = {
           email,
           listId,
@@ -477,15 +477,15 @@ export class EmailService {
           where: { userId: user.id },
           update: {
             notifications: {
-              ...(userPref?.notifications as any || {}),
+              ...(userPref?.notifications as Record<string, unknown> || {}),
               emailSubscriptions,
-            } as any,
+            } as Record<string, unknown>,
           },
           create: {
             userId: user.id,
             notifications: {
               emailSubscriptions,
-            } as any,
+            } as Record<string, unknown>,
           },
         });
       }
@@ -507,7 +507,7 @@ export class EmailService {
           where: { userId: user.id },
         });
         if (userPref) {
-          const emailSubscriptions = (userPref.notifications as any)?.emailSubscriptions || {};
+          const emailSubscriptions = (userPref.notifications as Record<string, unknown> & { emailSubscriptions?: Record<string, unknown> })?.emailSubscriptions || {};
           if (emailSubscriptions[listId]) {
             emailSubscriptions[listId].isActive = false;
             emailSubscriptions[listId].unsubscribedAt = new Date();
@@ -515,9 +515,9 @@ export class EmailService {
               where: { userId: user.id },
               data: {
                 notifications: {
-                  ...(userPref.notifications as any || {}),
+                  ...(userPref.notifications as Record<string, unknown> || {}),
                   emailSubscriptions,
-                } as any,
+                } as Record<string, unknown>,
               },
             });
           }
@@ -541,9 +541,9 @@ export class EmailService {
       if (!organization) {
         throw new Error('Organization not found');
       }
-      const settings = (organization.settings as any) || {};
+      const settings = (organization.settings as Record<string, unknown>) || {};
       const emailCampaigns = settings.emailCampaigns || [];
-      const campaign = emailCampaigns.find((c: any) => c.id === campaignId);
+      const campaign = emailCampaigns.find((c: { id?: string }) => c.id === campaignId);
 
       if (!campaign) {
         throw new Error('Campaign not found');
@@ -551,7 +551,7 @@ export class EmailService {
 
       // Get template
       const emailTemplates = settings.emailTemplates || [];
-      const template = emailTemplates.find((t: any) => t.id === campaign.templateId);
+      const template = emailTemplates.find((t: { id?: string }) => t.id === campaign.templateId);
       if (!template) {
         throw new Error('Template not found');
       }
@@ -566,14 +566,14 @@ export class EmailService {
 
       const recipients = users
         .filter(user => {
-          const emailSubscriptions = (user.preferences?.notifications as any)?.emailSubscriptions || {};
+          const emailSubscriptions = (user.preferences?.notifications as Record<string, unknown> & { emailSubscriptions?: Record<string, unknown> })?.emailSubscriptions || {};
           return campaign.segmentIds?.some((segmentId: string) => 
             emailSubscriptions[segmentId]?.isActive
           );
         })
         .map(user => ({
           email: user.email,
-          templateData: ((user.preferences?.notifications as any)?.emailSubscriptions || {})[campaign.segmentIds?.[0]]?.customFields || {},
+          templateData: ((user.preferences?.notifications as Record<string, unknown> & { emailSubscriptions?: Record<string, { customFields?: Record<string, unknown> }> })?.emailSubscriptions || {})[campaign.segmentIds?.[0]]?.customFields || {},
         }));
 
       const result = await this.sendBulkEmail({
@@ -587,7 +587,7 @@ export class EmailService {
       });
 
       // Update campaign status in Organization settings
-      const updatedCampaigns = emailCampaigns.map((c: any) => 
+      const updatedCampaigns = emailCampaigns.map((c: { id?: string; status?: string; sentAt?: Date; recipientCount?: number }) => 
         c.id === campaignId 
           ? { ...c, status: 'SENT', sentAt: new Date(), recipientCount: recipients.length }
           : c
@@ -598,7 +598,7 @@ export class EmailService {
           settings: {
             ...settings,
             emailCampaigns: updatedCampaigns,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -625,7 +625,7 @@ export class EmailService {
     };
   }
 
-  async sendOrderSummary(order: any, customer: any): Promise<void> {
+  async sendOrderSummary(order: { totalAmount?: number; orderNumber?: string; items?: Array<{ name?: string; quantity?: number; price?: number }> }, customer: { name?: string; email?: string }): Promise<void> {
     const orderTotal = order.totalAmount || 0; // Use totalAmount instead of total
     
     const emailContent = `

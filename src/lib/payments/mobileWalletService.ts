@@ -22,7 +22,7 @@ export class MobileWalletService {
     amount: number,
     currency: string,
     orderId: string,
-    items: any[]
+    items: Array<Record<string, unknown>>
   ): Promise<MobileWalletSession> {
     switch (provider.name) {
       case 'apple_pay':
@@ -41,7 +41,7 @@ export class MobileWalletService {
     amount: number,
     currency: string,
     orderId: string,
-    items: any[]
+    items: Array<Record<string, unknown>>
   ): Promise<MobileWalletSession> {
     // Apple Pay requires merchant validation and payment session
     // This is a simplified version - in production, you'd use Apple's APIs
@@ -60,7 +60,7 @@ export class MobileWalletService {
     amount: number,
     currency: string,
     orderId: string,
-    items: any[]
+    items: Array<Record<string, unknown>>
   ): Promise<MobileWalletSession> {
     // Google Pay integration
     // In production, this would use Google Pay API
@@ -79,7 +79,7 @@ export class MobileWalletService {
     amount: number,
     currency: string,
     orderId: string,
-    items: any[]
+    items: Array<Record<string, unknown>>
   ): Promise<MobileWalletSession> {
     // Samsung Pay integration
     // In production, this would use Samsung Pay API

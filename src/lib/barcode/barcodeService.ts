@@ -1,4 +1,4 @@
-// @ts-ignore - quagga types not available
+// @ts-expect-error - quagga types not available
 import Quagga from 'quagga';
 import { prisma } from '@/lib/prisma';
 
@@ -68,7 +68,7 @@ export class BarcodeService {
       try {
         this.currentConfig = config;
 
-        Quagga.init(config, (err: any) => {
+        Quagga.init(config, (err: unknown) => {
           if (err) {
             console.error('Error initializing Quagga:', err);
             reject(err);
@@ -110,7 +110,7 @@ export class BarcodeService {
    * Set up event listeners for barcode detection
    */
   private setupEventListeners(): void {
-    Quagga.onDetected((result: any) => {
+    Quagga.onDetected((result: { codeResult?: { code?: string; format?: string }; boxes?: unknown[][] }) => {
       const barcodeResult: BarcodeResult = {
         code: result.codeResult.code,
         format: result.codeResult.format,
@@ -124,14 +124,14 @@ export class BarcodeService {
       }
     });
 
-    Quagga.onProcessed((result: any) => {
+    Quagga.onProcessed((result: { boxes?: unknown[][] }) => {
       const drawingCtx = Quagga.canvas.ctx.overlay;
       const drawingCanvas = Quagga.canvas.dom.overlay;
 
       if (result) {
         if (result.boxes) {
           drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-          result.boxes.filter((box: any) => box !== result.box).forEach((box: any) => {
+          result.boxes?.filter((box) => box !== result.box).forEach((box) => {
             Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, { color: 'green', lineWidth: 2 });
           });
         }
@@ -198,7 +198,7 @@ export class BarcodeService {
           Quagga.decodeSingle({
             ...config,
             src: canvas.toDataURL(),
-          }, (result: any) => {
+          }, (result: { codeResult?: { code?: string; format?: string } }) => {
             if (result && result.codeResult) {
               const barcodeResult: BarcodeResult = {
                 code: result.codeResult.code,
@@ -270,10 +270,10 @@ export class BarcodeService {
         description: product.description || undefined,
         price: product.price,
         category: product.categoryId ? (await prisma.category.findUnique({ where: { id: product.categoryId }, select: { name: true } }))?.name : undefined,
-        brand: (product.dimensions as any)?.brand || undefined, // Store in dimensions metadata
-        manufacturer: (product.dimensions as any)?.manufacturer || undefined, // Store in dimensions metadata
+        brand: (product.dimensions as Record<string, unknown> & { brand?: string })?.brand || undefined, // Store in dimensions metadata
+        manufacturer: (product.dimensions as Record<string, unknown> & { manufacturer?: string })?.manufacturer || undefined, // Store in dimensions metadata
         images: product.images, // images is already string[]
-        specifications: (product.dimensions as any)?.specifications as Record<string, any> || {}, // Store in dimensions metadata
+        specifications: (product.dimensions as Record<string, unknown> & { specifications?: Record<string, unknown> })?.specifications || {}, // Store in dimensions metadata
         source: 'internal',
       };
     } catch (error) {
@@ -445,7 +445,7 @@ export class BarcodeService {
       });
 
       if (organization) {
-        const settings = (organization.settings as any) || {};
+        const settings = (organization.settings as Record<string, unknown>) || {};
         const productLookupCache = settings.productLookupCache || {};
         productLookupCache[barcode] = {
           productData: product,

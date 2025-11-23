@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update product stock and create movement record in a transaction
-    const [updatedProduct, movement] = await prisma.$transaction([
+    const [, movement] = await prisma.$transaction([
       prisma.product.update({
         where: { id: productId },
         data: { stockQuantity: newStockQuantity },

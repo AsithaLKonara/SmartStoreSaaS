@@ -14,8 +14,8 @@ export interface RealTimeMetrics {
   onlineCustomers: number;
   conversionRate: number;
   averageOrderValue: number;
-  topSellingProducts: any[];
-  revenueByHour: any[];
+  topSellingProducts: Array<Record<string, unknown>>;
+  revenueByHour: Array<Record<string, unknown>>;
 }
 
 export interface PerformanceKPI {
@@ -89,10 +89,10 @@ export class BusinessIntelligenceService {
    * Generate real-time business metrics
    */
   async generateRealTimeMetrics(
-    salesData: any[],
-    orderData: any[],
-    customerData: any[],
-    productData: any[]
+    salesData: Array<Record<string, unknown>>,
+    orderData: Array<Record<string, unknown>>,
+    customerData: Array<Record<string, unknown>>,
+    productData: Array<Record<string, unknown>>
   ): Promise<RealTimeMetrics> {
     try {
       if (!this.checkOpenAI()) {
@@ -167,9 +167,9 @@ export class BusinessIntelligenceService {
    * Calculate performance KPIs
    */
   async calculatePerformanceKPIs(
-    currentData: any[],
-    historicalData: any[],
-    targets: any[]
+    currentData: Array<Record<string, unknown>>,
+    historicalData: Array<Record<string, unknown>>,
+    targets: Array<Record<string, unknown>>
   ): Promise<PerformanceKPI[]> {
     try {
       if (!this.checkOpenAI()) {
@@ -220,9 +220,9 @@ export class BusinessIntelligenceService {
    * Generate sales forecasts
    */
   async generateSalesForecasts(
-    historicalSales: any[],
-    marketData: any[],
-    seasonalData: any[]
+    historicalSales: Array<Record<string, unknown>>,
+    marketData: Array<Record<string, unknown>>,
+    seasonalData: Array<Record<string, unknown>>
   ): Promise<SalesForecast[]> {
     try {
       if (!this.checkOpenAI()) {
@@ -268,9 +268,9 @@ export class BusinessIntelligenceService {
    * Analyze market trends
    */
   async analyzeMarketTrends(
-    marketData: any[],
-    competitorData: any[],
-    industryReports: any[]
+    marketData: Array<Record<string, unknown>>,
+    competitorData: Array<Record<string, unknown>>,
+    industryReports: Array<Record<string, unknown>>
   ): Promise<MarketTrend[]> {
     try {
       if (!this.checkOpenAI()) {
@@ -317,9 +317,9 @@ export class BusinessIntelligenceService {
    * Perform competitive analysis
    */
   async performCompetitiveAnalysis(
-    competitorData: any[],
-    marketShareData: any[],
-    productComparison: any[]
+    competitorData: Array<Record<string, unknown>>,
+    marketShareData: Array<Record<string, unknown>>,
+    productComparison: Array<Record<string, unknown>>
   ): Promise<CompetitiveAnalysis[]> {
     try {
       if (!this.checkOpenAI()) {
@@ -362,7 +362,7 @@ export class BusinessIntelligenceService {
    * Assess business risks
    */
   async assessBusinessRisks(
-    businessData: any[],
+    businessData: Array<Record<string, unknown>>,
     marketData: any[],
     financialData: any[]
   ): Promise<RiskAssessment[]> {

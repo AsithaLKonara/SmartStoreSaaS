@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { renderHook, act } from '@testing-library/react';
 import { useDebounce } from '../useDebounce';
 
@@ -7,8 +6,7 @@ describe('useDebounce Hook', () => {
     jest.useFakeTimers();
   });
 
-  // @ts-nocheck
-afterEach(() => {
+  afterEach(() => {
     jest.useRealTimers();
   });
 

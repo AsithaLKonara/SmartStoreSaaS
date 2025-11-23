@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, ReactNode } from 'react';
 import { useDarkMode } from '@/hooks/useDarkMode';
-import { Theme, ThemeConfig } from '@/lib/theme/darkModeService';
+import { Theme } from '@/lib/theme/darkModeService';
 
 interface ThemeContextType {
   theme: Theme;

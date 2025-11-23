@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDebounce } from '@/hooks/useDebounce';
-import { Search, Filter, X, ChevronDown } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 
 interface SearchResult {
   id: string;
@@ -10,7 +10,7 @@ interface SearchResult {
   title: string;
   description?: string;
   relevance: number;
-  metadata: any;
+  metadata: Record<string, unknown>;
   highlights: string[];
 }
 

@@ -109,7 +109,7 @@ export class PinterestService {
 
   async getBoards(): Promise<Array<{ id: string; name: string }>> {
     const response = await this.client.get('/boards');
-    return response.data.items.map((board: any) => ({
+    return response.data.items.map((board: { id: string; name: string }) => ({
       id: board.id,
       name: board.name,
     }));

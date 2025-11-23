@@ -70,8 +70,8 @@ export class XeroService {
     }
   }
 
-  private async createInvoice(order: any): Promise<void> {
-    const lineItems = order.items.map((item: any) => ({
+  private async createInvoice(order: { items: Array<{ name?: string; quantity?: number; price?: number }>; totalAmount?: number; orderNumber?: string; customer?: { name?: string; email?: string } }): Promise<void> {
+    const lineItems = order.items.map((item: { name?: string; quantity?: number; price?: number }) => ({
       Description: item.product.name,
       Quantity: item.quantity,
       UnitAmount: item.price,
@@ -121,7 +121,7 @@ export class XeroService {
     }
   }
 
-  private async createExpense(expense: any): Promise<void> {
+  private async createExpense(expense: { amount?: number; description?: string; category?: string; date?: Date }): Promise<void> {
     const payment = {
       Invoice: {
         Type: 'ACCPAY',

@@ -9,11 +9,6 @@ interface PWAStatus {
   isSupported: boolean;
 }
 
-interface NotificationPermissionState {
-  permission: NotificationPermission;
-  isSupported: boolean;
-}
-
 export function usePWA() {
   const [pwaStatus, setPwaStatus] = useState<PWAStatus>({
     isInstalled: false,
@@ -32,7 +27,7 @@ export function usePWA() {
   useEffect(() => {
     const checkInstallation = () => {
       const isInstalled = window.matchMedia('(display-mode: standalone)').matches ||
-                         (window.navigator as any).standalone === true;
+                         (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
       setPwaStatus(prev => ({ ...prev, isInstalled }));
     };
 

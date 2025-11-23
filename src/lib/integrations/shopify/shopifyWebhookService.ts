@@ -31,7 +31,7 @@ export class ShopifyWebhookService {
   static async handleWebhook(
     organizationId: string,
     topic: string,
-    data: any,
+    data: Record<string, unknown>,
     shopifyService: ShopifyService
   ): Promise<void> {
     const integration = await prisma.shopifyIntegration.findFirst({
@@ -65,7 +65,7 @@ export class ShopifyWebhookService {
   }
 
   private static async handleProductWebhook(
-    productData: any,
+    productData: Record<string, unknown>,
     integrationId: string
   ): Promise<void> {
     const integration = await prisma.shopifyIntegration.findUnique({
@@ -86,7 +86,7 @@ export class ShopifyWebhookService {
   }
 
   private static async handleOrderWebhook(
-    orderData: any,
+    orderData: Record<string, unknown>,
     integrationId: string,
     shopifyService: ShopifyService
   ): Promise<void> {
@@ -102,7 +102,7 @@ export class ShopifyWebhookService {
   }
 
   private static async handleInventoryWebhook(
-    inventoryData: any,
+    inventoryData: Record<string, unknown> & { variant_id?: string | number },
     integrationId: string
   ): Promise<void> {
     const integration = await prisma.shopifyIntegration.findUnique({

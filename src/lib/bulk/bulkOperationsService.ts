@@ -14,7 +14,7 @@ export interface BulkOperation {
   failedRecords: number;
   fileUrl?: string;
   errors: string[];
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
   completedAt?: Date;
 }
@@ -26,7 +26,7 @@ export interface ImportResult {
   successRecords: number;
   failedRecords: number;
   errors: string[];
-  data?: any[];
+  data?: Array<Record<string, unknown>>;
 }
 
 export interface ExportResult {
@@ -37,7 +37,7 @@ export interface ExportResult {
 }
 
 export class BulkOperationsService {
-  async createBulkOperation(type: 'import' | 'export', entity: string, metadata?: any): Promise<BulkOperation> {
+  async createBulkOperation(type: 'import' | 'export', entity: string, metadata?: Record<string, unknown>): Promise<BulkOperation> {
     const operation = await prisma.bulkOperation.create({
       data: {
         name: `${type}_${entity}_${Date.now()}`,
@@ -75,7 +75,7 @@ export class BulkOperationsService {
     const operation = await this.createBulkOperation('import', 'products');
     
     try {
-      let data: any[];
+      let data: Array<Record<string, unknown>>;
       
       if (format === 'csv') {
         data = parse(fileBuffer.toString(), {
@@ -129,7 +129,7 @@ export class BulkOperationsService {
                 ...(row.dimensions ? JSON.parse(row.dimensions) : {}),
                 brand: row.brand || undefined,
                 barcode: row.barcode || undefined,
-              } as any,
+              } as Record<string, unknown>,
               stockQuantity: parseInt(row.stockQuantity) || 0,
               lowStockThreshold: parseInt(row.reorderPoint) || 0,
               categoryId,
@@ -192,7 +192,7 @@ export class BulkOperationsService {
     const operation = await this.createBulkOperation('import', 'customers');
     
     try {
-      let data: any[];
+      let data: Array<Record<string, unknown>>;
       
       if (format === 'csv') {
         data = parse(fileBuffer.toString(), {
@@ -322,7 +322,7 @@ export class BulkOperationsService {
       });
 
       let fileUrl: string;
-      let fileData: any;
+      let fileData: Record<string, unknown> | Array<Record<string, unknown>>;
 
       if (format === 'json') {
         fileData = Buffer.from(JSON.stringify(products, null, 2));
@@ -337,7 +337,7 @@ export class BulkOperationsService {
         const categoryMap = new Map(categories.map(c => [c.id, c.name]));
 
         const csvData = products.map(product => {
-          const dimensions = (product.dimensions as any) || {};
+          const dimensions = (product.dimensions as Record<string, unknown>) || {};
           return {
             id: product.id,
             name: product.name,
@@ -435,7 +435,7 @@ export class BulkOperationsService {
       });
 
       let fileUrl: string;
-      let fileData: any;
+      let fileData: Record<string, unknown> | Array<Record<string, unknown>>;
 
       if (format === 'json') {
         fileData = Buffer.from(JSON.stringify(customers, null, 2));
@@ -446,11 +446,11 @@ export class BulkOperationsService {
           name: customer.name,
           email: customer.email,
           phone: customer.phone,
-          address: (customer.tags as any)?.address || undefined, // Store in tags metadata or use separate field
-          city: (customer.tags as any)?.city || undefined,
-          state: (customer.tags as any)?.state || undefined,
-          country: (customer.tags as any)?.country || undefined,
-          postalCode: (customer.tags as any)?.postalCode || undefined,
+          address: (customer.tags as Array<string> & Record<string, unknown> & { address?: string })?.address || undefined, // Store in tags metadata or use separate field
+          city: (customer.tags as Array<string> & Record<string, unknown> & { city?: string })?.city || undefined,
+          state: (customer.tags as Array<string> & Record<string, unknown> & { state?: string })?.state || undefined,
+          country: (customer.tags as Array<string> & Record<string, unknown> & { country?: string })?.country || undefined,
+          postalCode: (customer.tags as Array<string> & Record<string, unknown> & { postalCode?: string })?.postalCode || undefined,
           createdAt: customer.createdAt,
           updatedAt: customer.updatedAt
         }));
@@ -536,7 +536,7 @@ export class BulkOperationsService {
       });
 
       // Transform orders to exportable format
-      const exportData = orders.map((order: any) => ({
+      const exportData = orders.map((order) => ({
         id: order.id,
         orderNumber: order.orderNumber,
         customerName: order.customer?.name || '',
@@ -553,7 +553,7 @@ export class BulkOperationsService {
       }));
 
       let fileUrl: string;
-      let fileData: any;
+      let fileData: Record<string, unknown> | Array<Record<string, unknown>>;
 
       if (format === 'json') {
         fileData = Buffer.from(JSON.stringify(orders, null, 2));
@@ -567,8 +567,8 @@ export class BulkOperationsService {
           totalAmount: order.totalAmount,
           status: order.status,
           paymentMethod: order.paymentMethod,
-          shippingAddress: (order.metadata as any)?.shippingAddress || undefined, // Store in metadata
-          billingAddress: (order.metadata as any)?.billingAddress || undefined, // Store in metadata
+          shippingAddress: (order.metadata as Record<string, unknown> & { shippingAddress?: string })?.shippingAddress || undefined, // Store in metadata
+          billingAddress: (order.metadata as Record<string, unknown> & { billingAddress?: string })?.billingAddress || undefined, // Store in metadata
           createdAt: order.createdAt,
           updatedAt: order.updatedAt
         }));
@@ -629,7 +629,7 @@ export class BulkOperationsService {
       orderBy: { createdAt: 'desc' }
     });
 
-    return operations.map((operation: any) => ({
+    return operations.map((operation) => ({
       id: operation.id,
       type: operation.type as 'import' | 'export',
       entity: operation.entity as 'products' | 'customers' | 'orders' | 'inventory',

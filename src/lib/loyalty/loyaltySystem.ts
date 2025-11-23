@@ -34,7 +34,17 @@ interface ReferralProgram {
   expiresAt: Date;
 }
 
+interface Promotion {
+  id: string;
+  name: string;
+  discountPercentage?: number;
+  isActive: boolean;
+  createdAt: Date;
+  [key: string]: unknown;
+}
+
 export class LoyaltySystem {
+  private promotions: Map<string, Promotion> = new Map();
   private rewardTiers: RewardTier[] = [
     {
       id: 'bronze',
@@ -388,8 +398,7 @@ export class LoyaltySystem {
       const promotionId = generateRandomString(16);
       
       // For now, store in a static promotions map
-      (this as any).promotions = (this as any).promotions || new Map();
-      (this as any).promotions.set(promotionId, {
+      this.promotions.set(promotionId, {
         id: promotionId,
         ...promotion,
         createdAt: new Date(),
@@ -405,7 +414,7 @@ export class LoyaltySystem {
 
   async applyPromotionToOrder(orderId: string, promotionId: string): Promise<number> {
     try {
-      const promotion = (this as any).promotions?.get(promotionId);
+      const promotion = this.promotions.get(promotionId);
       if (!promotion || !promotion.isActive) {
         return 0; // No promotion applied
       }
@@ -472,7 +481,7 @@ export class LoyaltySystem {
     }
   }
 
-  async getLoyaltyAnalytics(organizationId: string): Promise<any> {
+  async getLoyaltyAnalytics(organizationId: string): Promise<Record<string, unknown>> {
     try {
       // Get loyalty analytics for the organization
       const customers = await prisma.customer.findMany({
@@ -482,8 +491,8 @@ export class LoyaltySystem {
 
       const analytics = {
         totalCustomers: customers.length,
-        totalPointsIssued: customers.reduce((sum: number, c: any) => sum + c.points, 0),
-        averagePointsPerCustomer: customers.length > 0 ? customers.reduce((sum: number, c: any) => sum + c.points, 0) / customers.length : 0,
+        totalPointsIssued: customers.reduce((sum: number, c: { points: number }) => sum + c.points, 0),
+        averagePointsPerCustomer: customers.length > 0 ? customers.reduce((sum: number, c: { points: number }) => sum + c.points, 0) / customers.length : 0,
         tierDistribution: {
           bronze: 0,
           silver: 0,

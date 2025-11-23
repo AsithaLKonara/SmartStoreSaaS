@@ -177,7 +177,7 @@ export class ComplianceService {
       where: { id: organizationId },
     });
 
-    return ((organization?.settings as any)?.encryption === true);
+    return ((organization?.settings as Record<string, unknown> & { encryption?: boolean })?.encryption === true);
   }
 
   private async checkDataDeletion(organizationId: string): Promise<boolean> {

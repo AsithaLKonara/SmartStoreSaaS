@@ -166,7 +166,7 @@ export function useRealTimeSync({
     return false;
   }, [organizationId, getSyncStatus]);
 
-  const resolveConflict = useCallback(async (conflictId: string, resolution: any) => {
+  const resolveConflict = useCallback(async (conflictId: string, resolution: Record<string, unknown>) => {
     try {
       const response = await fetch('/api/sync/status', {
         method: 'POST',

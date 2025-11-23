@@ -180,7 +180,7 @@ export class VisualSearchService {
         return [];
       }
 
-      const settings = (organization.settings as any) || {};
+      const settings = (organization.settings as Record<string, unknown>) || {};
       const productEmbeddings = settings.productEmbeddings || {};
 
       // Calculate similarities
@@ -250,7 +250,7 @@ export class VisualSearchService {
           });
 
           if (organization) {
-            const settings = (organization.settings as any) || {};
+            const settings = (organization.settings as Record<string, unknown>) || {};
             const productEmbeddings = settings.productEmbeddings || {};
             productEmbeddings[product.id] = {
               embedding: features,
@@ -264,7 +264,7 @@ export class VisualSearchService {
                 settings: {
                   ...settings,
                   productEmbeddings,
-                } as any,
+                } as Record<string, unknown>,
               },
             });
           }
@@ -480,7 +480,7 @@ export class VisualSearchService {
         throw new Error('Organization not found');
       }
 
-      const settings = (organization.settings as any) || {};
+      const settings = (organization.settings as Record<string, unknown>) || {};
       const productEmbeddings = settings.productEmbeddings || {};
       const embeddingData = productEmbeddings[productId];
 

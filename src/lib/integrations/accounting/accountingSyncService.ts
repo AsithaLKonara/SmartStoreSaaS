@@ -32,7 +32,7 @@ export class AccountingSyncService {
         throw new Error('Xero integration not properly configured');
       }
       // Xero uses tenantId from settings
-      const tenantId = (integration.settings as any)?.tenantId || '';
+      const tenantId = (integration.settings as Record<string, unknown> & { tenantId?: string })?.tenantId || '';
       service = new XeroService(
         integration.id,
         tenantId,

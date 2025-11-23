@@ -41,7 +41,13 @@ export async function GET(request: NextRequest) {
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '50');
 
-        const filters: any = {};
+        const filters: {
+          userId?: string;
+          action?: string;
+          startDate?: Date;
+          endDate?: Date;
+          success?: boolean;
+        } = {};
         if (userId) filters.userId = userId;
         if (action) filters.action = action;
         if (startDate) filters.startDate = new Date(startDate);
@@ -84,7 +90,7 @@ export async function GET(request: NextRequest) {
         });
         
         return NextResponse.json({ 
-          mfaEnabled: (userPref?.notifications as any)?.mfaEnabled || false,
+          mfaEnabled: (userPref?.notifications as Record<string, unknown> & { mfaEnabled?: boolean })?.mfaEnabled || false,
         });
 
       case 'security-summary':
@@ -107,7 +113,7 @@ export async function GET(request: NextRequest) {
         });
         
         const mfaEnabledUsers = usersWithMFA.filter((pref) => {
-          const notifications = pref.notifications as any;
+          const notifications = pref.notifications as Record<string, unknown>;
           return notifications?.mfaEnabled === true;
         }).length;
 
@@ -245,10 +251,10 @@ export async function POST(request: NextRequest) {
           data: { 
             settings: {
               securitySettings: settings,
-            } as any,
+            } as Record<string, unknown>,
           },
         });
-        return NextResponse.json({ settings: (updatedSettings.settings as any)?.securitySettings });
+        return NextResponse.json({ settings: (updatedSettings.settings as Record<string, unknown> & { securitySettings?: unknown })?.securitySettings });
 
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

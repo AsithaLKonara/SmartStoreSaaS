@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { GET, POST } from '../route';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';

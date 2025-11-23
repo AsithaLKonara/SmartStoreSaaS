@@ -21,7 +21,7 @@ export class BlockchainService {
     fromAddress: string,
     toAddress: string,
     amount: string,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): Promise<BlockchainTransaction> {
     // In production, this would interact with actual blockchain
     // For now, create a transaction record
@@ -46,13 +46,13 @@ export class BlockchainService {
 
     return {
       id: transaction.id,
-      type: transaction.type as any,
-      blockchain: transaction.blockchain as any,
+      type: transaction.type as 'payment' | 'supply_chain' | 'nft' | 'order',
+      blockchain: transaction.blockchain as 'ethereum' | 'polygon' | 'binance',
       txHash: transaction.txHash,
       fromAddress: transaction.fromAddress || undefined,
       toAddress: transaction.toAddress || undefined,
       amount: transaction.amount || undefined,
-      status: transaction.status as any,
+      status: transaction.status as 'pending' | 'confirmed' | 'failed',
       blockNumber: transaction.blockNumber || undefined,
     };
   }
@@ -62,7 +62,7 @@ export class BlockchainService {
     productId: string,
     fromLocation: string,
     toLocation: string,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): Promise<string> {
     const transaction = await this.createTransaction(
       organizationId,
@@ -118,7 +118,7 @@ export class BlockchainService {
     }
 
     // Get organization wallet address (would be stored in settings)
-    const settings = organization.settings as any;
+      const settings = organization.settings as Record<string, unknown>;
     const toAddress = settings?.cryptoWallet || process.env.ORGANIZATION_WALLET || '';
 
     const transaction = await this.createTransaction(

@@ -69,9 +69,9 @@ export class CustomerIntelligenceService {
    * Predict customer lifetime value
    */
   async predictCustomerLTV(
-    customerData: any[],
-    purchaseHistory: any[],
-    interactionHistory: any[]
+    customerData: Array<Record<string, unknown>>,
+    purchaseHistory: Array<Record<string, unknown>>,
+    interactionHistory: Array<Record<string, unknown>>
   ): Promise<CustomerLTV[]> {
     try {
       const openaiClient = getOpenAIClient();
@@ -111,9 +111,9 @@ export class CustomerIntelligenceService {
    * Assess churn risk for customers
    */
   async assessChurnRisk(
-    customerData: any[],
-    purchaseHistory: any[],
-    interactionHistory: any[]
+    customerData: Array<Record<string, unknown>>,
+    purchaseHistory: Array<Record<string, unknown>>,
+    interactionHistory: Array<Record<string, unknown>>
   ): Promise<ChurnRisk[]> {
     try {
       const prompt = `
@@ -151,9 +151,9 @@ export class CustomerIntelligenceService {
    * Create customer segments with AI
    */
   async createCustomerSegments(
-    customerData: any[],
-    purchaseHistory: any[],
-    behaviorData: any[]
+    customerData: Array<Record<string, unknown>>,
+    purchaseHistory: Array<Record<string, unknown>>,
+    behaviorData: Array<Record<string, unknown>>
   ): Promise<CustomerSegment[]> {
     try {
       const prompt = `
@@ -190,9 +190,9 @@ export class CustomerIntelligenceService {
    * Generate personalized product recommendations
    */
   async generateProductRecommendations(
-    customerData: any[],
-    purchaseHistory: any[],
-    productCatalog: any[]
+    customerData: Array<Record<string, unknown>>,
+    purchaseHistory: Array<Record<string, unknown>>,
+    productCatalog: Array<Record<string, unknown>>
   ): Promise<ProductRecommendation[]> {
     try {
       const prompt = `
@@ -229,10 +229,10 @@ export class CustomerIntelligenceService {
    * Analyze customer sentiment using Prisma models
    */
   async analyzeCustomerSentiment(
-    customerData: any[],
-    reviews: any[],
-    supportTickets: any[],
-    socialMediaData: any[]
+    customerData: Array<Record<string, unknown>>,
+    reviews: Array<Record<string, unknown>>,
+    supportTickets: Array<Record<string, unknown>>,
+    socialMediaData: Array<Record<string, unknown>>
   ): Promise<SentimentAnalysis[]> {
     try {
       const prompt = `
@@ -271,9 +271,9 @@ export class CustomerIntelligenceService {
    * Get customer sentiment data from Prisma models
    */
   async getCustomerSentimentData(organizationId: string, customerId?: string): Promise<{
-    reviews: any[];
-    supportTickets: any[];
-    customerSegments: any[];
+    reviews: Array<Record<string, unknown>>;
+    supportTickets: Array<Record<string, unknown>>;
+    customerSegments: Array<Record<string, unknown>>;
     customerOffers: any[];
   }> {
     try {

@@ -36,7 +36,7 @@ export class PricingService {
       const organization = await prisma.organization.findUnique({
         where: { id: organizationId },
       });
-      const settings = (organization?.settings as any) || {};
+      const settings = (organization?.settings as Record<string, unknown>) || {};
       const regionalPricing = settings.regionalPricing?.[productId]?.[region]?.[currency];
       if (regionalPricing) {
         return regionalPricing;
@@ -44,7 +44,7 @@ export class PricingService {
     }
 
     // Convert to requested currency
-    const dimensions = (product.dimensions as any) || {};
+    const dimensions = (product.dimensions as Record<string, unknown>) || {};
     const baseCurrency = dimensions.currency || 'USD';
     if (currency === baseCurrency) {
       return product.price;
@@ -96,7 +96,7 @@ export class PricingService {
 
     await prisma.organization.update({
       where: { id: organizationId },
-      data: { settings: settings as any },
+      data: { settings: settings as Record<string, unknown> },
     });
   }
 
@@ -111,7 +111,7 @@ export class PricingService {
       where: { id: organizationId },
     });
 
-    const taxRates = (organization?.settings as any)?.taxRates || {};
+    const taxRates = (organization?.settings as Record<string, unknown> & { taxRates?: Record<string, unknown> })?.taxRates || {};
     const taxRate = taxRates[region] || taxRates['default'] || 0;
 
     return amount * (taxRate / 100);

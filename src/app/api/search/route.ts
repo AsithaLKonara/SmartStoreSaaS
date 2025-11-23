@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
     const query = searchParams.get('query') || '';
-    const type = searchParams.get('type') || 'global';
     const sortBy = searchParams.get('sortBy') || 'relevance';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
     const limit = parseInt(searchParams.get('limit') || '20');
@@ -38,7 +37,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
 
-    const filters: any = {};
+    const filters: {
+      category?: string;
+      brand?: string;
+      priceRange?: { min: number; max: number };
+      status?: string;
+      dateRange?: { start: Date; end: Date };
+    } = {};
     if (category) filters.category = category;
     if (brand) filters.brand = brand;
     if (minPrice || maxPrice) {
@@ -58,8 +63,8 @@ export async function GET(request: NextRequest) {
     const searchOptions = {
       query,
       filters,
-      sortBy: sortBy as any,
-      sortOrder: sortOrder as any,
+      sortBy: sortBy as 'relevance' | 'price' | 'name' | 'date',
+      sortOrder: sortOrder as 'asc' | 'desc',
       limit,
       offset
     };

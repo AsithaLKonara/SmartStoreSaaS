@@ -19,7 +19,7 @@ export async function GET() {
     });
 
     // Get stats from CampaignMetric or use defaults
-    const campaignsWithStats = campaigns.map((campaign: any) => {
+    const campaignsWithStats = campaigns.map((campaign) => {
       const metrics = campaign.metrics?.[0] || {
         sent: 0,
         delivered: 0,
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     const campaign = await prisma.campaign.create({
       data: {
         name,
-        type: type as any,
+        type: type as 'EMAIL' | 'SMS' | 'PUSH' | 'IN_APP',
         content,
         settings: settings || {},
         organizationId: session.user.organizationId,

@@ -6,7 +6,7 @@ export interface PushNotification {
   body: string;
   icon?: string;
   badge?: string;
-  data?: any;
+  data?: Record<string, unknown>;
   actions?: NotificationAction[];
   requireInteraction?: boolean;
   silent?: boolean;
@@ -20,7 +20,7 @@ export interface NotificationAction {
 
 export interface OfflineData {
   type: 'ORDER' | 'MESSAGE' | 'SYNC';
-  data: any;
+  data: Record<string, unknown>;
   timestamp: Date;
   id: string;
 }
@@ -28,7 +28,7 @@ export interface OfflineData {
 export interface BackgroundSyncTask {
   id: string;
   type: 'ORDER_SYNC' | 'MESSAGE_SYNC' | 'DATA_SYNC';
-  data: any;
+  data: Record<string, unknown>;
   retryCount: number;
   maxRetries: number;
   createdAt: Date;
@@ -36,7 +36,7 @@ export interface BackgroundSyncTask {
 
 export interface QRCodeData {
   type: 'PRODUCT' | 'ORDER' | 'CUSTOMER' | 'INVENTORY';
-  data: any;
+  data: Record<string, unknown>;
   size?: number;
   format?: 'PNG' | 'SVG';
 }
@@ -129,7 +129,7 @@ export class AdvancedPWAService {
 
       const serviceWorkerRegistration = await navigator.serviceWorker.ready;
       
-      const notificationOptions: any = {
+      const notificationOptions: NotificationOptions = {
         body: notification.body,
         icon: notification.icon || '/icons/icon-192x192.png',
         badge: notification.badge || '/badge-72x72.png',
@@ -224,7 +224,7 @@ export class AdvancedPWAService {
 
     try {
       const registration = await navigator.serviceWorker.ready;
-      await (registration as any).sync.register(task.id);
+      await (registration as ServiceWorkerRegistration & { sync?: { register: (tag: string) => Promise<void> } }).sync?.register(task.id);
       
       // Store task data
       await this.storeBackgroundSyncTask(task);
@@ -342,14 +342,14 @@ export class AdvancedPWAService {
         throw new Error('Speech recognition not supported');
       }
 
-      const recognition = new (window as any).webkitSpeechRecognition();
+      const recognition = new (window as Window & { webkitSpeechRecognition?: new () => SpeechRecognition }).webkitSpeechRecognition!();
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = Array.from(event.results)
-          .map((result: any) => result[0])
+          .map((result) => result[0])
           .map(result => result.transcript)
           .join('');
 

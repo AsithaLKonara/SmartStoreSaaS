@@ -210,7 +210,7 @@ export class ShopifyService {
       where: { organizationId: integration.organizationId },
     });
     const existingProduct = allProducts.find(p => {
-      const dimensions = (p.dimensions as any) || {};
+      const dimensions = (p.dimensions as Record<string, unknown>) || {};
       return dimensions.shopifyId === String(shopifyProduct.id);
     });
 
@@ -248,7 +248,7 @@ export class ShopifyService {
             shopifyHandle: shopifyProduct.handle,
             shopifyVendor: shopifyProduct.vendor,
             shopifyType: shopifyProduct.product_type,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
     }

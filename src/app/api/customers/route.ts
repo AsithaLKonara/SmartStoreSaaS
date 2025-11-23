@@ -14,7 +14,11 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const tag = searchParams.get('tag');
 
-    const where: any = {
+    const where: {
+      organizationId: string;
+      OR?: Array<{ name?: { contains: string; mode: 'insensitive' }; email?: { contains: string; mode: 'insensitive' }; phone?: { contains: string; mode: 'insensitive' } }>;
+      tags?: { has: string };
+    } = {
       organizationId: session.user.organizationId,
     };
 
@@ -48,8 +52,8 @@ export async function GET(request: NextRequest) {
     });
 
     // Calculate derived fields
-    const customersWithStats = customers.map((customer: any) => {
-      const totalSpent = customer.orders.reduce((sum: number, order: any) => sum + order.totalAmount, 0);
+    const customersWithStats = customers.map((customer) => {
+      const totalSpent = customer.orders.reduce((sum: number, order) => sum + order.totalAmount, 0);
       const orderCount = customer.orders.length;
       const lastOrderDate = customer.orders.length > 0 ? customer.orders[0].createdAt : null;
 

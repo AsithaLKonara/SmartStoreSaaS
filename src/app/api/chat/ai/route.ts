@@ -4,6 +4,18 @@ import { authOptions } from '@/lib/auth';
 import { aiChatService } from '@/lib/ai/chatService';
 import { prisma } from '@/lib/prisma';
 
+interface ChatMessageMetadata {
+  sentiment?: {
+    positive: number;
+    negative: number;
+    neutral: number;
+    overall: 'positive' | 'negative' | 'neutral';
+  };
+  isUrgent?: boolean;
+  confidence?: number;
+  aiGenerated?: boolean;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -12,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { message, conversationId, customerId } = body;
+    const { message, conversationId } = body;
 
     if (!message || !conversationId) {
       return NextResponse.json({ message: 'Message and conversation ID are required' }, { status: 400 });
@@ -109,9 +121,9 @@ export async function POST(request: NextRequest) {
     } else if (message.toLowerCase().includes('help') || message.toLowerCase().includes('support')) {
       // FAQ handling
       aiResponse = await aiChatService.answerFAQ(message, session.user.organizationId);
-    } else if (customerId && (message.toLowerCase().includes('recommend') || message.toLowerCase().includes('suggest'))) {
+    } else if (conversation?.customerId && (message.toLowerCase().includes('recommend') || message.toLowerCase().includes('suggest'))) {
       // Product recommendations based on customer history
-      const recommendations = await aiChatService.recommendProducts(customerId, message, session.user.organizationId);
+      const recommendations = await aiChatService.recommendProducts(conversation.customerId, message, session.user.organizationId);
       if (recommendations.length > 0) {
         aiResponse = `Based on your preferences, here are some recommendations:\n\n${recommendations
           .slice(0, 3)
@@ -139,11 +151,11 @@ export async function POST(request: NextRequest) {
         customerId: conversation?.customerId || '',
         organizationId: session.user.organizationId,
         metadata: {
-          sentiment: sentiment as any,
+          sentiment,
           isUrgent,
           confidence: 0.9,
           aiGenerated: true,
-        } as any,
+        } as ChatMessageMetadata,
       },
     });
 
@@ -174,24 +186,11 @@ export async function POST(request: NextRequest) {
 }
 
 // Generate contextual response using AI
-async function generateContextualResponse(message: string, context: string, organizationId: string): Promise<string> {
+async function generateContextualResponse(_message: string, _context: string, _organizationId: string): Promise<string> {
   try {
-    const prompt = `
-      You are a helpful customer service assistant for SmartStore AI, an e-commerce platform.
-      
-      Previous conversation context:
-      ${context}
-      
-      Customer message: "${message}"
-      
-      Provide a helpful, friendly, and professional response. Be concise but informative.
-      If the customer is asking about products, orders, or general questions, provide helpful guidance.
-      If you're unsure about something, politely ask for clarification.
-      
-      Response:`;
-
     // This would use the AI service to generate a response
     // For now, returning a generic helpful response
+    // Context and organizationId are available for future AI integration
     return "Thank you for your message! I'm here to help you with any questions about our products, orders, or services. How can I assist you today?";
   } catch {
     console.error('Error generating contextual response');
@@ -200,7 +199,12 @@ async function generateContextualResponse(message: string, context: string, orga
 }
 
 // Create urgent issue notification
-async function createUrgentIssueNotification(conversation: any, message: string, organizationId: string): Promise<void> {
+interface ConversationForNotification {
+  id: string;
+  customerId: string;
+}
+
+async function createUrgentIssueNotification(conversation: ConversationForNotification, message: string, organizationId: string): Promise<void> {
   try {
     // Create notification for urgent issues
     await prisma.notification.create({
@@ -270,7 +274,15 @@ export async function GET(request: NextRequest) {
 }
 
 // Get AI chat statistics
-async function getAIChatStats(organizationId: string): Promise<any> {
+interface AIChatStats {
+  totalAIMessages: number;
+  urgentIssues: number;
+  totalConversations: number;
+  averageResponseTime: number;
+  aiUtilizationRate: number;
+}
+
+async function getAIChatStats(organizationId: string): Promise<AIChatStats> {
   try {
     const totalMessages = await prisma.chatMessage.count({
       where: {

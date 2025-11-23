@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -32,7 +32,7 @@ export async function GET() {
 
     // Get conversation details with customer info
     const conversationsWithDetails = await Promise.all(
-      conversations.map(async (conv: any) => {
+      conversations.map(async (conv) => {
         const customer = await prisma.customer.findUnique({
           where: { id: conv.customerId },
         });
@@ -51,11 +51,11 @@ export async function GET() {
         });
 
         return {
-          id: conv.id,
+          id: conv.customerId,
           customerId: conv.customerId,
-          customerName: conv.customer?.name || 'Unknown',
-          customerPhone: conv.customer?.phone || '',
-          customerEmail: conv.customer?.email || '',
+          customerName: customer?.name || 'Unknown',
+          customerPhone: customer?.phone || '',
+          customerEmail: customer?.email || '',
           lastMessage: lastMessage?.content || '',
           lastMessageTime: lastMessage?.createdAt || conv._max.createdAt || new Date().toISOString(),
           unreadCount,

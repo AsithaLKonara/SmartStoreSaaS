@@ -6,7 +6,7 @@ export interface ARModelInfo {
   modelUrl: string;
   modelType: 'gltf' | 'glb' | 'obj';
   thumbnailUrl?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export class ARService {
@@ -25,7 +25,7 @@ export class ARService {
       modelUrl: arModel.modelUrl,
       modelType: arModel.modelType as 'gltf' | 'glb' | 'obj',
       thumbnailUrl: arModel.thumbnailUrl || undefined,
-      metadata: arModel.metadata as any,
+      metadata: arModel.metadata as Record<string, unknown>,
     };
   }
 
@@ -61,7 +61,7 @@ export class ARService {
       modelUrl: arModel.modelUrl,
       modelType: arModel.modelType as 'gltf' | 'glb' | 'obj',
       thumbnailUrl: arModel.thumbnailUrl || undefined,
-      metadata: arModel.metadata as any,
+      metadata: arModel.metadata as Record<string, unknown>,
     };
   }
 

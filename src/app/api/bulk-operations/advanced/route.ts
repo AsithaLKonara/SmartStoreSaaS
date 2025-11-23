@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
             });
 
             for (let i = 0; i < Math.min(records.length, 10); i++) {
-              const record = records[i] as any;
+              const record = records[i] as Record<string, unknown>;
               const validation = { row: i + 1, valid: true, errors: [] as string[] };
 
               if (validateEntity === 'products') {
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
             const records = XLSX.utils.sheet_to_json(worksheet);
 
             for (let i = 0; i < Math.min(records.length, 10); i++) {
-              const record = records[i] as any;
+              const record = records[i] as Record<string, unknown>;
               const validation = { row: i + 1, valid: true, errors: [] as string[] };
 
               if (validateEntity === 'products') {

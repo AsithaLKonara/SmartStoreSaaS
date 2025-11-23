@@ -131,12 +131,12 @@ export class InventoryService {
 
     if (!organization) return [];
 
-    const orgSettings = (organization.settings as any) || {};
+    const orgSettings = (organization.settings as Record<string, unknown> & { stockAlerts?: Record<string, { isActive?: boolean; id?: string; productId?: string; warehouseId?: string; type?: string; currentQuantity?: number; threshold?: number; message?: string }> }) || {};
     const stockAlerts = orgSettings.stockAlerts || {};
 
     return Object.values(stockAlerts)
-      .filter((alert: any) => alert.isActive)
-      .map((alert: any) => ({
+      .filter((alert) => alert.isActive)
+      .map((alert) => ({
         id: alert.id || '',
         productId: alert.productId,
         warehouseId: alert.warehouseId,
@@ -171,7 +171,7 @@ export class InventoryService {
 
       // Get inventory data from Warehouse settings metadata
       return warehouses.map(warehouse => {
-        const inventoryData = (warehouse.settings as any)?.inventory?.[productId] || {};
+        const inventoryData = (warehouse.settings as Record<string, unknown> & { inventory?: Record<string, { quantity?: number; reservedQuantity?: number }> })?.inventory?.[productId] || {};
         const quantity = inventoryData.quantity || 0;
         const reservedQuantity = inventoryData.reservedQuantity || 0;
 
@@ -281,7 +281,7 @@ export class InventoryService {
             settings: {
               ...warehouseSettings,
               inventory: inventoryData,
-            } as any,
+            } as Record<string, unknown>,
           },
         });
 
@@ -290,7 +290,7 @@ export class InventoryService {
           where: { organizationId },
         });
         const totalStock = allWarehouses.reduce((sum, w) => {
-          const wSettings = (w.settings as any) || {};
+          const wSettings = (w.settings as Record<string, unknown> & { inventory?: Record<string, { quantity?: number }> }) || {};
           const wInventory = wSettings.inventory || {};
           return sum + (wInventory[productId]?.quantity || 0);
         }, 0);
@@ -404,7 +404,7 @@ export class InventoryService {
               settings: {
                 ...warehouseSettings,
                 inventory: inventoryData,
-              } as any,
+              } as Record<string, unknown>,
             },
           });
 
@@ -430,7 +430,7 @@ export class InventoryService {
                 metadata: {
                   ...orderMetadata,
                   inventoryReservations: reservations,
-                } as any,
+                } as Record<string, unknown>,
               },
             });
           }
@@ -493,7 +493,7 @@ export class InventoryService {
                   settings: {
                     ...warehouseSettings,
                     inventory: inventoryData,
-                  } as any,
+                  } as Record<string, unknown>,
                 },
               });
 
@@ -523,7 +523,7 @@ export class InventoryService {
                   settings: {
                     ...warehouseSettings,
                     inventory: inventoryData,
-                  } as any,
+                  } as Record<string, unknown>,
                 },
               });
             }
@@ -542,7 +542,7 @@ export class InventoryService {
               metadata: {
                 ...orderMetadata,
                 inventoryReservations: updatedReservations,
-              } as any,
+              } as Record<string, unknown>,
             },
           });
         }
@@ -785,7 +785,7 @@ export class InventoryService {
               settings: {
                 ...orgSettings,
                 stockAlerts,
-              } as any,
+              } as Record<string, unknown>,
             },
           });
         }
@@ -894,7 +894,7 @@ export class InventoryService {
                 settings: {
                   ...orgSettings,
                   stockAlerts,
-                } as any,
+                } as Record<string, unknown>,
               },
             });
           }
@@ -1207,7 +1207,7 @@ export class InventoryService {
     }
   }
 
-  private async getTopProductsByValue(organizationId: string): Promise<any[]> {
+  private async getTopProductsByValue(organizationId: string): Promise<Array<Record<string, unknown>>> {
     // Get products with stock quantity > 0
     const products = await prisma.product.findMany({
       where: {
@@ -1229,7 +1229,7 @@ export class InventoryService {
       .slice(0, 10);
   }
 
-  private async getSlowMovingProducts(organizationId: string): Promise<any[]> {
+  private async getSlowMovingProducts(organizationId: string): Promise<Array<Record<string, unknown>>> {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 

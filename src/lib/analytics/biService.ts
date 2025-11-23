@@ -12,13 +12,13 @@ export interface BIWidget {
   type: 'chart' | 'table' | 'metric' | 'kpi';
   title: string;
   dataSource: string;
-  config: any;
+  config: Record<string, unknown>;
 }
 
 export interface BIFilter {
   field: string;
   operator: 'eq' | 'gt' | 'lt' | 'between' | 'in';
-  value: any;
+  value: unknown;
 }
 
 export interface BIQuery {
@@ -36,7 +36,7 @@ export class BIService {
     query: BIQuery
   ): Promise<any> {
     // Build Prisma query based on BI query
-    const where: any = {
+    const where: Record<string, unknown> = {
       organizationId,
     };
 
@@ -80,7 +80,7 @@ export class BIService {
 
   private async queryOrders(
     organizationId: string,
-    where: any,
+    where: Record<string, unknown>,
     query: BIQuery
   ): Promise<any> {
     const orders = await prisma.order.findMany({
@@ -106,7 +106,7 @@ export class BIService {
 
   private async queryProducts(
     organizationId: string,
-    where: any,
+    where: Record<string, unknown>,
     query: BIQuery
   ): Promise<any> {
     const products = await prisma.product.findMany({
@@ -127,7 +127,7 @@ export class BIService {
 
   private async queryCustomers(
     organizationId: string,
-    where: any,
+    where: Record<string, unknown>,
     query: BIQuery
   ): Promise<any> {
     const customers = await prisma.customer.findMany({
@@ -146,13 +146,13 @@ export class BIService {
   }
 
   private aggregateData(
-    data: any[],
+    data: Array<Record<string, unknown>>,
     measures: string[],
     groupBy?: string[]
-  ): any[] {
+  ): Array<Record<string, unknown>> {
     if (!groupBy || groupBy.length === 0) {
       // Simple aggregation
-      const result: any = {};
+      const result: Record<string, unknown> = {};
       measures.forEach(measure => {
         switch (measure) {
           case 'revenue':

@@ -1,6 +1,5 @@
 import OpenAI from 'openai';
 import { prisma } from '@/lib/prisma';
-import { formatCurrency } from '@/lib/utils';
 
 interface SalesForecast {
   period: string;
@@ -334,7 +333,7 @@ export class AIAnalyticsService {
       // Simple route optimization - group by area
       const routes = orders.reduce((acc, order) => {
         // Get address from Order metadata or shippingAddress
-        const address = (order.metadata as any)?.shippingAddress || (order.metadata as any)?.address || '';
+        const address = (order.metadata as Record<string, unknown> & { shippingAddress?: string; address?: string })?.shippingAddress || (order.metadata as Record<string, unknown> & { shippingAddress?: string; address?: string })?.address || '';
         const area = address ? address.split(',')[1]?.trim() || 'Unknown' : 'Unknown';
         if (!acc[area]) {
           acc[area] = [];
@@ -351,7 +350,7 @@ export class AIAnalyticsService {
           id: order.id,
           orderNumber: order.orderNumber,
           customerName: order.customer.name,
-          address: (order.metadata as any)?.shippingAddress || (order.metadata as any)?.address || '',
+          address: (order.metadata as Record<string, unknown> & { shippingAddress?: string; address?: string })?.shippingAddress || (order.metadata as Record<string, unknown> & { shippingAddress?: string; address?: string })?.address || '',
         })),
       }));
     } catch (error) {
@@ -403,9 +402,9 @@ export class AIAnalyticsService {
         }
 
         return acc;
-      }, {} as Record<string, any>);
+      }, {} as Record<string, { courierId: string; courierName: string; deliveries: unknown[]; successfulDeliveries: number; totalDeliveryTime: number }>);
 
-      return Object.values(courierMetrics).map((courier: any) => ({
+      return Object.values(courierMetrics).map((courier) => ({
         courierId: courier.courierId,
         courierName: courier.courierName,
         deliverySuccessRate: courier.successfulDeliveries / courier.deliveries.length,

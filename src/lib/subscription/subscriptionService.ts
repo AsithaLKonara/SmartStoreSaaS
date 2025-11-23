@@ -608,7 +608,7 @@ export class SubscriptionService {
         where: { id: customerId },
         include: { organization: true },
       });
-      
+
       if (!customerRecord || !customerRecord.organizationId) {
         throw new Error('Customer not found');
       }
@@ -620,7 +620,7 @@ export class SubscriptionService {
           organizationId: customerRecord.organizationId,
         },
       });
-      
+
       if (!user || !user.organizationId) {
         throw new Error('User not found for customer');
       }
@@ -810,7 +810,7 @@ export class SubscriptionService {
 
     const limits = plan.limits || {};
     const limit = limits[metricType];
-    const currentUsage = await this.getCurrentUsage(subscriptionId, metricType);
+      const currentUsage = await this.getCurrentUsage(subscriptionId, metricType);
 
     // Get usage for current period from metadata
     const usageRecords = subMetadata.usageRecords || [];

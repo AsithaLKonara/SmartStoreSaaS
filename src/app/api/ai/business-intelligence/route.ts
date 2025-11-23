@@ -17,6 +17,16 @@ interface ProductData {
   stock?: number;
 }
 
+// Type definitions for business intelligence data
+type MarketData = Record<string, unknown>;
+type SeasonalData = Record<string, unknown>;
+type CompetitorData = Record<string, unknown>;
+type MarketShareData = Record<string, unknown>;
+type ProductComparison = Record<string, unknown>;
+type MarketRiskData = Record<string, unknown>;
+type FinancialData = Record<string, unknown>;
+type IndustryReport = Record<string, unknown>;
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -137,8 +147,8 @@ export async function GET(request: NextRequest) {
 
       case 'sales-forecasts':
         const historicalSales = salesData;
-        const marketData: any[] = []; // This would come from market research
-        const seasonalData: any[] = []; // This would come from seasonal analysis
+        const marketData: MarketData[] = []; // This would come from market research
+        const seasonalData: SeasonalData[] = []; // This would come from seasonal analysis
         const forecasts = await businessIntelligenceService.generateSalesForecasts(
           historicalSales,
           marketData,
@@ -147,9 +157,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ forecasts });
 
       case 'market-trends':
-        const marketTrendsData: any[] = []; // This would come from market research APIs
-        const competitorData: any[] = []; // This would come from competitor analysis
-        const industryReports: any[] = []; // This would come from industry reports
+        const marketTrendsData: MarketData[] = []; // This would come from market research APIs
+        const competitorData: CompetitorData[] = []; // This would come from competitor analysis
+        const industryReports: IndustryReport[] = []; // This would come from industry reports
         const trends = await businessIntelligenceService.analyzeMarketTrends(
           marketTrendsData,
           competitorData,
@@ -158,9 +168,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ trends });
 
       case 'competitive-analysis':
-        const competitorAnalysisData: any[] = []; // This would come from competitor research
-        const marketShareData: any[] = []; // This would come from market share analysis
-        const productComparison: any[] = []; // This would come from product comparison
+        const competitorAnalysisData: CompetitorData[] = []; // This would come from competitor research
+        const marketShareData: MarketShareData[] = []; // This would come from market share analysis
+        const productComparison: ProductComparison[] = []; // This would come from product comparison
         const competitiveAnalysis = await businessIntelligenceService.performCompetitiveAnalysis(
           competitorAnalysisData,
           marketShareData,
@@ -175,8 +185,8 @@ export async function GET(request: NextRequest) {
           customers: customerData,
           products: productData,
         };
-        const marketRiskData: any[] = []; // This would come from market risk analysis
-        const financialData: any[] = []; // This would come from financial analysis
+        const marketRiskData: MarketRiskData[] = []; // This would come from market risk analysis
+        const financialData: FinancialData[] = []; // This would come from financial analysis
         const risks = await businessIntelligenceService.assessBusinessRisks(
           [businessData],
           marketRiskData,
@@ -185,8 +195,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ risks });
 
       case 'business-insights':
-        const marketTrendsDataInsights: any[] = []; // This would come from market research APIs
-        const competitorDataInsights: any[] = []; // This would come from competitor analysis
+        const marketTrendsDataInsights: MarketData[] = []; // This would come from market research APIs
+        const competitorDataInsights: CompetitorData[] = []; // This would come from competitor analysis
         const allData = {
           sales: salesData,
           orders: orderData,
@@ -252,15 +262,15 @@ export async function GET(request: NextRequest) {
         );
 
         const topProducts = products
-          .sort((a: any, b: any) => (b.sales || 0) - (a.sales || 0))
+          .sort((a, b) => ((b as ProductData & { sales?: number }).sales || 0) - ((a as ProductData & { sales?: number }).sales || 0))
           .slice(0, 5);
 
         const recentOrders = orders
-          .sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime())
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
           .slice(0, 10);
 
         const customerActivity = customers
-          .sort((a: any, b: any) => (b.orders?.length || 0) - (a.orders?.length || 0))
+          .sort((a, b) => (b.orders?.length || 0) - (a.orders?.length || 0))
           .slice(0, 5);
 
         return NextResponse.json({
@@ -303,7 +313,7 @@ export async function POST(request: NextRequest) {
             type: data.type || 'OPERATIONAL',
             status: 'READY',
             format: data.format || 'PDF',
-            parameters: data as any,
+            parameters: data as Record<string, unknown>,
             organizationId: organizationId!,
           },
         });
@@ -332,7 +342,7 @@ export async function POST(request: NextRequest) {
             organizationId: organizationId!,
             type: 'business_alert',
             severity: (data?.severity as string) || 'medium',
-            details: data as any,
+            details: data as Record<string, unknown>,
             resolved: false,
           },
         });

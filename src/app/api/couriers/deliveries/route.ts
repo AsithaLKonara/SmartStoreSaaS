@@ -39,7 +39,7 @@ export async function GET() {
         orderNumber: order.orderNumber,
         customerName: order.customer?.name || 'Unknown',
         pickupAddress: 'Warehouse Address', // This would come from warehouse settings
-        deliveryAddress: (order.metadata as any)?.shippingAddress || 'Address not available',
+        deliveryAddress: (order.metadata as Record<string, unknown> & { shippingAddress?: string })?.shippingAddress || 'Address not available',
         status: order.status === 'CONFIRMED' ? 'ASSIGNED' : 
                 order.status === 'PACKED' ? 'PICKED_UP' : 
                 order.status === 'OUT_FOR_DELIVERY' ? 'IN_TRANSIT' : 'ASSIGNED',

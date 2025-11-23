@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 interface BIQuery {
   dimensions: string[];
   measures: string[];
-  filters?: any[];
+  filters?: Array<Record<string, unknown>>;
   groupBy?: string[];
 }
 

@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         const size = searchParams.get('size');
         const format = searchParams.get('format');
         const qrCodeUrl = await advancedPWAService.generateQRCode({
-          type: qrType as any,
+          type: qrType as 'URL' | 'TEXT' | 'WIFI' | 'EMAIL' | 'PHONE' | 'SMS',
           data: JSON.parse(qrData || '{}'),
           size: size ? parseInt(size) : 200,
           format: (format as 'PNG' | 'SVG') || 'PNG',
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
           where: { id: organizationId || '' },
           select: { settings: true },
         });
-        const currentStats = (org?.settings as any)?.pwaStats || {
+        const currentStats = (org?.settings as Record<string, unknown> & { pwaStats?: { totalInstalls: number; activeUsers: number; offlineUsage: number; pushSubscriptions: number } })?.pwaStats || {
           totalInstalls: 0,
           activeUsers: 0,
           offlineUsage: 0,
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
               metadata: {
                 subscription: subscription.toJSON(),
                 isActive: true,
-              } as any,
+              } as Record<string, unknown>,
             },
           });
         }
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
                 pushSubscriptions,
                 recordedAt: new Date(),
               },
-            } as any,
+            } as Record<string, unknown>,
           },
         });
         return NextResponse.json({ success: true });

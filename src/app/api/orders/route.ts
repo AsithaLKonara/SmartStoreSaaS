@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth';
 import { prisma } from '../../../lib/prisma';
-import { generateOrderNumber } from '../../../lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,13 +12,24 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
-    const paymentStatus = searchParams.get('paymentStatus');
     const search = searchParams.get('search');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: {
+      organizationId: string;
+      status?: string;
+      paymentStatus?: string;
+      OR?: Array<{
+        orderNumber?: { contains: string; mode: 'insensitive' };
+        customer?: {
+          name?: { contains: string; mode: 'insensitive' };
+          email?: { contains: string; mode: 'insensitive' };
+          phone?: { contains: string; mode: 'insensitive' };
+        };
+      }>;
+    } = {
       organizationId: session.user.organizationId,
     };
 
@@ -41,10 +51,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count for pagination
-    const total = await prisma.order.count({ where: where as any });
+    const total = await prisma.order.count({ where });
 
     const orders = await prisma.order.findMany({
-      where: where as any,
+      where,
       include: {
         customer: true,
         items: {
@@ -89,8 +99,6 @@ export async function POST(request: NextRequest) {
       customerId,
       items,
       status,
-      paymentMethod,
-      paymentStatus,
       notes,
     } = body;
 

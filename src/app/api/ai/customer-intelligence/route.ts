@@ -155,7 +155,7 @@ export async function GET(request: NextRequest) {
 
         const customerRecommendations = await customerIntelligenceService.generateProductRecommendations(
           [customer],
-          purchaseHistory.filter((p: any) => p.customerId === customerId),
+          purchaseHistory.filter((p) => (p as { customerId?: string }).customerId === customerId),
           await prisma.product.findMany({ where: { organizationId } })
         );
 

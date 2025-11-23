@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 
 export interface ModelTrainingConfig {
   modelType: 'recommendation' | 'forecasting' | 'classification' | 'regression';
-  trainingData: any[];
+  trainingData: Array<Record<string, unknown>>;
   features: string[];
   targetVariable: string;
   hyperparameters?: Record<string, any>;
@@ -16,7 +16,7 @@ export interface TrainedModel {
   accuracy: number;
   status: 'training' | 'ready' | 'failed';
   modelPath: string;
-  metadata: any;
+  metadata: Record<string, unknown>;
   createdAt: Date;
 }
 
@@ -31,14 +31,14 @@ export class CustomModelService {
         organizationId,
         modelType: config.modelType,
         status: 'training',
-        config: config as any,
+        config: config as Record<string, unknown>,
         startedAt: new Date(),
       },
     });
 
     try {
       // Train model based on type
-      let model: any;
+      let model: Record<string, unknown>;
       switch (config.modelType) {
         case 'recommendation':
           model = await this.trainRecommendationModel(config);
@@ -201,66 +201,66 @@ export class CustomModelService {
     }
   }
 
-  private calculateItemSimilarity(data: any[], features: string[]): any {
+  private calculateItemSimilarity(_data: Array<Record<string, unknown>>, _features: string[]): Record<string, unknown> {
     // Simplified similarity calculation
     return {};
   }
 
-  private extractUserPreferences(data: any[]): any {
+  private extractUserPreferences(_data: Array<Record<string, unknown>>): Record<string, unknown> {
     return {};
   }
 
-  private calculateForecastCoefficients(data: any[], target: string): number[] {
+  private calculateForecastCoefficients(_data: Array<Record<string, unknown>>, _target: string): number[] {
     // Simplified coefficient calculation
     return [1.0, 0.5, 0.3];
   }
 
-  private detectSeasonality(data: any[], target: string): any {
+  private detectSeasonality(_data: Array<Record<string, unknown>>, _target: string): Record<string, unknown> {
     return { period: 7, strength: 0.6 };
   }
 
-  private buildDecisionTrees(data: any[], features: string[], target: string): any[] {
+  private buildDecisionTrees(_data: Array<Record<string, unknown>>, _features: string[], _target: string): Array<Record<string, unknown>> {
     return [];
   }
 
-  private calculateFeatureImportance(data: any[], features: string[], target: string): Record<string, number> {
+  private calculateFeatureImportance(_data: Array<Record<string, unknown>>, _features: string[], _target: string): Record<string, number> {
     return {};
   }
 
-  private calculateRegressionCoefficients(data: any[], features: string[], target: string): number[] {
+  private calculateRegressionCoefficients(_data: Array<Record<string, unknown>>, _features: string[], _target: string): number[] {
     return features.map(() => Math.random());
   }
 
-  private calculateRSquared(data: any[], features: string[], target: string): number {
+  private calculateRSquared(_data: Array<Record<string, unknown>>, _features: string[], _target: string): number {
     return 0.79;
   }
 
-  private async saveModel(model: any, organizationId: string, modelType: string): Promise<string> {
+  private async saveModel(_model: Record<string, unknown>, organizationId: string, modelType: string): Promise<string> {
     // In production, save to cloud storage (S3, GCS, etc.)
-    const modelPath = `models/${organizationId}/${modelType}/${Date.now()}.json`;
+    const _modelPath = `models/${organizationId}/${modelType}/${Date.now()}.json`;
     // Would save model to storage here
     return modelPath;
   }
 
-  private async loadModel(modelPath: string): Promise<any> {
+  private async loadModel(_modelPath: string): Promise<Record<string, unknown>> {
     // Load model from storage
     // Would load from storage here
     return {};
   }
 
-  private predictRecommendations(model: any, input: any): any {
+  private predictRecommendations(_model: Record<string, unknown>, _input: Record<string, unknown>): Record<string, unknown> {
     return { recommendations: [], confidence: 0.8 };
   }
 
-  private predictForecast(model: any, input: any): any {
+  private predictForecast(_model: Record<string, unknown>, _input: Record<string, unknown>): Record<string, unknown> {
     return { forecast: [], confidence: 0.75 };
   }
 
-  private predictClassification(model: any, input: any): any {
+  private predictClassification(_model: Record<string, unknown>, _input: Record<string, unknown>): Record<string, unknown> {
     return { class: 'positive', probability: 0.85 };
   }
 
-  private predictRegression(model: any, input: any): any {
+  private predictRegression(_model: Record<string, unknown>, _input: Record<string, unknown>): Record<string, unknown> {
     return { value: 100.5, confidence: 0.8 };
   }
 }

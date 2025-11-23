@@ -15,7 +15,21 @@ export async function GET(request: NextRequest) {
     const method = searchParams.get('method');
     const search = searchParams.get('search');
 
-    const where: any = {
+    const where: {
+      organizationId: string;
+      status?: string;
+      method?: string;
+      OR?: Array<{
+        order?: {
+          orderNumber?: { contains: string; mode: 'insensitive' };
+          customer?: {
+            name?: { contains: string; mode: 'insensitive' };
+            phone?: { contains: string; mode: 'insensitive' };
+          };
+        };
+        transactionId?: { contains: string; mode: 'insensitive' };
+      }>;
+    } = {
       organizationId: session.user.organizationId,
     };
 
@@ -63,7 +77,7 @@ export async function GET(request: NextRequest) {
       amount: payment.amount,
       method: payment.method,
       status: payment.status,
-      transactionId: (payment.metadata as any)?.transactionId || null,
+      transactionId: (payment.metadata as Record<string, unknown> & { transactionId?: string })?.transactionId || null,
       gateway: payment.gateway,
       createdAt: payment.createdAt,
       updatedAt: payment.updatedAt,

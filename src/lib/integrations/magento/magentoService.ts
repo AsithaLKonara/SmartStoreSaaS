@@ -145,7 +145,7 @@ export class MagentoService {
           dimensions: {
             magentoId: String(magentoProduct.id),
             magentoType: magentoProduct.type_id,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
     }
@@ -231,7 +231,7 @@ export class MagentoService {
       await prisma.order.update({
         where: { id: existingOrder.id },
         data: {
-          status: orderData.status as any,
+          status: orderData.status as 'DRAFT' | 'PENDING' | 'CONFIRMED' | 'PACKED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED' | 'RETURNED',
           totalAmount: orderData.totalAmount,
         },
       });
@@ -239,7 +239,7 @@ export class MagentoService {
       await prisma.order.create({
         data: {
           orderNumber: orderData.orderNumber,
-          status: orderData.status as any,
+          status: orderData.status as 'DRAFT' | 'PENDING' | 'CONFIRMED' | 'PACKED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED' | 'RETURNED',
           totalAmount: orderData.totalAmount,
           subtotal: orderData.subtotal,
           customerId: orderData.customerId,
@@ -248,7 +248,7 @@ export class MagentoService {
           metadata: {
             magentoId: orderData.metadata.magentoId,
             magentoIncrementId: orderData.metadata.magentoIncrementId,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
     }

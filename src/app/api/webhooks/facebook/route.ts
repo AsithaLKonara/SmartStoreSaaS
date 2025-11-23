@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
-import { prisma } from '@/lib/prisma';
-import { FacebookCommerceService } from '@/lib/integrations/facebook/facebookCommerceService';
 
 export async function POST(request: NextRequest) {
   try {

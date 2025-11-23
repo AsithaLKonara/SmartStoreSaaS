@@ -460,8 +460,8 @@ export class MarketplaceService {
       });
 
       // Calculate marketplace metrics
-      const totalRevenue = orders.reduce((sum: number, order: any) => {
-        const orderTotal = order.items.reduce((itemSum: number, item: any) => 
+      const totalRevenue = orders.reduce((sum: number, order: { items: Array<{ quantity: number; price: number }> }) => {
+        const orderTotal = order.items.reduce((itemSum: number, item: { quantity: number; price: number }) => 
           itemSum + (item.quantity * item.price), 0);
         return sum + orderTotal;
       }, 0);
@@ -619,7 +619,7 @@ export class MarketplaceService {
 
     if (pendingOrders.length === 0) return;
 
-    const totalPayout = pendingOrders.reduce((sum: number, order: any) => sum + order.totalAmount, 0);
+    const totalPayout = pendingOrders.reduce((sum: number, order: { totalAmount: number }) => sum + order.totalAmount, 0);
 
     // Process payout via Stripe Connect
     await this.processStripePayout(vendorId, totalPayout);
@@ -627,7 +627,7 @@ export class MarketplaceService {
     // Update payout status
     await prisma.order.updateMany({
       where: {
-        id: { in: pendingOrders.map((o: any) => o.id) },
+        id: { in: pendingOrders.map((o: { id: string }) => o.id) },
       },
       data: {
         // Note: payoutStatus field doesn't exist in Order model
@@ -700,7 +700,7 @@ export class MarketplaceService {
     });
   }
 
-  private groupSalesByMonth(orders: any[], startDate: Date, endDate: Date): any[] {
+  private groupSalesByMonth(orders: Array<{ createdAt: Date; totalAmount: number }>, startDate: Date, endDate: Date): Array<{ month: string; revenue: number; orders: number }> {
     const months = new Map<string, { revenue: number; orders: number }>();
     
     for (const order of orders) {
@@ -720,7 +720,7 @@ export class MarketplaceService {
       .sort((a, b) => a.month.localeCompare(b.month));
   }
 
-  private mapVendorFromDB(vendor: any): Vendor {
+  private mapVendorFromDB(vendor: { id: string; userId: string; name?: string; businessType: string; businessDescription?: string; logo?: string; banner?: string; address?: unknown; contactInfo?: unknown; taxInfo?: unknown; bankDetails?: unknown; status: string; verificationStatus: string; metadata?: unknown; rating?: number; totalSales?: number; totalOrders?: number; createdAt: Date; updatedAt: Date; documents?: unknown[] }): Vendor {
     return {
       id: vendor.id,
       userId: vendor.userId,
@@ -735,7 +735,7 @@ export class MarketplaceService {
       bankDetails: vendor.bankDetails || {},
       status: vendor.status,
       verificationStatus: vendor.verificationStatus,
-      commissionRate: (vendor.metadata as any)?.commissionRate || 0,
+      commissionRate: (vendor.metadata as Record<string, unknown> & { commissionRate?: number })?.commissionRate || 0,
       rating: vendor.rating,
       totalSales: vendor.totalSales,
       totalOrders: vendor.totalOrders,
@@ -746,7 +746,7 @@ export class MarketplaceService {
     };
   }
 
-  private mapVendorProductFromDB(vendorProduct: any): VendorProduct {
+  private mapVendorProductFromDB(vendorProduct: { id: string; vendorId: string; productId: string; price: number; stock: number; sku?: string; condition?: string; warranty?: string; shippingWeight?: number; shippingDimensions?: unknown; processingTime?: number; isActive: boolean; createdAt: Date; updatedAt: Date }): VendorProduct {
     return {
       id: vendorProduct.id,
       vendorId: vendorProduct.vendorId,
@@ -757,7 +757,7 @@ export class MarketplaceService {
       condition: vendorProduct.condition,
       warranty: vendorProduct.warranty,
       shippingWeight: vendorProduct.shippingWeight,
-      shippingDimensions: vendorProduct.shippingDimensions as any,
+      shippingDimensions: vendorProduct.shippingDimensions as { length?: number; width?: number; height?: number; unit?: string },
       processingTime: vendorProduct.processingTime,
       status: vendorProduct.isActive ? 'active' : 'inactive',
       createdAt: vendorProduct.createdAt,

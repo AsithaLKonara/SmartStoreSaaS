@@ -25,7 +25,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
     const query = searchParams.get('query');
-    const type = searchParams.get('type');
 
     switch (action) {
       case 'suggestions':

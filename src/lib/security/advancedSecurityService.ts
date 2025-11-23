@@ -61,7 +61,7 @@ interface SecurityRule {
   id: string;
   name: string;
   type: 'rate_limit' | 'geo_block' | 'device_trust' | 'behavior_analysis' | 'ip_reputation';
-  conditions: any;
+  conditions: Record<string, unknown>;
   actions: Array<'block' | 'alert' | 'challenge' | 'log' | 'notify_admin'>;
   isActive: boolean;
   priority: number;
@@ -304,7 +304,7 @@ export class AdvancedSecurityService {
           await this.notifyAdministrators({
             id: crypto.randomUUID(),
             type: 'SUSPICIOUS_ACTIVITY',
-            severity: detection.severity.toUpperCase() as any,
+            severity: detection.severity.toUpperCase() as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
             message: `Security threat detected: ${detection.reason}`,
             userId: event.userId,
             ipAddress: event.ipAddress,
@@ -432,7 +432,7 @@ export class AdvancedSecurityService {
       }
 
       // Get user's recent locations
-      const recentEvents: any[] = []; // await prisma.securityAudit.findMany({ where: { userId: event.userId, metadata: { not: null }, createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } }, take: 10 });
+      const recentEvents: Array<{ metadata?: Record<string, unknown> & { location?: { coordinates?: [number, number] } } }> = []; // await prisma.securityAudit.findMany({ where: { userId: event.userId, metadata: { not: null }, createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } }, take: 10 });
 
       if (recentEvents.length === 0) {
         return { isAnomalous: false, score: 0 };
@@ -440,16 +440,16 @@ export class AdvancedSecurityService {
 
       // Calculate average location
       const locations = recentEvents
-        .map((e: any) => (e.metadata as any)?.location)
-        .filter((loc: any) => loc?.coordinates)
-        .map((loc: any) => loc.coordinates);
+        .map((e) => e.metadata?.location)
+        .filter((loc): loc is { coordinates: [number, number] } => loc?.coordinates !== undefined)
+        .map((loc) => loc.coordinates);
 
       if (locations.length === 0) {
         return { isAnomalous: false, score: 0 };
       }
 
-      const avgLat = locations.reduce((sum: number, loc: any) => sum + loc[0], 0) / locations.length;
-      const avgLng = locations.reduce((sum: number, loc: any) => sum + loc[1], 0) / locations.length;
+      const avgLat = locations.reduce((sum: number, loc) => sum + loc[0], 0) / locations.length;
+      const avgLng = locations.reduce((sum: number, loc) => sum + loc[1], 0) / locations.length;
 
       // Calculate distance from average location
       const currentLocation = event.location.coordinates;
@@ -514,16 +514,16 @@ export class AdvancedSecurityService {
   ): Promise<SecurityMetrics> {
     try {
       // Get all security events in the time range
-      const events: any[] = []; // await prisma.securityAudit.findMany({ where: { organizationId, createdAt: { gte: timeRange.start, lte: timeRange.end } } });
+      const events: Array<{ metadata?: Record<string, unknown> & { severity?: string; details?: { blocked?: boolean } }; ipAddress?: string; action?: string }> = []; // await prisma.securityAudit.findMany({ where: { organizationId, createdAt: { gte: timeRange.start, lte: timeRange.end } } });
 
       // Calculate metrics
       const totalEvents = events.length;
-      const criticalThreats = events.filter((e: any) => (e.metadata as any)?.severity === 'critical').length;
-      const blockedAttempts = events.filter((e: any) => (e.metadata as any)?.details?.blocked === true).length;
-      const uniqueAttackers = new Set(events.map((e: any) => e.ipAddress)).size;
+      const criticalThreats = events.filter((e) => e.metadata?.severity === 'critical').length;
+      const blockedAttempts = events.filter((e) => e.metadata?.details?.blocked === true).length;
+      const uniqueAttackers = new Set(events.map((e) => e.ipAddress).filter((ip): ip is string => ip !== undefined)).size;
 
       // Top threats by type
-      const threatCounts = events.reduce((acc: any, event: any) => {
+      const threatCounts = events.reduce((acc: Record<string, number>, event) => {
         const type = event.action;
         acc[type] = (acc[type] || 0) + 1;
         return acc;
@@ -533,23 +533,23 @@ export class AdvancedSecurityService {
         .map(([type, count]) => ({
           type,
           count: count as number,
-          severity: (events.find((e: any) => e.action === type)?.metadata as any)?.severity || 'low'
+          severity: (events.find((e) => e.action === type)?.metadata?.severity as 'low' | 'medium' | 'high' | 'critical' | undefined) || 'low'
         }))
         .sort((a, b) => (b.count as number) - (a.count as number))
         .slice(0, 10);
 
       // Geographical distribution
       const geoData = events
-        .filter((e: any) => (e.metadata as any)?.location)
-        .reduce((acc: any, event: any) => {
-          const country = (event.metadata as any)?.location?.country;
+        .filter((e) => e.metadata?.location !== undefined)
+        .reduce((acc: Record<string, { count: number; maxSeverity?: string }>, event) => {
+          const country = (event.metadata?.location as { country?: string })?.country;
           if (country) {
             acc[country] = (acc[country] || 0) + 1;
           }
           return acc;
         }, {});
 
-      const geoDistribution = Object.entries(geoData).map(([country, data]: [string, any]) => ({
+      const geoDistribution = Object.entries(geoData).map(([country, data]) => ({
         country,
         count: data.count,
         threatLevel: data.maxSeverity || 'low'

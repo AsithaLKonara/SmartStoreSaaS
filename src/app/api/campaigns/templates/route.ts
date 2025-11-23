@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     const template = await prisma.campaignTemplate.create({
       data: {
         name,
-        type: type as any,
+        type: type as 'EMAIL' | 'SMS' | 'PUSH' | 'IN_APP',
         content,
         variables: variables || [],
         organizationId: session.user.organizationId,

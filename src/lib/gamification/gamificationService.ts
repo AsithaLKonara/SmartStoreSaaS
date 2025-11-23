@@ -34,7 +34,7 @@ export class GamificationService {
     const unlockedAchievementIds: string[] = [];
 
     for (const achievement of achievements) {
-      const criteria = achievement.criteria as any;
+      const criteria = achievement.criteria as Record<string, unknown>;
       
       // Check if achievement criteria is met
       if (this.checkCriteria(criteria, eventType, eventData)) {
@@ -179,7 +179,7 @@ export class GamificationService {
     name: string,
     description: string,
     type: string,
-    value: any,
+    value: unknown,
     pointsRequired?: number
   ): Promise<any> {
     const reward = await prisma.reward.create({
@@ -246,7 +246,7 @@ export class GamificationService {
     }, 0);
   }
 
-  private checkCriteria(criteria: any, eventType: string, eventData: any): boolean {
+  private checkCriteria(criteria: Record<string, unknown>, eventType: string, eventData: Record<string, unknown>): boolean {
     if (!criteria) return false;
 
     // Example criteria checks

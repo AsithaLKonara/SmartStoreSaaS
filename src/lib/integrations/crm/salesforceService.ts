@@ -62,7 +62,7 @@ export class SalesforceService {
     }
   }
 
-  private async createOrUpdateContact(customer: any): Promise<void> {
+  private async createOrUpdateContact(customer: { name?: string; email?: string; phone?: string }): Promise<void> {
     const contact = {
       FirstName: customer.name?.split(' ')[0] || '',
       LastName: customer.name?.split(' ').slice(1).join(' ') || customer.name || 'Customer',
@@ -117,7 +117,7 @@ export class SalesforceService {
     return { success, failed };
   }
 
-  private async createLead(lead: any): Promise<void> {
+  private async createLead(lead: { name?: string; email?: string; company?: string }): Promise<void> {
     const salesforceLead = {
       FirstName: lead.name?.split(' ')[0] || '',
       LastName: lead.name?.split(' ').slice(1).join(' ') || lead.name || 'Lead',
@@ -158,7 +158,7 @@ export class SalesforceService {
     return { success, failed };
   }
 
-  private async createOpportunity(order: any): Promise<void> {
+  private async createOpportunity(order: { totalAmount?: number; orderNumber?: string; customer?: { name?: string } }): Promise<void> {
     // Get contact ID
     const contact = await this.client.get(
       `/services/data/v57.0/query/?q=SELECT Id FROM Contact WHERE SmartStoreId__c='${order.customerId}'`

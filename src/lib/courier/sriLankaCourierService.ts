@@ -136,7 +136,7 @@ export class SriLankaCourierService extends EventEmitter {
       });
 
       // Sync tracking update
-      await this.syncTrackingEvent(trackingInfo, (courier as any).organizationId);
+      await this.syncTrackingEvent(trackingInfo, (courier as { organizationId?: string }).organizationId || '');
 
       this.emit('tracking_updated', trackingInfo);
       return trackingInfo;
@@ -193,7 +193,7 @@ export class SriLankaCourierService extends EventEmitter {
       description: data.Shipments[0]?.CurrentStatusDescription || '',
       estimatedDelivery: data.Shipments[0]?.EstimatedDeliveryDate ? 
         new Date(data.Shipments[0].EstimatedDeliveryDate) : undefined,
-      events: data.Shipments[0]?.ShipmentEvents?.map((event: any) => ({
+      events: data.Shipments[0]?.ShipmentEvents?.map((event: Record<string, unknown>) => ({
         status: event.Status,
         location: event.Location,
         timestamp: new Date(event.Timestamp),
@@ -225,7 +225,7 @@ export class SriLankaCourierService extends EventEmitter {
       description: data.shipments[0]?.description || '',
       estimatedDelivery: data.shipments[0]?.estimatedDeliveryDate ? 
         new Date(data.shipments[0].estimatedDeliveryDate) : undefined,
-      events: data.shipments[0]?.events?.map((event: any) => ({
+      events: data.shipments[0]?.events?.map((event: Record<string, unknown>) => ({
         status: event.status,
         location: event.location,
         timestamp: new Date(event.timestamp),
@@ -265,7 +265,7 @@ export class SriLankaCourierService extends EventEmitter {
       description: data.output?.completeTrackResults[0]?.trackResults[0]?.latestStatusDetail?.description || '',
       estimatedDelivery: data.output?.completeTrackResults[0]?.trackResults[0]?.deliveryDetails?.deliveryDate ? 
         new Date(data.output.completeTrackResults[0].trackResults[0].deliveryDetails.deliveryDate) : undefined,
-      events: data.output?.completeTrackResults[0]?.trackResults[0]?.scanEvents?.map((event: any) => ({
+      events: data.output?.completeTrackResults[0]?.trackResults[0]?.scanEvents?.map((event: Record<string, unknown>) => ({
         status: event.eventDescription,
         location: event.scanLocation?.city || '',
         timestamp: new Date(event.date),
@@ -297,7 +297,7 @@ export class SriLankaCourierService extends EventEmitter {
       description: data.trackResponse?.shipment[0]?.package[0]?.activity[0]?.status?.description || '',
       estimatedDelivery: data.trackResponse?.shipment[0]?.package[0]?.deliveryDate ? 
         new Date(data.trackResponse.shipment[0].package[0].deliveryDate) : undefined,
-      events: data.trackResponse?.shipment[0]?.package[0]?.activity?.map((event: any) => ({
+      events: data.trackResponse?.shipment[0]?.package[0]?.activity?.map((event: Record<string, unknown>) => ({
         status: event.status?.description || '',
         location: event.location?.address?.city || '',
         timestamp: new Date(event.date + ' ' + event.time),
@@ -329,7 +329,7 @@ export class SriLankaCourierService extends EventEmitter {
       timestamp: new Date(),
       description: data.statusDescription || '',
       estimatedDelivery: data.estimatedDelivery ? new Date(data.estimatedDelivery) : undefined,
-      events: data.trackingEvents?.map((event: any) => ({
+      events: data.trackingEvents?.map((event: Record<string, unknown>) => ({
         status: event.status,
         location: event.location,
         timestamp: new Date(event.timestamp),
@@ -361,7 +361,7 @@ export class SriLankaCourierService extends EventEmitter {
       timestamp: new Date(),
       description: data.statusDescription || '',
       estimatedDelivery: data.estimatedDelivery ? new Date(data.estimatedDelivery) : undefined,
-      events: data.trackingHistory?.map((event: any) => ({
+      events: data.trackingHistory?.map((event: Record<string, unknown>) => ({
         status: event.status,
         location: event.location,
         timestamp: new Date(event.timestamp),
@@ -396,7 +396,7 @@ export class SriLankaCourierService extends EventEmitter {
       await prisma.shipment.create({
         data: {
           trackingNumber: shipment.trackingNumber,
-          status: shipment.status as any, // Cast to any to bypass type constraint
+          status: shipment.status as 'PENDING' | 'ASSIGNED' | 'PICKED_UP' | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'FAILED' | 'RETURNED', // Cast to ShipmentStatus enum values
           courierId: courier.code,
           orderId: request.orderId,
           metadata: {

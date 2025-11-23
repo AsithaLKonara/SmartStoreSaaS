@@ -41,7 +41,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function createOrder(data: any, userId: string) {
+interface PayPalOrderData {
+  amount: number;
+  currency: string;
+  orderId: string;
+  returnUrl: string;
+  cancelUrl: string;
+}
+
+async function createOrder(data: PayPalOrderData, userId: string) {
   const { amount, currency, orderId, returnUrl, cancelUrl } = data;
   
   // Verify user owns this order
@@ -67,7 +75,11 @@ async function createOrder(data: any, userId: string) {
   return NextResponse.json(paypalOrder);
 }
 
-async function captureOrder(data: any, userId: string) {
+interface PayPalCaptureData {
+  paypalOrderId: string;
+}
+
+async function captureOrder(data: PayPalCaptureData, userId: string) {
   const { paypalOrderId } = data;
   
   // Verify user owns this order
@@ -76,7 +88,7 @@ async function captureOrder(data: any, userId: string) {
       metadata: {
         path: ['paypalOrderId'],
         equals: paypalOrderId,
-      } as any,
+      },
       organizationId: userId,
     },
   });
@@ -89,7 +101,11 @@ async function captureOrder(data: any, userId: string) {
   return NextResponse.json(payment);
 }
 
-async function getOrder(data: any, userId: string) {
+interface PayPalGetOrderData {
+  paypalOrderId: string;
+}
+
+async function getOrder(data: PayPalGetOrderData, _userId: string) {
   const { paypalOrderId } = data;
   
   // Verify user owns this order
@@ -98,7 +114,7 @@ async function getOrder(data: any, userId: string) {
       metadata: {
         path: ['paypalOrderId'],
         equals: paypalOrderId,
-      } as any,
+      },
       organizationId: userId,
     },
   });
@@ -111,7 +127,14 @@ async function getOrder(data: any, userId: string) {
   return NextResponse.json(paypalOrder);
 }
 
-async function createRefund(data: any, userId: string) {
+interface PayPalRefundData {
+  paymentId: string;
+  amount: number;
+  currency: string;
+  note?: string;
+}
+
+async function createRefund(data: PayPalRefundData, userId: string) {
   const { paymentId, amount, currency, note } = data;
   
   // Verify user owns this payment
@@ -120,7 +143,7 @@ async function createRefund(data: any, userId: string) {
         metadata: {
           path: ['paypalPaymentId'],
           equals: paymentId,
-        } as any,
+        },
       organizationId: userId,
     },
   });
@@ -133,7 +156,15 @@ async function createRefund(data: any, userId: string) {
   return NextResponse.json(refund);
 }
 
-async function createBillingPlan(data: any, userId: string) {
+interface PayPalBillingPlanData {
+  name: string;
+  description: string;
+  amount: number;
+  currency: string;
+  interval: string;
+}
+
+async function createBillingPlan(data: PayPalBillingPlanData, _userId: string) {
   const { name, description, amount, currency, interval } = data;
   
   const plan = await paypalService.createBillingPlan(

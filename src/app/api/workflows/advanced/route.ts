@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
     const workflowId = searchParams.get('workflowId');
-    const templateId = searchParams.get('templateId');
 
     switch (action) {
       case 'templates':
@@ -159,7 +158,7 @@ export async function POST(request: NextRequest) {
             isActive: false,
             organizationId: originalWorkflow.organizationId,
             workflowNodes: {
-              create: (originalWorkflow.workflowNodes || []).map((node: any) => ({
+              create: (originalWorkflow.workflowNodes || []).map((node) => ({
                 type: node.type,
                 name: node.name,
                 config: node.config,
@@ -167,7 +166,7 @@ export async function POST(request: NextRequest) {
               })) || []
             },
             workflowConnections: {
-              create: (originalWorkflow.workflowConnections || []).map((conn: any) => ({
+              create: (originalWorkflow.workflowConnections || []).map((conn) => ({
                 sourceNodeId: conn.sourceNodeId,
                 targetNodeId: conn.targetNodeId,
                 condition: conn.condition

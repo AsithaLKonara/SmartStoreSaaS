@@ -188,15 +188,15 @@ export class GamificationService {
         where: { userId },
         update: {
           notifications: {
-            ...(userPref?.notifications as any || {}),
+            ...(userPref?.notifications as Record<string, unknown> || {}),
             gamification: defaultGamification,
-          } as any,
+          } as Record<string, unknown>,
         },
         create: {
           userId,
           notifications: {
             gamification: defaultGamification,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -232,7 +232,7 @@ export class GamificationService {
         where: { userId },
       });
 
-      const gamificationData = (userPref?.notifications as any)?.gamification || null;
+      const gamificationData = (userPref?.notifications as Record<string, unknown> & { gamification?: unknown })?.gamification || null;
 
       if (!gamificationData) {
         await this.initializeUserGamification(userId);
@@ -265,9 +265,9 @@ export class GamificationService {
         where: { userId },
         data: {
           notifications: {
-            ...(userPref?.notifications as any || {}),
+            ...(userPref?.notifications as Record<string, unknown> || {}),
             gamification: updatedGamification,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -347,7 +347,7 @@ export class GamificationService {
       });
 
       // Award points and badges - rewards stored in criteria metadata
-      const rewards = (achievement.criteria as any)?.rewards || { points: achievement.points || 0, badges: [], discounts: [] };
+      const rewards = (achievement.criteria as Record<string, unknown> & { rewards?: { points?: number; badges?: unknown[]; discounts?: unknown[] } })?.rewards || { points: achievement.points || 0, badges: [], discounts: [] };
       await this.awardPoints(userId, rewards.points || achievement.points || 0, `Achievement: ${achievement.name}`);
 
       if (rewards.badges && rewards.badges.length > 0) {
@@ -420,7 +420,7 @@ export class GamificationService {
         select: { settings: true },
       });
 
-      const settings = (organization?.settings as any) || {};
+      const settings = (organization?.settings as Record<string, unknown>) || {};
       const challenges = settings.challenges || [];
       
       // Add new challenge to the list
@@ -433,7 +433,7 @@ export class GamificationService {
           settings: {
             ...settings,
             challenges,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -455,7 +455,7 @@ export class GamificationService {
         select: { settings: true },
       });
 
-      const settings = (organization?.settings as any) || {};
+      const settings = (organization?.settings as Record<string, unknown>) || {};
       const challenges: Challenge[] = settings.challenges || [];
       
       const challengeIndex = challenges.findIndex((c: Challenge) => c.id === challengeId);
@@ -486,7 +486,7 @@ export class GamificationService {
           settings: {
             ...settings,
             challenges,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -697,7 +697,7 @@ export class GamificationService {
               ...gamificationData,
               badges: newBadges,
             },
-          } as any,
+          } as Record<string, unknown>,
         },
       });
     }

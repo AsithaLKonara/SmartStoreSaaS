@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ message: 'Organization not found' }, { status: 400 });
       }
 
-      const period = (searchParams.get('period') as any) || 'all-time';
-      const leaderboardType = (searchParams.get('leaderboardType') as any) || 'points';
+      const period = (searchParams.get('period') as 'all-time' | 'weekly' | 'monthly' | 'yearly' | null) || 'all-time';
+      const leaderboardType = (searchParams.get('leaderboardType') as 'points' | 'rewards' | 'achievements' | null) || 'points';
       
       const leaderboard = await service.getLeaderboard(organizationId, period, leaderboardType);
       return NextResponse.json(leaderboard);

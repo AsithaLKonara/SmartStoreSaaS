@@ -12,7 +12,7 @@ export interface SecurityAudit {
   userAgent: string;
   timestamp: Date;
   success: boolean;
-  details: any;
+  details: Record<string, unknown>;
 }
 
 export interface MFASetup {
@@ -39,7 +39,7 @@ export interface SecurityAlert {
   ipAddress: string;
   timestamp: Date;
   resolved: boolean;
-  details: any;
+  details: Record<string, unknown>;
 }
 
 export class SecurityService {
@@ -89,8 +89,8 @@ export class SecurityService {
         where: { userId },
       });
       
-      const mfaSecret = (userPref?.notifications as any)?.mfaSecret;
-      const mfaBackupCodes = (userPref?.notifications as any)?.mfaBackupCodes || [];
+      const mfaSecret = (userPref?.notifications as Record<string, unknown> & { mfaSecret?: string })?.mfaSecret;
+      const mfaBackupCodes = (userPref?.notifications as Record<string, unknown> & { mfaBackupCodes?: string[] })?.mfaBackupCodes || [];
       
       if (!mfaSecret) return false;
       
@@ -101,9 +101,9 @@ export class SecurityService {
           where: { userId },
           data: {
             notifications: {
-              ...(userPref?.notifications as any || {}),
+              ...(userPref?.notifications as Record<string, unknown> || {}),
               mfaBackupCodes: mfaBackupCodes.filter((code: string) => code !== token),
-            } as any,
+            } as Record<string, unknown>,
           },
         });
         return true;
@@ -228,7 +228,7 @@ export class SecurityService {
     limit: number = 50
   ): Promise<SecurityAudit[]> {
     try {
-      const where: any = {};
+      const where: Record<string, unknown> = {};
       
       if (filters.userId) where.userId = filters.userId;
       if (filters.action) where.action = filters.action;
@@ -239,9 +239,9 @@ export class SecurityService {
       }
       
       // securityAudit model doesn't exist - returning empty array
-      const audits: any[] = [];
+      const audits: Array<Record<string, unknown>> = [];
 
-      return audits.map((audit: any) => ({
+      return audits.map((audit: { id: string; userId?: string; action: string; resource: string; ipAddress: string; userAgent: string; timestamp: Date; success: boolean; details?: Record<string, unknown> }) => ({
         id: audit.id,
         userId: audit.userId,
         action: audit.action,

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { POST } from '../route';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
@@ -248,7 +247,6 @@ describe('/api/auth/signup', () => {
       });
 
       const response = await POST(request);
-      const data = await response.json();
 
       expect(response.status).toBe(201);
       expect(prisma.organization.findUnique).toHaveBeenCalledWith({

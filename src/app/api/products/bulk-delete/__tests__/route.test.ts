@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { DELETE } from '../route';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';

@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, amount, category, type, paymentMethod, vendor, tags, date } = body;
+    const { title, description, amount, category, type, paymentMethod, vendor, tags } = body;
 
     if (!description || !amount) {
       return NextResponse.json({ message: 'Description and amount are required' }, { status: 400 });

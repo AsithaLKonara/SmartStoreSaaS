@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { whatsAppService } from '@/lib/whatsapp/whatsappService';
-import { wooCommerceService } from '@/lib/woocommerce/woocommerceService';
 import { sriLankaCourierService } from '@/lib/courier/sriLankaCourierService';
 
 export async function POST(request: NextRequest) {

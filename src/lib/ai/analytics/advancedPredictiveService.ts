@@ -57,7 +57,7 @@ export class AdvancedPredictiveService {
     metric: 'sales' | 'products' | 'customers',
     period: 'weekly' | 'monthly' | 'quarterly' = 'monthly'
   ): Promise<TrendAnalysis> {
-    let data: any[] = [];
+    let data: Array<Record<string, unknown>> = [];
 
     switch (metric) {
       case 'sales':
@@ -196,7 +196,7 @@ export class AdvancedPredictiveService {
     };
   }
 
-  private groupSalesByDay(orders: any[]): Record<string, number> {
+  private groupSalesByDay(orders: Array<{ createdAt: Date; totalAmount: number }>): Record<string, number> {
     const daily: Record<string, number> = {};
     orders.forEach(order => {
       const date = order.createdAt.toISOString().split('T')[0];
@@ -289,7 +289,7 @@ export class AdvancedPredictiveService {
     };
   }
 
-  private aggregateByPeriod(data: any[], period: string, metric: string): number[] {
+  private aggregateByPeriod(data: Array<Record<string, unknown>>, period: string, metric: string): number[] {
     // Simplified aggregation
     const grouped: Record<string, number> = {};
     
@@ -342,7 +342,7 @@ export class AdvancedPredictiveService {
   private predictNextPeriods(
     values: number[],
     trend: number,
-    period: string
+    _period: string
   ): Array<{ period: string; expectedValue: number }> {
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
     const predictions: Array<{ period: string; expectedValue: number }> = [];
@@ -358,7 +358,7 @@ export class AdvancedPredictiveService {
     return predictions;
   }
 
-  private calculatePriceElasticity(priceHistory: any[]): number {
+  private calculatePriceElasticity(priceHistory: Array<{ price: number; quantity: number; date: Date }>): number {
     if (priceHistory.length < 2) return -1.5; // Default elasticity
     
     // Simplified price elasticity calculation
@@ -378,7 +378,7 @@ export class AdvancedPredictiveService {
   private optimizePriceBasedOnElasticity(
     currentPrice: number,
     elasticity: number,
-    costPrice: number
+    _costPrice: number
   ): number {
     // Optimal price = cost / (1 + 1/elasticity)
     // Simplified optimization

@@ -17,8 +17,8 @@ export interface TikTokOrder {
   status: string;
   total_amount: number;
   currency: string;
-  items: any[];
-  customer: any;
+  items: Array<Record<string, unknown>>;
+  customer: Record<string, unknown>;
   created_at: string;
 }
 
@@ -118,7 +118,7 @@ export class TikTokShopService {
       where: { organizationId },
     });
     const existingProduct = allProducts.find(p => {
-      const dimensions = (p.dimensions as any) || {};
+      const dimensions = (p.dimensions as Record<string, unknown>) || {};
       return dimensions.tiktokId === tiktokProduct.id;
     });
 
@@ -128,10 +128,10 @@ export class TikTokShopService {
         data: {
           ...productData,
           dimensions: {
-            ...(existingProduct.dimensions as any || {}),
+            ...(existingProduct.dimensions as Record<string, unknown> || {}),
             tiktokId: tiktokProduct.id,
             tiktokShopId: this.shopId,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
     } else {
@@ -151,7 +151,7 @@ export class TikTokShopService {
             currency: productData.currency,
             tiktokId: tiktokProduct.id,
             tiktokShopId: this.shopId,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
     }
@@ -238,7 +238,7 @@ export class TikTokShopService {
       await prisma.order.update({
         where: { id: existingOrder.id },
         data: {
-          status: orderData.status as any,
+          status: orderData.status as 'DRAFT' | 'PENDING' | 'CONFIRMED' | 'PACKED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED' | 'RETURNED',
           totalAmount: orderData.totalAmount,
         },
       });
@@ -246,7 +246,7 @@ export class TikTokShopService {
       await prisma.order.create({
         data: {
           orderNumber: orderData.orderNumber,
-          status: orderData.status as any,
+          status: orderData.status as 'DRAFT' | 'PENDING' | 'CONFIRMED' | 'PACKED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED' | 'RETURNED',
           totalAmount: orderData.totalAmount,
           subtotal: orderData.totalAmount, // Use totalAmount as subtotal if not provided
           currency: orderData.currency,

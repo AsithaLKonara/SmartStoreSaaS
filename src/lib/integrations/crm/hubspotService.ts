@@ -62,7 +62,7 @@ export class HubSpotService {
     }
   }
 
-  private async createOrUpdateContact(customer: any): Promise<void> {
+  private async createOrUpdateContact(customer: { name?: string; email?: string; phone?: string; orders?: Array<{ totalAmount?: number }> }): Promise<void> {
     const contact = {
       properties: {
         firstname: customer.name?.split(' ')[0] || '',
@@ -70,7 +70,7 @@ export class HubSpotService {
         email: customer.email || '',
         phone: customer.phone || '',
         smartstore_id: customer.id,
-        total_revenue: customer.orders.reduce((sum: number, order: any) => sum + order.totalAmount, 0),
+        total_revenue: customer.orders.reduce((sum: number, order: { totalAmount?: number }) => sum + (order.totalAmount || 0), 0),
         num_orders: customer.orders.length,
       },
     };
@@ -86,7 +86,7 @@ export class HubSpotService {
         `/crm/v3/objects/contacts/${existing.data.id}`,
         contact
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.response?.status === 404) {
         // Create new contact
         await this.client.post('/crm/v3/objects/contacts', contact);
@@ -123,7 +123,7 @@ export class HubSpotService {
     return { success, failed };
   }
 
-  private async createDeal(order: any): Promise<void> {
+  private async createDeal(order: { totalAmount?: number; orderNumber?: string; customer?: { name?: string; email?: string } }): Promise<void> {
     // Get contact ID
     const contact = await this.client.get(
       `/crm/v3/objects/contacts/${order.customer.email || order.customerId}`

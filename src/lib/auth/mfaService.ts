@@ -49,14 +49,14 @@ export class MFAService {
     const userPref = await prisma.userPreference.findUnique({
       where: { userId },
     });
-    const mfaData = (userPref?.notifications as any)?.mfa;
+    const mfaData = (userPref?.notifications as Record<string, unknown> & { mfa?: unknown })?.mfa;
     if (!mfaData) return null;
     if (type && mfaData.type !== type) return null;
     return mfaData;
   }
 
   // Helper method to update MFA data in UserPreference
-  private async updateMFAData(userId: string, updates: any): Promise<void> {
+  private async updateMFAData(userId: string, updates: Record<string, unknown>): Promise<void> {
     const userPref = await prisma.userPreference.findUnique({
       where: { userId },
     });
@@ -66,7 +66,7 @@ export class MFAService {
         notifications: {
           ...(userPref?.notifications as any || {}),
           mfa: {
-            ...((userPref?.notifications as any)?.mfa || {}),
+            ...((userPref?.notifications as Record<string, unknown> & { mfa?: Record<string, unknown> })?.mfa || {}),
             ...updates,
           },
         } as any,
@@ -112,15 +112,15 @@ export class MFAService {
         where: { userId },
         update: {
           notifications: {
-            ...((await prisma.userPreference.findUnique({ where: { userId } }))?.notifications as any || {}),
+            ...((await prisma.userPreference.findUnique({ where: { userId } }))?.notifications as Record<string, unknown> || {}),
             mfa: mfaData,
-          } as any,
+          } as Record<string, unknown>,
         },
         create: {
           userId,
           notifications: {
             mfa: mfaData,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -144,7 +144,7 @@ export class MFAService {
         where: { userId },
       });
 
-      const mfaData = (userPref?.notifications as any)?.mfa;
+      const mfaData = (userPref?.notifications as Record<string, unknown> & { mfa?: unknown })?.mfa;
 
       if (!mfaData || mfaData.type !== 'totp' || !mfaData.isEnabled) {
         return { isValid: false };
@@ -167,12 +167,12 @@ export class MFAService {
           where: { userId },
           data: {
             notifications: {
-              ...(userPref?.notifications as any || {}),
+              ...(userPref?.notifications as Record<string, unknown> || {}),
               mfa: {
                 ...mfaData,
                 lastUsedAt: new Date(),
               },
-            } as any,
+            } as Record<string, unknown>,
           },
         });
 
@@ -503,7 +503,7 @@ export class MFAService {
       const userPref = await prisma.userPreference.findUnique({
         where: { userId },
       });
-      const mfaData = (userPref?.notifications as any)?.mfa;
+      const mfaData = (userPref?.notifications as Record<string, unknown> & { mfa?: unknown })?.mfa;
 
       if (!mfaData) return [];
 
@@ -568,7 +568,7 @@ export class MFAService {
       const userPref = await prisma.userPreference.findUnique({
         where: { userId },
       });
-      const logs = (userPref?.notifications as any)?.mfaLogs || [];
+      const logs = (userPref?.notifications as Record<string, unknown> & { mfaLogs?: unknown[] })?.mfaLogs || [];
       return logs.slice(0, limit);
     } catch (error) {
       console.error('Error getting MFA logs:', error);
@@ -625,7 +625,7 @@ export class MFAService {
             timestamp: new Date(),
             ipAddress: '', // This would be passed from the request context
             userAgent: '', // This would be passed from the request context
-          } as any,
+          } as Record<string, unknown>,
         },
       });
     } catch (error) {

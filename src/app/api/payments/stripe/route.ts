@@ -70,7 +70,7 @@ async function createPaymentIntent(data: PaymentIntentData, userId: string) {
   const userPref = await prisma.userPreference.findUnique({
     where: { userId },
   });
-  let stripeCustomerId = (userPref?.notifications as any)?.stripeCustomerId;
+  let stripeCustomerId = (userPref?.notifications as Record<string, unknown> & { stripeCustomerId?: string })?.stripeCustomerId;
   
   if (!stripeCustomerId) {
     stripeCustomerId = await stripeService.createCustomer(
@@ -80,18 +80,18 @@ async function createPaymentIntent(data: PaymentIntentData, userId: string) {
     );
     
     // Store Stripe customer ID in user preferences metadata
-    const userPref = await prisma.userPreference.upsert({
+    await prisma.userPreference.upsert({
       where: { userId },
       update: {
         notifications: {
           stripeCustomerId,
-        } as any,
+        } as Record<string, unknown>,
       },
       create: {
         userId,
         notifications: {
           stripeCustomerId,
-        } as any,
+        } as Record<string, unknown>,
       },
     });
   }
@@ -134,13 +134,13 @@ async function createCustomer(data: CustomerData, userId: string) {
     update: {
       notifications: {
         stripeCustomerId: customerId,
-      } as any,
+      } as Record<string, unknown>,
     },
     create: {
       userId,
       notifications: {
         stripeCustomerId: customerId,
-      } as any,
+      } as Record<string, unknown>,
     },
   });
 
@@ -152,7 +152,7 @@ async function getPaymentMethods(_data: unknown, userId: string) {
     where: { userId },
   });
 
-  const stripeCustomerId = (userPref?.notifications as any)?.stripeCustomerId;
+  const stripeCustomerId = (userPref?.notifications as Record<string, unknown> & { stripeCustomerId?: string })?.stripeCustomerId;
   if (!stripeCustomerId) {
     return NextResponse.json({ paymentMethods: [] });
   }
@@ -173,7 +173,7 @@ async function createSubscription(data: SubscriptionData, userId: string) {
     where: { userId },
   });
 
-  const stripeCustomerId = (userPref?.notifications as any)?.stripeCustomerId;
+  const stripeCustomerId = (userPref?.notifications as Record<string, unknown> & { stripeCustomerId?: string })?.stripeCustomerId;
   if (!stripeCustomerId) {
     throw new Error('Customer not found');
   }
@@ -225,7 +225,7 @@ async function createRefund(data: RefundData, userId: string) {
       metadata: {
         path: ['stripePaymentIntentId'],
         equals: paymentIntentId,
-      } as any,
+      } as { path: string[]; equals: string },
       organizationId: userId, // Assuming organization ownership
     },
   });
@@ -248,7 +248,7 @@ async function createSetupIntent(_data: unknown, userId: string) {
   const userPref = await prisma.userPreference.findUnique({
     where: { userId },
   });
-  const stripeCustomerId = (userPref?.notifications as any)?.stripeCustomerId;
+  const stripeCustomerId = (userPref?.notifications as Record<string, unknown> & { stripeCustomerId?: string })?.stripeCustomerId;
   if (!stripeCustomerId) {
     throw new Error('Customer not found');
   }

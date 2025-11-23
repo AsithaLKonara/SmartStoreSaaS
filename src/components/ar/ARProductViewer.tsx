@@ -10,7 +10,7 @@ interface ARProductViewerProps {
   modelType: 'gltf' | 'glb' | 'obj';
 }
 
-export function ARProductViewer({ productId, modelUrl, modelType }: ARProductViewerProps) {
+export function ARProductViewer({ productId, modelUrl: _modelUrl, modelType: _modelType }: ARProductViewerProps) {
   const [isARSupported, setIsARSupported] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const viewerRef = useRef<HTMLDivElement>(null);
@@ -18,7 +18,7 @@ export function ARProductViewer({ productId, modelUrl, modelType }: ARProductVie
   useEffect(() => {
     // Check for WebXR support
     if (typeof navigator !== 'undefined' && 'xr' in navigator) {
-      (navigator as any).xr.isSessionSupported('immersive-ar').then((supported: boolean) => {
+      (navigator as Navigator & { xr?: { isSessionSupported: (mode: string) => Promise<boolean> } }).xr?.isSessionSupported('immersive-ar').then((supported: boolean) => {
         setIsARSupported(supported);
         setIsLoading(false);
       });
@@ -34,7 +34,7 @@ export function ARProductViewer({ productId, modelUrl, modelType }: ARProductVie
     }
 
     try {
-      const session = await (navigator as any).xr.requestSession('immersive-ar');
+      const session = await (navigator as Navigator & { xr?: { requestSession: (mode: string) => Promise<unknown> } }).xr?.requestSession('immersive-ar');
       // AR session would be initialized here
       // In production, this would use a 3D library like Three.js with AR capabilities
       console.log('AR session started:', session);

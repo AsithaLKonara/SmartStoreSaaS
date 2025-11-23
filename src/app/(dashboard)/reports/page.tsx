@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
-  BarChart3, Download, Calendar, TrendingUp, TrendingDown, DollarSign,
+  BarChart3, Download, Calendar, TrendingUp, DollarSign,
   Users, Package, FileText, Activity, Clock, CheckCircle,
-  XCircle, AlertTriangle, Plus, Eye, Settings
+  XCircle, Plus, Eye, Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { formatRelativeTime } from '@/lib/utils';

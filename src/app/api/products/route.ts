@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
         organizationId: session.user.organizationId,
         createdById: session.user.id,
         variants: {
-          create: variants?.map((variant: any) => ({
+          create: variants?.map((variant: { name: string; price?: string | number; costPrice?: string | number; stockQuantity?: string | number; sku?: string }) => ({
             name: variant.name,
             price: variant.price ? parseFloat(variant.price) : null,
             costPrice: variant.costPrice ? parseFloat(variant.costPrice) : null,

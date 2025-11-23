@@ -264,7 +264,7 @@ export class RecommendationEngine {
       .slice(0, limit);
   }
 
-  private calculateContentSimilarity(product1: any, product2: any): number {
+  private calculateContentSimilarity(product1: Record<string, unknown>, product2: Record<string, unknown>): number {
     let similarity = 0;
 
     // Category match
