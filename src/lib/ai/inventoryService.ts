@@ -351,8 +351,8 @@ export class AIInventoryService {
   async optimizePricing(
     productData: ProductData[],
     salesHistory: SalesHistoryItem[],
-    competitorPrices: CompetitorPrice[]
-  ): Promise<PricingRecommendation[]> {
+    competitorPrices: Array<{ productId: string; price: number; competitor: string }>
+  ): Promise<Array<{ productId: string; currentPrice: number; recommendedPrice: number; reason: string }>> {
     try {
       const prompt = `
         Optimize product pricing based on:
