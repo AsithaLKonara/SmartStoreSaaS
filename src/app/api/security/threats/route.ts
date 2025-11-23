@@ -11,7 +11,7 @@ export async function POST() {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await _request.json();
+    const body = await request.json();
     const { type, check } = body;
 
     if (type === 'threat') {
