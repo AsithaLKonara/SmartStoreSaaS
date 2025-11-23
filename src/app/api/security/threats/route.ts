@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { ThreatDetectionService, ThreatEvent } from '@/lib/security/threatDetectionService';
 import { FraudPreventionService } from '@/lib/security/fraudPreventionService';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
