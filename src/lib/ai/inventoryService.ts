@@ -340,7 +340,11 @@ export class AIInventoryService {
         })
       ]);
 
-      return { products, suppliers, purchaseOrders };
+      return { 
+        products: products as ProductData[], 
+        suppliers: suppliers.map(s => ({ id: s.id, name: s.name, isActive: s.isActive, metadata: s.metadata as Record<string, unknown> | undefined })), 
+        purchaseOrders: purchaseOrders.map(po => ({ id: po.id, supplier: { id: po.supplier.id, name: po.supplier.name } })) 
+      };
     } catch (error) {
       console.error('Error fetching inventory data:', error);
       return { products: [], suppliers: [], purchaseOrders: [] };
