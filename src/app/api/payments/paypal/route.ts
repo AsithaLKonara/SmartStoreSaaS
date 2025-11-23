@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { action } = await request.json();
+    const { action, ...data } = await request.json();
 
     switch (action) {
       case 'create-order':
@@ -105,7 +105,7 @@ interface PayPalGetOrderData {
   paypalOrderId: string;
 }
 
-async function getOrder(data: PayPalGetOrderData, _userId: string) {
+async function getOrder(data: PayPalGetOrderData, userId: string) {
   const { paypalOrderId } = data;
   
   // Verify user owns this order
