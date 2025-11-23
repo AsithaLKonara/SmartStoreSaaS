@@ -328,8 +328,7 @@ export class SubscriptionService {
         status: subscription.status as any,
         currentPeriodStart: subscription.currentPeriodStart,
         currentPeriodEnd: subscription.currentPeriodEnd,
-        trialStart: subMetadata.trialStart ? new Date(subMetadata.trialStart) : undefined,
-        trialEnd: subMetadata.trialEnd ? new Date(subMetadata.trialEnd) : undefined,
+        // trialStart/trialEnd not in Subscription interface - stored in metadata
         stripeSubscriptionId: subscription.stripeSubscriptionId,
         paypalSubscriptionId: subMetadata.paypalSubscriptionId,
         metadata: subscription.metadata as any,
@@ -439,13 +438,11 @@ export class SubscriptionService {
       const updatedMetadata = (updatedSubscription.metadata as any) || {};
       return {
         id: updatedSubscription.id,
-        userId: updatedMetadata.userId || '',
-        planId: updatedMetadata.planId || '',
+        customerId: updatedSubscription.customerId,
         status: updatedSubscription.status as any,
         currentPeriodStart: updatedSubscription.currentPeriodStart,
         currentPeriodEnd: updatedSubscription.currentPeriodEnd,
-        cancelAt: updatedMetadata.cancelAt ? new Date(updatedMetadata.cancelAt) : undefined,
-        canceledAt: updatedMetadata.canceledAt ? new Date(updatedMetadata.canceledAt) : undefined,
+        // cancelAt/canceledAt not in Subscription interface - stored in metadata
         stripeSubscriptionId: updatedSubscription.stripeSubscriptionId,
         metadata: updatedSubscription.metadata as any,
       };
@@ -601,30 +598,49 @@ export class SubscriptionService {
 
   async updateMembershipStatus(customerId: string): Promise<void> {
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
+      // First get customer to find associated user
+      const customerRecord = await prisma.customer.findUnique({
+        where: { id: customerId },
+        include: { organization: true },
       });
+      
+      if (!customerRecord || !customerRecord.organizationId) {
+        throw new Error('Customer not found');
+      }
 
-      if (!user || !user.organizationId) return null as any;
+      // Find user by email matching customer
+      const user = await prisma.user.findFirst({
+        where: {
+          email: customerRecord.email || '',
+          organizationId: customerRecord.organizationId,
+        },
+      });
+      
+      if (!user || !user.organizationId) {
+        throw new Error('User not found for customer');
+      }
 
-      // Get customer and their orders
-      const customer = await prisma.customer.findFirst({
+      // Get customer again for orders (reuse customerRecord)
+      const customer = customerRecord;
         where: {
           organizationId: user.organizationId,
           email: user.email,
-        },
-        include: {
-          orders: {
-            where: { status: 'COMPLETED' },
-          },
         },
       });
 
       if (!customer) return null as any;
 
+      // Get orders separately since orders relation may not exist directly
+      const orders = await prisma.order.findMany({
+        where: {
+          customerId: customerRecord.id,
+          status: 'COMPLETED',
+        },
+      });
+
       // Calculate totals
-      const totalSpent = customer.orders.reduce((sum, order) => sum + order.totalAmount, 0);
-      const totalOrders = customer.orders.length;
+      const totalSpent = orders.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0);
+      const totalOrders = orders.length;
 
       // Get membership status from UserPreference
       const userPref = await prisma.userPreference.findUnique({
@@ -699,15 +715,8 @@ export class SubscriptionService {
         },
       });
 
-      return {
-        userId: membershipStatus.userId,
-        tierId: membershipStatus.tierId,
-        level: membershipStatus.level,
-        totalSpent: membershipStatus.totalSpent,
-        totalOrders: membershipStatus.totalOrders,
-        memberSince: new Date(membershipStatus.memberSince),
-        nextTierProgress,
-      };
+      // Function returns void - membership status stored in UserPreference
+      // No return value needed
     } catch (error) {
       console.error('Error updating membership status:', error);
       throw error;
@@ -808,8 +817,14 @@ export class SubscriptionService {
 
     // Get usage for current period from metadata
     const usageRecords = subMetadata.usageRecords || [];
-    const periodStart = subscriptionRecord2.currentPeriodStart.getTime();
-    const periodEnd = subscriptionRecord2.currentPeriodEnd.getTime();
+      const subscriptionRecord = await prisma.subscription.findUnique({
+        where: { id: subscriptionId },
+      });
+      if (!subscriptionRecord) {
+        throw new Error('Subscription not found');
+      }
+      const periodStart = subscriptionRecord.currentPeriodStart.getTime();
+      const periodEnd = subscriptionRecord.currentPeriodEnd.getTime();
     const periodUsage = usageRecords
       .filter((r: any) => {
         const timestamp = new Date(r.timestamp).getTime();
