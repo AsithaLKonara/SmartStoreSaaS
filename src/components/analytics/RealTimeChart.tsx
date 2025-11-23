@@ -101,7 +101,7 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
     });
   }, [onDataUpdate]);
 
-  const { isConnected, events } = useRealTimeSync({
+  const { isConnected } = useRealTimeSync({
     organizationId,
     onEvent: handleRealTimeUpdate
   });
