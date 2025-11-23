@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -67,7 +67,7 @@ export async function POST() {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
 
-    const body = await _request.json();
+    const body = await request.json();
     const { action, ...data } = body;
 
     switch (action) {
