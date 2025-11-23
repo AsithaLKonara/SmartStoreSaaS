@@ -4,7 +4,7 @@ export interface SocialPlatform {
   id: string;
   name: 'facebook' | 'instagram' | 'tiktok' | 'pinterest' | 'twitter';
   isActive: boolean;
-  config: any;
+  config: Record<string, unknown>;
   lastSync: Date;
   productCount: number;
 }
@@ -15,7 +15,7 @@ export interface SocialProduct {
   platformId: string;
   platformProductId: string;
   status: 'active' | 'inactive' | 'syncing' | 'error';
-  metadata: any;
+  metadata: Record<string, unknown>;
   lastSync: Date;
 }
 
@@ -77,7 +77,7 @@ export class SocialCommerceService {
     }));
   }
 
-  async connectPlatform(organizationId: string, platform: string, config: any): Promise<SocialPlatform> {
+  async connectPlatform(organizationId: string, platform: string, config: Record<string, unknown>): Promise<SocialPlatform> {
     const socialPlatform = await prisma.socialPlatform.upsert({
       where: {
         organizationId_name: { organizationId, name: platform as any }
@@ -198,7 +198,7 @@ export class SocialCommerceService {
       const post = await prisma.socialPost.create({
         data: {
           platformId,
-          type: postData.type as any,
+          type: postData.type as 'product' | 'story' | 'reel' | 'post',
           content: postData.content,
           mediaUrls: postData.mediaUrls,
           productIds: postData.productIds,
@@ -259,7 +259,7 @@ export class SocialCommerceService {
           status: 'published',
           publishedAt: new Date(),
           metadata: { 
-            ...(post.metadata as any || {}),
+            ...(post.metadata as Record<string, unknown> || {}),
             platformPostId 
           }
         }
@@ -275,7 +275,7 @@ export class SocialCommerceService {
         scheduledAt: updatedPost.scheduledAt || undefined,
         publishedAt: updatedPost.publishedAt || undefined,
         status: updatedPost.status as 'draft' | 'scheduled' | 'published' | 'failed',
-        engagement: (updatedPost.engagement as any) || {
+        engagement: (updatedPost.engagement as { likes?: number; comments?: number; shares?: number; clicks?: number } | null) || {
           likes: 0,
           comments: 0,
           shares: 0,
@@ -312,27 +312,27 @@ export class SocialCommerceService {
       // Calculate total engagement
       const totalEngagement = posts.reduce((sum, post) => {
         if (post.engagement && typeof post.engagement === 'object') {
-          const engagement = post.engagement as any;
+          const engagement = post.engagement as { likes?: number; comments?: number; shares?: number; clicks?: number };
           return sum + (engagement.likes || 0) + (engagement.comments || 0) + (engagement.shares || 0);
         }
         return sum;
       }, 0);
 
       // Calculate platform breakdown
-      const platformBreakdown: Record<string, any> = {};
+      const platformBreakdown: Record<string, { followers: number; posts: number; engagement: number; sales: number }> = {};
       let totalFollowers = 0;
 
       for (const platform of platforms) {
         const platformPosts = posts.filter(post => post.platformId === platform.id);
         const platformEngagement = platformPosts.reduce((sum, post) => {
           if (post.engagement && typeof post.engagement === 'object') {
-            const engagement = post.engagement as any;
+            const engagement = post.engagement as { likes?: number; comments?: number; shares?: number; clicks?: number };
             return sum + (engagement.likes || 0) + (engagement.comments || 0) + (engagement.shares || 0);
           }
           return sum;
         }, 0);
 
-        const followers = (platform.config as any)?.followers || 0;
+        const followers = (platform.config as Record<string, unknown> & { followers?: number })?.followers || 0;
         totalFollowers += followers;
 
         platformBreakdown[platform.name] = {
@@ -352,7 +352,7 @@ export class SocialCommerceService {
           }
           
           if (post.engagement && typeof post.engagement === 'object') {
-            const engagement = post.engagement as any;
+            const engagement = post.engagement as { likes?: number; comments?: number; shares?: number; clicks?: number };
             productSales[productId].engagement += engagement.clicks || 0;
           }
         }
@@ -381,7 +381,7 @@ export class SocialCommerceService {
     }
   }
 
-  async updatePostEngagement(postId: string, engagement: any): Promise<void> {
+  async updatePostEngagement(postId: string, engagement: { likes?: number; comments?: number; shares?: number; clicks?: number }): Promise<void> {
     try {
       await prisma.socialPost.update({
         where: { id: postId },

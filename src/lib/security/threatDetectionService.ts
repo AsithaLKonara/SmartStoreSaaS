@@ -4,7 +4,7 @@ export interface ThreatEvent {
   type: 'suspicious_login' | 'brute_force' | 'sql_injection' | 'xss' | 'rate_limit_exceeded';
   severity: 'low' | 'medium' | 'high' | 'critical';
   source: string;
-  details: any;
+  details: Record<string, unknown>;
   timestamp: Date;
 }
 
@@ -48,7 +48,7 @@ export class ThreatDetectionService {
     });
 
     const isNewLocation = recentLogins.every(
-      (login: any) => login.metadata?.location !== event.details.location
+      (login: { metadata?: Record<string, unknown> & { location?: unknown } }) => login.metadata?.location !== event.details.location
     );
 
     if (isNewLocation && event.details.location) {

@@ -21,7 +21,7 @@ export class RegionService {
     }
 
     // Get region from organization settings or default
-    const settings = organization.settings as any;
+    const settings = organization.settings as Record<string, unknown>;
     const region = settings?.region || 'us-east-1';
 
     return this.getRegionConfigByRegion(region);
@@ -70,7 +70,7 @@ export class RegionService {
       throw new Error('Organization not found');
     }
 
-    const settings = (organization.settings as any) || {};
+    const settings = (organization.settings as Record<string, unknown>) || {};
     settings.region = region;
 
     await prisma.organization.update({

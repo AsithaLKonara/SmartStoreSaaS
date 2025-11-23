@@ -108,7 +108,7 @@ export interface BoxSubscription {
     allergies?: string[];
     dietaryRestrictions?: string[];
   };
-  deliveryAddress: any;
+  deliveryAddress: Record<string, unknown>;
   nextDelivery: Date;
   status: 'active' | 'paused' | 'canceled';
 }
@@ -146,7 +146,7 @@ export class SubscriptionService {
       if (!organization) {
         throw new Error('Organization not found');
       }
-      const settings = (organization.settings as any) || {};
+      const settings = (organization.settings as Record<string, unknown> & { subscriptionPlans?: Array<Record<string, unknown>> }) || {};
       const subscriptionPlans = settings.subscriptionPlans || [];
       const planData = {
         id: `plan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -162,7 +162,7 @@ export class SubscriptionService {
           settings: {
             ...settings,
             subscriptionPlans,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
       return {
@@ -218,9 +218,9 @@ export class SubscriptionService {
       if (!organization) {
         throw new Error('Organization not found');
       }
-      const settings = (organization.settings as any) || {};
+      const settings = (organization.settings as Record<string, unknown> & { subscriptionPlans?: Array<Record<string, unknown>> }) || {};
       const subscriptionPlans = settings.subscriptionPlans || [];
-      const plan = subscriptionPlans.find((p: any) => p.id === planId);
+      const plan = subscriptionPlans.find((p: { id?: string; isActive?: boolean }) => p.id === planId);
 
       if (!plan || !plan.isActive) {
         throw new Error('Plan not found or inactive');
@@ -251,7 +251,7 @@ export class SubscriptionService {
       const userPref = await prisma.userPreference.findUnique({
         where: { userId: user?.id || '' },
       });
-      const stripeCustomerId = (userPref?.notifications as any)?.stripeCustomerId;
+      const stripeCustomerId = (userPref?.notifications as Record<string, unknown> & { stripeCustomerId?: string })?.stripeCustomerId;
 
       let stripeSubscriptionId;
       let paypalSubscriptionId;
@@ -285,7 +285,7 @@ export class SubscriptionService {
             paypalSubscriptionId,
             createdVia: paymentMethod,
             originalPlan: plan.name,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -296,13 +296,13 @@ export class SubscriptionService {
           notifications: {
             ...(userPref?.notifications as any || {}),
             subscriptionId: subscription.id,
-          } as any,
+          } as Record<string, unknown>,
         },
         create: {
           userId,
           notifications: {
             subscriptionId: subscription.id,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -321,11 +321,11 @@ export class SubscriptionService {
         source: 'subscription-service',
       });
 
-      const subMetadata = (subscription.metadata as any) || {};
+      const subMetadata = (subscription.metadata as Record<string, unknown>) || {};
       return {
         id: subscription.id,
         customerId: subscription.customerId,
-        status: subscription.status as any,
+        status: subscription.status as 'active' | 'canceled' | 'past_due' | 'unpaid' | 'trialing',
         currentPeriodStart: subscription.currentPeriodStart,
         currentPeriodEnd: subscription.currentPeriodEnd,
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
@@ -333,7 +333,7 @@ export class SubscriptionService {
         createdAt: subscription.createdAt,
         updatedAt: subscription.updatedAt,
         // trialStart/trialEnd and paypalSubscriptionId not in Subscription interface - stored in metadata
-        metadata: subscription.metadata as any,
+        metadata: subscription.metadata as Record<string, unknown>,
       };
     } catch (error) {
       throw new Error(`Failed to create subscription: ${error}`);
@@ -409,7 +409,7 @@ export class SubscriptionService {
 
       const now = new Date();
       const cancelAt = immediate ? now : subscription.currentPeriodEnd;
-      const subMetadata = (subscription.metadata as any) || {};
+      const subMetadata = (subscription.metadata as Record<string, unknown>) || {};
 
       const updatedSubscription = await prisma.subscription.update({
         where: { id: subscriptionId },
@@ -421,7 +421,7 @@ export class SubscriptionService {
             cancelAt: cancelAt.toISOString(),
             canceledAt: immediate ? now.toISOString() : undefined,
             cancellationReason: reason,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -470,7 +470,7 @@ export class SubscriptionService {
       if (!subscription) {
         throw new Error('Subscription not found');
       }
-      const subMetadata = (subscription.metadata as any) || {};
+      const subMetadata = (subscription.metadata as Record<string, unknown>) || {};
       const usageRecords = subMetadata.usageRecords || [];
       const usageRecord = {
         id: `usage_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -487,7 +487,7 @@ export class SubscriptionService {
           metadata: {
             ...subMetadata,
             usageRecords,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -565,7 +565,7 @@ export class SubscriptionService {
       if (!organization) {
         throw new Error('Organization not found');
       }
-      const settings = (organization.settings as any) || {};
+      const settings = (organization.settings as Record<string, unknown> & { subscriptionPlans?: Array<Record<string, unknown>> }) || {};
       const membershipTiers = settings.membershipTiers || [];
       const tierData = {
         id: `tier_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -580,7 +580,7 @@ export class SubscriptionService {
           settings: {
             ...settings,
             membershipTiers,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
       const createdTier = tierData;
@@ -651,7 +651,7 @@ export class SubscriptionService {
         where: { id: user.organizationId },
       });
       if (!organization) return null as any;
-      const settings = (organization.settings as any) || {};
+      const settings = (organization.settings as Record<string, unknown> & { subscriptionPlans?: Array<Record<string, unknown>> }) || {};
       const tiers = (settings.membershipTiers || []).sort((a: any, b: any) => (a.level || 0) - (b.level || 0));
 
       // Find appropriate tier
@@ -702,13 +702,13 @@ export class SubscriptionService {
           notifications: {
             ...(userPref?.notifications as any || {}),
             membershipStatus,
-          } as any,
+          } as Record<string, unknown>,
         },
         create: {
           userId: user?.id || '',
           notifications: {
             membershipStatus,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -733,7 +733,7 @@ export class SubscriptionService {
       if (!organization) {
         throw new Error('Organization not found');
       }
-      const settings = (organization.settings as any) || {};
+      const settings = (organization.settings as Record<string, unknown> & { subscriptionPlans?: Array<Record<string, unknown>> }) || {};
       const subscriptionBoxes = settings.subscriptionBoxes || [];
       const boxData = {
         id: `box_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -748,7 +748,7 @@ export class SubscriptionService {
           settings: {
             ...settings,
             subscriptionBoxes,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
       const createdBox = boxData;

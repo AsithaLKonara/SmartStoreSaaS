@@ -83,7 +83,7 @@ export class SMSService {
               campaignId: options.campaignId,
               scheduledTime: options.scheduledTime,
             },
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -95,7 +95,7 @@ export class SMSService {
   }
 
   private async sendWithTwilio(options: SMSOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const messageOptions: any = {
+    const messageOptions: Record<string, unknown> = {
       body: options.message,
       from: options.from || process.env.TWILIO_PHONE_NUMBER!,
       to: this.formatPhoneNumber(options.to),
@@ -130,7 +130,7 @@ export class SMSService {
   /**
    * Send bulk SMS messages
    */
-  async sendBulkSMS(options: BulkSMSOptions): Promise<{ success: boolean; results: any[]; error?: string }> {
+  async sendBulkSMS(options: BulkSMSOptions): Promise<{ success: boolean; results: Array<Record<string, unknown>>; error?: string }> {
     try {
       const results = [];
 
@@ -173,8 +173,8 @@ export class SMSService {
         name: template.name,
         content: template.content,
         variables: template.variables,
-        organizationId: (template as any).organizationId || '',
-      } as any;
+        organizationId: (template as Record<string, unknown> & { organizationId?: string }).organizationId || '',
+      } as Record<string, unknown>;
 
       return {
         id: createdTemplate.id,
@@ -307,12 +307,12 @@ export class SMSService {
       }
 
       // Get recipients from campaign settings or metadata
-      const recipients: any[] = [];
+      const recipients: Array<{ phone: string }> = [];
       const message = campaign.content || '';
 
       // Send SMS to all recipients
       const results = await Promise.allSettled(
-        recipients.map((recipient: any) =>
+        recipients.map((recipient) =>
           this.sendSMS({
             to: recipient.phone,
             message,
@@ -321,7 +321,7 @@ export class SMSService {
         )
       );
 
-      const successCount = results.filter((result: any) => 
+      const successCount = results.filter((result) => 
         result.status === 'fulfilled' && result.value.success
       ).length;
 
@@ -329,7 +329,7 @@ export class SMSService {
       await prisma.campaign.update({
         where: { id: campaignId },
         data: {
-          status: 'COMPLETED' as any,
+          status: 'COMPLETED' as 'DRAFT' | 'SCHEDULED' | 'SENDING' | 'SENT' | 'CANCELLED',
           // completedAt doesn't exist in Campaign model
         },
       });
@@ -367,7 +367,7 @@ export class SMSService {
               status: 'RECEIVED',
               receivedAt: new Date(),
             },
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -424,7 +424,7 @@ export class SMSService {
           tags: [],
           metadata: {
             phone,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 
@@ -456,7 +456,7 @@ export class SMSService {
       });
 
       const logs = notifications
-        .map(n => (n.metadata as any)?.smsLog)
+        .map(n => (n.metadata as Record<string, unknown> & { smsLog?: { status?: string } })?.smsLog)
         .filter((log): log is NonNullable<typeof log> => !!log);
 
       const sent = logs.filter(log => log.status === 'SENT').length;
@@ -583,7 +583,7 @@ export class SMSService {
               status: 'SENT',
               provider: this.provider,
             },
-          } as any,
+          } as Record<string, unknown>,
         },
       });
 

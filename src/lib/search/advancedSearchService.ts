@@ -16,7 +16,7 @@ export interface SearchResult {
   title: string;
   description?: string;
   relevance: number;
-  metadata: any;
+  metadata: Record<string, unknown>;
   highlights: string[];
 }
 
@@ -45,7 +45,7 @@ export class AdvancedSearchService {
   async searchProducts(organizationId: string, options: SearchOptions): Promise<{ results: SearchResult[]; analytics: SearchAnalytics }> {
     const startTime = Date.now();
     
-    const where: any = {
+    const where: Record<string, unknown> = {
       organizationId,
       isActive: options.includeInactive ? undefined : true,
       OR: [
@@ -73,7 +73,7 @@ export class AdvancedSearchService {
       }
     }
 
-    const orderBy: any = {};
+    const orderBy: Record<string, unknown> = {};
     if (options.sortBy === 'name') {
       orderBy.name = options.sortOrder || 'asc';
     } else if (options.sortBy === 'price') {
@@ -96,7 +96,7 @@ export class AdvancedSearchService {
       skip: options.offset || 0
     });
 
-    const results: SearchResult[] = products.map((product: any) => ({
+    const results: SearchResult[] = products.map((product) => ({
       id: product.id,
       type: 'product',
       title: product.name,
@@ -132,7 +132,7 @@ export class AdvancedSearchService {
   async searchCustomers(organizationId: string, options: SearchOptions): Promise<{ results: SearchResult[]; analytics: SearchAnalytics }> {
     const startTime = Date.now();
     
-    const where: any = {
+    const where: Record<string, unknown> = {
       organizationId,
       OR: [
         { name: { contains: options.query, mode: 'insensitive' } },
@@ -154,7 +154,7 @@ export class AdvancedSearchService {
       }
     }
 
-    const orderBy: any = {};
+    const orderBy: Record<string, unknown> = {};
     if (options.sortBy === 'name') {
       orderBy.name = options.sortOrder || 'asc';
     } else if (options.sortBy === 'date') {
@@ -170,7 +170,7 @@ export class AdvancedSearchService {
       skip: options.offset || 0
     });
 
-    const results: SearchResult[] = customers.map((customer: any) => ({
+    const results: SearchResult[] = customers.map((customer) => ({
       id: customer.id,
       type: 'customer',
       title: customer.name || 'Unknown Customer',
@@ -205,7 +205,7 @@ export class AdvancedSearchService {
   async searchOrders(organizationId: string, options: SearchOptions): Promise<{ results: SearchResult[]; analytics: SearchAnalytics }> {
     const startTime = Date.now();
     
-    const where: any = {
+    const where: Record<string, unknown> = {
       organizationId,
       OR: [
         { orderNumber: { contains: options.query, mode: 'insensitive' } },
@@ -234,7 +234,7 @@ export class AdvancedSearchService {
       }
     }
 
-    const orderBy: any = {};
+    const orderBy: Record<string, unknown> = {};
     if (options.sortBy === 'date') {
       orderBy.createdAt = options.sortOrder || 'desc';
     } else if (options.sortBy === 'price') {
@@ -251,7 +251,7 @@ export class AdvancedSearchService {
       skip: options.offset || 0
     });
 
-    const results: SearchResult[] = orders.map((order: any) => ({
+    const results: SearchResult[] = orders.map((order) => ({
       id: order.id,
       type: 'order',
       title: `Order #${order.orderNumber}`,
@@ -380,7 +380,7 @@ export class AdvancedSearchService {
     return popularSearches.map(item => item.query);
   }
 
-  private calculateRelevance(item: any, query: string): number {
+  private calculateRelevance(item: { name?: string; description?: string; sku?: string; tags?: Array<string | Record<string, unknown>> }, query: string): number {
     let relevance = 0;
     const queryLower = query.toLowerCase();
 
@@ -403,7 +403,7 @@ export class AdvancedSearchService {
 
     // Check tags
     if (item.tags && Array.isArray(item.tags)) {
-      item.tags.forEach((tag: any) => {
+      item.tags.forEach((tag) => {
         if (tag.toLowerCase().includes(queryLower)) {
           relevance += 3;
         }

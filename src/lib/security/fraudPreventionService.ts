@@ -5,8 +5,8 @@ export interface FraudCheck {
   customerId: string;
   amount: number;
   paymentMethod: string;
-  shippingAddress: any;
-  billingAddress: any;
+  shippingAddress: Record<string, unknown>;
+  billingAddress: Record<string, unknown>;
 }
 
 export interface FraudResult {
@@ -104,7 +104,7 @@ export class FraudPreventionService {
     };
   }
 
-  private addressesDiffer(address1: any, address2: any): boolean {
+  private addressesDiffer(address1: Record<string, unknown>, address2: Record<string, unknown>): boolean {
     const fields = ['street', 'city', 'state', 'zip', 'country'];
     return fields.some(field => {
       const val1 = address1[field]?.toLowerCase().trim();
