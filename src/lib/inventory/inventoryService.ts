@@ -702,7 +702,7 @@ export class InventoryService {
         stockAlerts[alertKey] = alert;
 
         // Send notifications
-        await this.sendStockAlertNotifications(alert as any, organizationId);
+        await this.sendStockAlertNotifications(alert, organizationId);
       }
 
       await prisma.organization.update({

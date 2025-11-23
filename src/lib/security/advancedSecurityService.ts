@@ -731,7 +731,7 @@ export class AdvancedSecurityService {
         data: {
           type: this.mapEventTypeToAlertType(event.type),
           message: `Security threat detected: ${detection.reason}`,
-          severity: detection.severity.toUpperCase() as any,
+          severity: detection.severity.toUpperCase() as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
           organizationId: event.organizationId || 'system', // Add missing organizationId
           metadata: {
             userId: event.userId,
@@ -810,7 +810,7 @@ export class AdvancedSecurityService {
     }
   }
 
-  private calculateDistance(loc1: any, loc2: any): number {
+  private calculateDistance(loc1: [number, number], loc2: [number, number]): number {
     const R = 6371; // Earth's radius in kilometers
     const dLat = this.deg2rad(loc2.lat - loc1.lat);
     const dLng = this.deg2rad(loc2.lng - loc1.lng);
@@ -837,9 +837,9 @@ export class AdvancedSecurityService {
     return weights[severity] || 1;
   }
 
-  private generateTimeline(events: any[], timeRange: { start: Date; end: Date }): any[] {
+  private generateTimeline(events: Array<{ createdAt: Date; metadata?: Record<string, unknown> & { severity?: string } }>, timeRange: { start: Date; end: Date }): Array<{ timestamp: Date; count: number; severity: string }> {
     try {
-      const timeline: any[] = [];
+      const timeline: Array<{ timestamp: Date; count: number; severity: string }> = [];
       const interval = 60 * 60 * 1000; // 1 hour intervals
       
       for (let time = timeRange.start.getTime(); time <= timeRange.end.getTime(); time += interval) {
@@ -852,7 +852,7 @@ export class AdvancedSecurityService {
         
         if (eventsInInterval.length > 0) {
           const maxSeverity = eventsInInterval.reduce((max, event) => {
-            const severity = (event.metadata as any)?.severity || 'low';
+            const severity = (event.metadata?.severity as 'low' | 'medium' | 'high' | 'critical' | undefined) || 'low';
             return this.getSeverityWeight(severity) > this.getSeverityWeight(max) ? severity : max;
           }, 'low');
           

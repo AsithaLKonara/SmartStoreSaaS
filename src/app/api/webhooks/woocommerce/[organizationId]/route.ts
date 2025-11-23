@@ -43,7 +43,7 @@ export async function POST(
   }
 }
 
-async function processProductCreated(product: any, organizationId: string): Promise<void> {
+async function processProductCreated(product: { id: number | string; name?: string; description?: string; price?: string | number; stock_quantity?: number; status?: string }, organizationId: string): Promise<void> {
   const syncEvent: SyncEvent = {
     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type: 'product',
@@ -66,7 +66,7 @@ async function processProductCreated(product: any, organizationId: string): Prom
   await realTimeSyncService.queueEvent(syncEvent);
 }
 
-async function processProductUpdated(product: any, organizationId: string): Promise<void> {
+async function processProductUpdated(product: { id: number | string; name?: string; description?: string; price?: string | number; stock_quantity?: number; status?: string }, organizationId: string): Promise<void> {
   const syncEvent: SyncEvent = {
     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type: 'product',
@@ -89,7 +89,7 @@ async function processProductUpdated(product: any, organizationId: string): Prom
   await realTimeSyncService.queueEvent(syncEvent);
 }
 
-async function processProductDeleted(product: any, organizationId: string): Promise<void> {
+async function processProductDeleted(product: { id: number | string }, organizationId: string): Promise<void> {
   const syncEvent: SyncEvent = {
     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type: 'product',
@@ -107,7 +107,7 @@ async function processProductDeleted(product: any, organizationId: string): Prom
   await realTimeSyncService.queueEvent(syncEvent);
 }
 
-async function processOrderCreated(order: any, organizationId: string): Promise<void> {
+async function processOrderCreated(order: { id: number | string; number?: string; status?: string; total?: string | number; billing?: { first_name?: string; last_name?: string; email?: string; phone?: string } }, organizationId: string): Promise<void> {
   const syncEvent: SyncEvent = {
     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type: 'order',
@@ -133,7 +133,7 @@ async function processOrderCreated(order: any, organizationId: string): Promise<
   await realTimeSyncService.queueEvent(syncEvent);
 }
 
-async function processOrderUpdated(order: any, organizationId: string): Promise<void> {
+async function processOrderUpdated(order: { id: number | string; number?: string; status?: string; total?: string | number }, organizationId: string): Promise<void> {
   const syncEvent: SyncEvent = {
     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     type: 'order',
