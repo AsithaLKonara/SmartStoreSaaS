@@ -1,6 +1,5 @@
 import OpenAI from 'openai';
 import { prisma } from '@/lib/prisma';
-import { generateOrderNumber } from '@/lib/utils';
 
 interface SentimentScore {
   positive: number;
@@ -100,7 +99,7 @@ export class AIChatService {
     }
   }
 
-  async recommendProducts(customerId: string, context: string, organizationId: string): Promise<ProductRecommendation[]> {
+  async recommendProducts(customerId: string, context: string, _organizationId: string): Promise<ProductRecommendation[]> {
     try {
       const customer = await prisma.customer.findUnique({
         where: { id: customerId },
@@ -418,7 +417,7 @@ export class AIChatService {
       .join('\n');
   }
 
-  private async getOrganizationFAQs(organizationId: string): Promise<string> {
+  private async getOrganizationFAQs(_organizationId: string): Promise<string> {
     // This would typically come from a FAQ database
     // For now, returning common e-commerce FAQs
     return `

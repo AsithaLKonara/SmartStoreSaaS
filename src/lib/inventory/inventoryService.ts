@@ -449,7 +449,7 @@ export class InventoryService {
    */
   async releaseReservation(
     orderId: string,
-    organizationId: string,
+    _organizationId: string,
     fulfill: boolean = false
   ): Promise<boolean> {
     try {
@@ -469,7 +469,7 @@ export class InventoryService {
 
           // Get warehouse to update inventory
           const warehouse = await tx.warehouse.findFirst({
-            where: { id: reservation.warehouseId, organizationId },
+            where: { id: reservation.warehouseId, organizationId: _organizationId },
           });
 
           if (warehouse) {
@@ -504,7 +504,7 @@ export class InventoryService {
                 reservation.quantity,
                 'OUT',
                 'system',
-                organizationId,
+                _organizationId,
                 {
                   reason: 'Order fulfillment',
                   orderId,

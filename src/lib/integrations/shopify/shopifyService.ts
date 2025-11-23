@@ -209,8 +209,8 @@ export class ShopifyService {
     const allProducts = await prisma.product.findMany({
       where: { organizationId: integration.organizationId },
     });
-    const existingProduct = allProducts.find(p => {
-      const dimensions = (p.dimensions as Record<string, unknown>) || {};
+    const existingProduct = allProducts.find((_p) => {
+      const dimensions = (_p.dimensions as Record<string, unknown>) || {};
       return dimensions.shopifyId === String(shopifyProduct.id);
     });
 
@@ -423,8 +423,8 @@ export class ShopifyService {
 
           // Check via dimensions metadata
           const allProducts = await prisma.product.findMany({});
-          const product = allProducts.find(p => {
-            const dimensions = (p.dimensions as Record<string, unknown>) || {};
+          const product = allProducts.find((_p) => {
+            const dimensions = (_p.dimensions as Record<string, unknown>) || {};
             return (dimensions.shopifyId as string) === String(shopifyProduct.id);
           });
 
