@@ -22,7 +22,7 @@ import {
   Warehouse
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { formatCurrency, formatDate, formatRelativeTime } from '@/lib/utils';
+import { formatDate, formatRelativeTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface Warehouse {
@@ -30,7 +30,7 @@ interface Warehouse {
   name: string;
   address: string;
   isActive: boolean;
-  settings: any;
+  settings: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
@@ -239,7 +239,7 @@ export default function WarehousePage() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'overview' | 'inventory' | 'movements' | 'warehouses')}
                 className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'

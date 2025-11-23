@@ -38,7 +38,7 @@ export async function GET(
 }
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { conversationId: string } }
 ) {
   try {

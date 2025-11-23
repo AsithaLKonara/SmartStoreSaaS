@@ -4,28 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { businessIntelligenceService } from '@/lib/ai/businessIntelligenceService';
 import { prisma } from '@/lib/prisma';
 
-interface OrderWithRelations {
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
-  totalAmount: number;
-  status: string;
-  customerId: string;
-  organizationId: string;
-  items: any[];
-  customer: any;
-}
-
-interface CustomerData {
-  id: string;
-  name: string;
-  email: string;
-  organizationId: string;
-  createdAt: Date;
-  updatedAt: Date;
-  totalSpent?: number;
-  orders?: any[];
-}
+// Removed unused interfaces: OrderWithRelations, CustomerData
 
 interface ProductData {
   id: string;
