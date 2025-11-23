@@ -32,14 +32,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await _request.json();
+    const body = await request.json();
     const { pickupAddress, deliveryAddress, package: packageData, orderId, organizationId, courierCode } = body;
 
     if (!pickupAddress || !deliveryAddress || !packageData || !orderId || !organizationId || !courierCode) {

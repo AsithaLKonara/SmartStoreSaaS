@@ -107,14 +107,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await _request.json();
+    const body = await request.json();
     const { action, data } = body;
     const organizationId = session.user.organizationId;
 

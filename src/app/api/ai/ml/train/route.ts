@@ -3,14 +3,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { CustomModelService } from '@/lib/ai/ml/customModelService';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await _request.json();
+    const body = await request.json();
     const { modelType, trainingData, features, targetVariable, hyperparameters } = body;
 
     if (!modelType || !trainingData || !features || !targetVariable) {

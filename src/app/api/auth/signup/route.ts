@@ -3,9 +3,9 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { generateSlug } from '@/lib/utils';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const body = await _request.json();
+    const body = await request.json();
     const { name, email, password, organizationName, organizationSlug } = body;
 
     // Validate required fields
