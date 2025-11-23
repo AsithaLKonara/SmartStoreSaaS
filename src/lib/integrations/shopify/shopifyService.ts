@@ -145,7 +145,7 @@ export class ShopifyService {
           ? `/products.json?limit=250&page_info=${pageInfo}`
           : '/products.json?limit=250';
 
-        const response: any = await this.client.get(url);
+        const response = await this.client.get<{ products: ShopifyProduct[]; link?: string }>(url);
         const products: ShopifyProduct[] = response.data.products;
 
         for (const shopifyProduct of products) {
@@ -219,12 +219,12 @@ export class ShopifyService {
         data: {
           ...productData,
           dimensions: {
-            ...(existingProduct.dimensions as any || {}),
+            ...((existingProduct.dimensions as Record<string, unknown>) || {}),
             shopifyId: String(shopifyProduct.id),
             shopifyHandle: shopifyProduct.handle,
             shopifyVendor: shopifyProduct.vendor,
             shopifyType: shopifyProduct.product_type,
-          } as any,
+          },
         },
       });
     } else {
@@ -368,9 +368,9 @@ export class ShopifyService {
       await prisma.order.update({
         where: { id: existingOrder.id },
         data: {
-          status: orderData.status as any,
+          status: orderData.status,
           totalAmount: orderData.totalAmount,
-          paymentStatus: orderData.paymentStatus as any,
+          paymentStatus: orderData.paymentStatus,
         },
       });
     } else {
@@ -423,8 +423,8 @@ export class ShopifyService {
           // Check via dimensions metadata
           const allProducts = await prisma.product.findMany({});
           const product = allProducts.find(p => {
-            const dimensions = (p.dimensions as any) || {};
-            return dimensions.shopifyId === String(shopifyProduct.id);
+            const dimensions = (p.dimensions as Record<string, unknown>) || {};
+            return (dimensions.shopifyId as string) === String(shopifyProduct.id);
           });
 
           if (product) {
