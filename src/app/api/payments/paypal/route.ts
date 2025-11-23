@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { action, ...data } = await request.json();
+    const { action } = await request.json();
 
     switch (action) {
       case 'create-order':

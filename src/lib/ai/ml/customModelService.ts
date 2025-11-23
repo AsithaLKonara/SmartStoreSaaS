@@ -237,7 +237,7 @@ export class CustomModelService {
 
   private async saveModel(_model: Record<string, unknown>, organizationId: string, modelType: string): Promise<string> {
     // In production, save to cloud storage (S3, GCS, etc.)
-    const _modelPath = `models/${organizationId}/${modelType}/${Date.now()}.json`;
+    const modelPath = `models/${organizationId}/${modelType}/${Date.now()}.json`;
     // Would save model to storage here
     return modelPath;
   }

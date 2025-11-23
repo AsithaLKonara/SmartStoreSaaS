@@ -318,7 +318,7 @@ export class AIAnalyticsService {
   }
 
   // Operational Analytics
-  async optimizeDeliveryRoutes(organizationId: string): Promise<any[]> {
+  async optimizeDeliveryRoutes(organizationId: string): Promise<Array<Record<string, unknown>>> {
     try {
       const orders = await prisma.order.findMany({
         where: {
