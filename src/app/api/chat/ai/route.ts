@@ -48,12 +48,12 @@ export async function POST(request: NextRequest) {
       status: conversation.status,
       priority: conversation.priority || 'MEDIUM',
       customerId: conversation.customerId,
-      messages: conversation.messages.map((msg) => ({
-        id: msg.id,
-        content: msg.message || '',
-        role: msg.isIncoming ? 'user' : 'assistant',
-        timestamp: msg.timestamp
-      })),
+        messages: conversation.messages.map((msg) => ({
+          id: msg.id,
+          content: (msg as { message: string }).message || '',
+          role: (msg as { isIncoming: boolean }).isIncoming ? 'user' : 'assistant',
+          timestamp: (msg as { timestamp: Date }).timestamp
+        })),
       createdAt: conversation.createdAt,
       updatedAt: conversation.updatedAt
     });
