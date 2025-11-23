@@ -488,10 +488,10 @@ export class MessengerService {
     }
   }
 
-  private async processMessagingEvent(event: Record<string, unknown> & { sender?: { id?: string }; recipient?: { id?: string }; message?: Record<string, unknown>; postback?: Record<string, unknown> }, pageId: string): Promise<void> {
+  private async processMessagingEvent(event: Record<string, unknown> & { sender?: { id?: string }; recipient?: { id?: string }; message?: Record<string, unknown>; postback?: Record<string, unknown> }, _pageId: string): Promise<void> {
     try {
-      const senderId = event.sender.id;
-      const recipientId = event.recipient.id;
+      const _senderId = event.sender.id;
+      const _recipientId = event.recipient.id;
 
       // Determine organization from page ID
       // Since messengerIntegration model doesn't exist, use default organization

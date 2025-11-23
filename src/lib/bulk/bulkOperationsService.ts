@@ -219,7 +219,7 @@ export class BulkOperationsService {
         const row = data[i];
         try {
           // Combine address information into a single address field
-          const fullAddress = [
+          const _fullAddress = [
             row.address || '',
             row.city || '',
             row.state || '',

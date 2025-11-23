@@ -23,6 +23,7 @@ interface LoyaltyTransaction {
   createdAt: Date;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface ReferralProgram {
   id: string;
   referrerId: string;

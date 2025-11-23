@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { emailService } from '@/lib/email/emailService';
 import { realTimeSyncService } from '@/lib/sync/realTimeSyncService';
-import { stripeService } from '@/lib/payments/stripeService';
 
 export interface Vendor {
   id: string;

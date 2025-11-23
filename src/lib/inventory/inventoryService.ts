@@ -1,8 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { realTimeSyncService } from '@/lib/sync/realTimeSyncService';
 import { emailService } from '@/lib/email/emailService';
-import { smsService } from '@/lib/sms/smsService';
-import { whatsAppService } from '@/lib/whatsapp/whatsappService';
 
 export interface InventoryItem {
   id: string;
@@ -834,7 +832,7 @@ export class InventoryService {
 
       if (!product || !warehouse) return;
 
-      const message = this.getAlertMessage(alert, product.name, warehouse.name);
+      const _message = this.getAlertMessage(alert, product.name, warehouse.name);
 
       // Send notifications to admins
       for (const user of users) {
@@ -928,7 +926,7 @@ export class InventoryService {
     productId: string,
     warehouseId: string,
     organizationId: string,
-    daysToForecast: number = 30
+    _daysToForecast: number = 30
   ): Promise<InventoryForecast | null> {
     try {
       // Get current inventory from warehouse settings

@@ -753,18 +753,18 @@ export class PersonalizationEngine {
 
   // Placeholder methods for different recommendation algorithms
   private async generateCollaborativeRecommendations(
-    userProfile: UserProfile,
-    context: RealTimeContext,
-    count: number
+    _userProfile: UserProfile,
+    _context: RealTimeContext,
+    _count: number
   ): Promise<PersonalizationRecommendation[]> {
     // Implement collaborative filtering
     return [];
   }
 
   private async generateContentBasedRecommendations(
-    userProfile: UserProfile,
-    context: RealTimeContext,
-    count: number
+    _userProfile: UserProfile,
+    _context: RealTimeContext,
+    _count: number
   ): Promise<PersonalizationRecommendation[]> {
     // Implement content-based filtering
     return [];
