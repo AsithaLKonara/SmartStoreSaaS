@@ -620,15 +620,7 @@ export class SubscriptionService {
         throw new Error('User not found for customer');
       }
 
-      // Get customer again for orders (reuse customerRecord)
-      const customer = customerRecord;
-        where: {
-          organizationId: user.organizationId,
-          email: user.email,
-        },
-      });
-
-      if (!customer) return null as any;
+      // Use customerRecord for orders (already fetched above)
 
       // Get orders separately since orders relation may not exist directly
       const orders = await prisma.order.findMany({
