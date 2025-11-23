@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { whatsAppService } from '@/lib/whatsapp/whatsappService';
 import { prisma } from '@/lib/prisma';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const body = await _request.json();
+    const body = await request.json();
     
     // Verify webhook signature (implement proper verification)
-    const signature = _request.headers.get('x-hub-signature-256');
+    const signature = request.headers.get('x-hub-signature-256');
     if (!signature) {
       return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
     }
