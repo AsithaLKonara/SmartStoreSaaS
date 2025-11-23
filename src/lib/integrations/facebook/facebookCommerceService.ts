@@ -165,20 +165,29 @@ export class FacebookCommerceService {
   }
 
   private productToFacebookCatalogItem(product: Record<string, unknown>): FacebookCatalogItem {
+    const sku = (product.sku as string) || (product.id as string) || '';
+    const name = (product.name as string) || '';
+    const description = (product.description as string)?.replace(/<[^>]*>/g, '') || '';
+    const images = (product.images as string[]) || [];
+    const stockQuantity = (product.stockQuantity as number) || 0;
+    const price = (product.price as number) || 0;
+    const currency = (product.currency as string) || 'USD';
+    const slug = (product.slug as string) || '';
+    
     return {
-      retailer_id: product.sku || product.id,
-      name: product.name,
-      description: product.description?.replace(/<[^>]*>/g, '') || '',
-      image_url: product.images?.[0] || '',
+      retailer_id: sku,
+      name: name,
+      description: description,
+      image_url: images[0] || '',
       category: 'Apparel & Accessories',
-      availability: product.stockQuantity > 0 ? 'in stock' : 'out of stock',
+      availability: stockQuantity > 0 ? 'in stock' : 'out of stock',
       condition: 'new',
-      price: `${product.price.toFixed(2)} ${product.currency || 'USD'}`,
-      currency: product.currency || 'USD',
-      url: `${process.env.NEXTAUTH_URL || 'https://smartstore.ai'}/products/${product.slug}`,
+      price: `${price.toFixed(2)} ${currency}`,
+      currency: currency,
+      url: `${process.env.NEXTAUTH_URL || 'https://smartstore.ai'}/products/${slug}`,
       brand: 'SmartStore',
-      inventory: product.stockQuantity,
-      additional_image_urls: product.images?.slice(1) || [],
+      inventory: stockQuantity,
+      additional_image_urls: images.slice(1) || [],
     };
   }
 

@@ -318,7 +318,7 @@ export class ShopifyService {
         data: {
           name: shopifyOrder.customer.first_name + ' ' + shopifyOrder.customer.last_name,
           email: shopifyOrder.email,
-          phone: shopifyOrder.customer.phone || null,
+          phone: (shopifyOrder.customer.phone as string) || null,
           organizationId: integration.organizationId,
         },
       });
@@ -348,9 +348,9 @@ export class ShopifyService {
       },
       items: {
         create: shopifyOrder.line_items.map((item: Record<string, unknown>) => ({
-          quantity: item.quantity,
-          price: parseFloat(item.price),
-          total: parseFloat(item.price) * item.quantity,
+          quantity: (item.quantity as number) || 1,
+          price: parseFloat((item.price as string) || '0'),
+          total: parseFloat((item.price as string) || '0') * ((item.quantity as number) || 1),
           metadata: {
             shopifyLineItemId: item.id,
             variantId: item.variant_id,
@@ -398,7 +398,7 @@ export class ShopifyService {
               productId: ((item.metadata as Record<string, unknown>)?.productId as string) || '',
             })) : [],
           },
-          metadata: orderData.metadata as Record<string, unknown>,
+          metadata: orderData.metadata,
         },
       });
     }

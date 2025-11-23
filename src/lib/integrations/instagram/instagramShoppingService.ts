@@ -138,15 +138,23 @@ export class InstagramShoppingService {
   }
 
   private productToInstagramProduct(product: Record<string, unknown>): InstagramProduct {
+    const sku = (product.sku as string) || (product.id as string) || '';
+    const name = (product.name as string) || '';
+    const description = (product.description as string)?.replace(/<[^>]*>/g, '') || '';
+    const price = (product.price as number) || 0;
+    const currency = (product.currency as string) || 'USD';
+    const images = (product.images as string[]) || [];
+    const stockQuantity = (product.stockQuantity as number) || 0;
+    
     return {
-      id: product.sku || product.id,
-      name: product.name,
-      description: product.description?.replace(/<[^>]*>/g, '') || '',
-      price: `${product.price.toFixed(2)} ${product.currency || 'USD'}`,
-      currency: product.currency || 'USD',
-      image_url: product.images?.[0] || '',
-      availability: product.stockQuantity > 0 ? 'in stock' : 'out of stock',
-      inventory: product.stockQuantity,
+      id: sku,
+      name: name,
+      description: description,
+      price: `${price.toFixed(2)} ${currency}`,
+      currency: currency,
+      image_url: images[0] || '',
+      availability: stockQuantity > 0 ? 'in stock' : 'out of stock',
+      inventory: stockQuantity,
     };
   }
 
