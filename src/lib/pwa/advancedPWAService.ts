@@ -513,8 +513,8 @@ export class AdvancedPWAService {
       });
 
       // Handle notification actions if supported
-      if ('actions' in options && Array.isArray((options as any).actions)) {
-        (options as any).actions.forEach((action: any) => {
+      if ('actions' in options && Array.isArray((options as NotificationOptions & { actions?: NotificationAction[] }).actions)) {
+        ((options as NotificationOptions & { actions?: NotificationAction[] }).actions || []).forEach((action: NotificationAction) => {
           // Handle action clicks
           notification.addEventListener('click', () => {
             console.log('Notification action clicked:', action.action);

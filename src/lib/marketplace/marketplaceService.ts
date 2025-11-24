@@ -764,12 +764,12 @@ export class MarketplaceService {
     };
   }
 
-  private mapMarketplaceOrderFromDB(order: any): MarketplaceOrder {
+  private mapMarketplaceOrderFromDB(order: { id: string; metadata?: Record<string, unknown>; items: Array<{ id: string; productId: string; quantity: number; price: number }> }): MarketplaceOrder {
     return {
       id: order.id,
       orderId: order.id,
-      vendorId: (order.metadata as any)?.vendorId || '',
-      items: order.items.map((item: any) => ({
+      vendorId: (order.metadata as Record<string, unknown> & { vendorId?: string })?.vendorId || '',
+      items: order.items.map((item: { id: string; productId: string; quantity: number; price: number }) => ({
         id: item.id,
         vendorProductId: item.productId,
         quantity: item.quantity,

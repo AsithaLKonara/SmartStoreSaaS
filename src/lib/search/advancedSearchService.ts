@@ -418,7 +418,7 @@ export class AdvancedSearchService {
     return relevance;
   }
 
-  private generateHighlights(item: any, query: string): string[] {
+  private generateHighlights(item: { name?: string; description?: string; sku?: string; tags?: Array<string | Record<string, unknown>> }, query: string): string[] {
     const highlights: string[] = [];
     const queryLower = query.toLowerCase();
 
@@ -485,7 +485,7 @@ export class AdvancedSearchService {
   private aggregateFacets(results: SearchResult[], field: string): Array<{ name: string; count: number }> {
     const facetCounts = new Map<string, number>();
     
-    results.forEach((result: any) => {
+    results.forEach((result: SearchResult) => {
       const value = result.metadata[field];
       if (value) {
         facetCounts.set(value, (facetCounts.get(value) || 0) + 1);
@@ -507,7 +507,7 @@ export class AdvancedSearchService {
     const rangeCounts = new Map<string, number>();
     ranges.forEach(range => rangeCounts.set(range.label, 0));
 
-    results.forEach((result: any) => {
+    results.forEach((result: SearchResult) => {
       const price = result.metadata.price;
       if (typeof price === 'number') {
         const range = ranges.find(r => price >= r.min && price < r.max);
