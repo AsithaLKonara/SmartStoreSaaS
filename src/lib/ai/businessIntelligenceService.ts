@@ -363,8 +363,8 @@ export class BusinessIntelligenceService {
    */
   async assessBusinessRisks(
     businessData: Array<Record<string, unknown>>,
-    marketData: any[],
-    financialData: any[]
+    marketData: Array<Record<string, unknown>>,
+    financialData: Array<Record<string, unknown>>
   ): Promise<RiskAssessment[]> {
     try {
       if (!this.checkOpenAI()) {
@@ -412,8 +412,8 @@ export class BusinessIntelligenceService {
    * Generate business insights and recommendations
    */
   async generateBusinessInsights(
-    allData: any[]
-  ): Promise<any[]> {
+    allData: Array<Record<string, unknown>>
+  ): Promise<Array<Record<string, unknown>>> {
     try {
       if (!this.checkOpenAI()) {
         return [];

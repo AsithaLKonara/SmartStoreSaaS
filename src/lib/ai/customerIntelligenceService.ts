@@ -274,7 +274,7 @@ export class CustomerIntelligenceService {
     reviews: Array<Record<string, unknown>>;
     supportTickets: Array<Record<string, unknown>>;
     customerSegments: Array<Record<string, unknown>>;
-    customerOffers: any[];
+    customerOffers: Array<Record<string, unknown>>;
   }> {
     try {
       const whereClause = customerId ? { customerId } : {};
@@ -291,11 +291,11 @@ export class CustomerIntelligenceService {
         }),
         prisma.customerSegment.findMany({
           where: orgClause,
-          include: { customerSegmentCustomers: { include: { customer: true } } } as any
+          include: { customerSegmentCustomers: { include: { customer: true } } }
         }),
         prisma.customerOffer.findMany({
           where: orgClause,
-          include: { customerOfferCustomers: { include: { customer: true } } } as any
+          include: { customerOfferCustomers: { include: { customer: true } } }
         })
       ]);
 
@@ -310,9 +310,9 @@ export class CustomerIntelligenceService {
    * Analyze purchase patterns and behavior
    */
   async analyzePurchasePatterns(
-    customerData: any[],
-    purchaseHistory: any[]
-  ): Promise<any[]> {
+    customerData: Array<Record<string, unknown>>,
+    purchaseHistory: Array<Record<string, unknown>>
+  ): Promise<Array<Record<string, unknown>>> {
     try {
       const prompt = `
         Analyze customer purchase patterns based on:

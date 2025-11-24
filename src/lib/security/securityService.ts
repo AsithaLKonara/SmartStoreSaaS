@@ -245,12 +245,12 @@ export class SecurityService {
         id: audit.id,
         userId: audit.userId,
         action: audit.action,
-        resource: (audit.metadata as any)?.resource || '',
+        resource: (audit.metadata as Record<string, unknown> & { resource?: string })?.resource || '',
         ipAddress: audit.ipAddress || '',
         userAgent: audit.userAgent || '',
         timestamp: audit.createdAt,
-        success: (audit.metadata as any)?.success || false,
-        details: (audit.metadata as any)?.details || {}
+        success: (audit.metadata as Record<string, unknown> & { success?: boolean })?.success || false,
+        details: (audit.metadata as Record<string, unknown> & { details?: Record<string, unknown> })?.details || {}
       }));
     } catch (error) {
       console.error('Error getting audit logs:', error);
@@ -276,7 +276,7 @@ export class SecurityService {
         userId,
         ipAddress,
         details,
-      } as any;
+      } as { id: string; type: SecurityAlert['type']; message: string; severity: SecurityAlert['severity']; userId?: string; ipAddress?: string; details?: Record<string, unknown>; metadata?: Record<string, unknown>; createdAt?: Date };
       console.log('Security alert:', alert);
 
       // Send notification
@@ -286,7 +286,7 @@ export class SecurityService {
         severity,
         message,
         userId,
-        ipAddress: (alert.metadata as any)?.ipAddress || '', // Access from metadata
+        ipAddress: (alert.metadata as Record<string, unknown> & { ipAddress?: string })?.ipAddress || ipAddress || '', // Access from metadata
         timestamp: alert.createdAt,
         resolved: false,
         details: details || {}
@@ -298,7 +298,7 @@ export class SecurityService {
         severity,
         message,
         userId,
-        ipAddress: (alert.metadata as any)?.ipAddress || '', // Access from metadata
+        ipAddress: (alert.metadata as Record<string, unknown> & { ipAddress?: string })?.ipAddress || ipAddress || '', // Access from metadata
         timestamp: alert.createdAt,
         resolved: false,
         details: details || {}
