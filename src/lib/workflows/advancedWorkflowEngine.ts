@@ -95,9 +95,9 @@ export class AdvancedWorkflowEngine {
 
       return {
         ...workflow,
-        nodes: (workflow.nodes as any) || [],
-        connections: (workflow.connections as any) || [],
-        triggers: (workflow.triggers as any) || [],
+        nodes: (workflow.nodes as Array<Record<string, unknown>>) || [],
+        connections: (workflow.connections as Array<Record<string, unknown>>) || [],
+        triggers: (workflow.triggers as Array<string>) || [],
         version: workflow.version || 1,
         organizationId: workflow.organizationId,
         config: workflow.config,

@@ -56,12 +56,12 @@ declare module 'quagga' {
   export const canvas: QuaggaCanvas;
   export const ImageDebug: QuaggaImageDebug;
 
-  export function init(config: BarcodeConfig, callback: (err: any) => void): void;
+  export function init(config: BarcodeConfig, callback: (err: Error | null) => void): void;
   export function start(): void;
   export function stop(): void;
   export function onDetected(callback: (result: BarcodeResult) => void): void;
-  export function onProcessed(callback: (result: any) => void): void;
+  export function onProcessed(callback: (result: { codeResult?: BarcodeResult; boxes?: number[][]; [key: string]: unknown }) => void): void;
   export function decodeSingle(config: BarcodeConfig, callback: (result: BarcodeResult) => void): void;
   export function offDetected(callback?: (result: BarcodeResult) => void): void;
-  export function offProcessed(callback?: (result: any) => void): void;
+  export function offProcessed(callback?: (result: { codeResult?: BarcodeResult; boxes?: number[][]; [key: string]: unknown }) => void): void;
 } 

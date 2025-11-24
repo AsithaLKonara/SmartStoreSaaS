@@ -33,7 +33,7 @@ export function useRealTimeSync({
     isOnline: false
   });
   const [events, setEvents] = useState<SyncEvent[]>([]);
-  const [conflicts, setConflicts] = useState<any[]>([]);
+  const [conflicts, setConflicts] = useState<Array<{ id: string; [key: string]: unknown }>>([]);
   
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);

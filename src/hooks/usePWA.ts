@@ -101,7 +101,7 @@ export function usePWA() {
 
     try {
       // Trigger install prompt
-      const promptEvent = (window as any).deferredPrompt;
+      const promptEvent = (window as Record<string, unknown> & { deferredPrompt?: { prompt: () => void; userChoice: Promise<{ outcome: string }> } }).deferredPrompt;
       if (promptEvent) {
         promptEvent.prompt();
         const { outcome } = await promptEvent.userChoice;
@@ -109,7 +109,7 @@ export function usePWA() {
         if (outcome === 'accepted') {
           toast.success('SmartStore AI installed successfully!');
           setPwaStatus(prev => ({ ...prev, canInstall: false }));
-          (window as any).deferredPrompt = null;
+          (window as Record<string, unknown> & { deferredPrompt?: unknown }).deferredPrompt = null;
           return true;
         }
       }
@@ -225,7 +225,7 @@ export function usePWA() {
       const registration = await navigator.serviceWorker.ready;
       // Background sync API may not be available
       if ('sync' in registration) {
-        await (registration.sync as any).register('background-sync');
+        await (registration as ServiceWorkerRegistration & { sync?: { register: (tag: string) => Promise<void> } }).sync?.register('background-sync');
       }
       toast.success('Background sync registered');
       return true;
