@@ -34,7 +34,7 @@ export class BIService {
   async executeQuery(
     organizationId: string,
     query: BIQuery
-  ): Promise<any> {
+  ): Promise<{ data: Array<Record<string, unknown>>; total?: number }> {
     // Build Prisma query based on BI query
     const where: Record<string, unknown> = {
       organizationId,
@@ -82,7 +82,7 @@ export class BIService {
     organizationId: string,
     where: Record<string, unknown>,
     query: BIQuery
-  ): Promise<any> {
+  ): Promise<{ data: Array<Record<string, unknown>>; total: number }> {
     const orders = await prisma.order.findMany({
       where,
       include: {
@@ -108,7 +108,7 @@ export class BIService {
     organizationId: string,
     where: Record<string, unknown>,
     query: BIQuery
-  ): Promise<any> {
+  ): Promise<{ data: Array<Record<string, unknown>>; total: number }> {
     const products = await prisma.product.findMany({
       where,
       include: {
@@ -129,7 +129,7 @@ export class BIService {
     organizationId: string,
     where: Record<string, unknown>,
     query: BIQuery
-  ): Promise<any> {
+  ): Promise<{ data: Array<Record<string, unknown>>; total: number }> {
     const customers = await prisma.customer.findMany({
       where,
       include: {
@@ -174,7 +174,7 @@ export class BIService {
     }
 
     // Group by dimensions
-    const grouped = new Map<string, any>();
+    const grouped = new Map<string, Record<string, unknown>>();
 
     data.forEach(item => {
       const key = groupBy.map(field => item[field] || 'unknown').join('|');
@@ -184,7 +184,7 @@ export class BIService {
           ...groupBy.reduce((acc, field) => {
             acc[field] = item[field];
             return acc;
-          }, {} as any),
+          }, {} as Record<string, unknown>),
           revenue: 0,
           quantity: 0,
           count: 0,

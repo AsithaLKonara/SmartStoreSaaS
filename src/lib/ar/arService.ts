@@ -34,7 +34,7 @@ export class ARService {
     modelUrl: string,
     modelType: 'gltf' | 'glb' | 'obj',
     thumbnailUrl?: string,
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): Promise<ARModelInfo> {
     const arModel = await prisma.aRModel.upsert({
       where: { productId },
@@ -87,7 +87,7 @@ export class ARService {
         modelUrl: p.arModel!.modelUrl,
         modelType: p.arModel!.modelType as 'gltf' | 'glb' | 'obj',
         thumbnailUrl: p.arModel!.thumbnailUrl || undefined,
-        metadata: p.arModel!.metadata as any,
+        metadata: p.arModel!.metadata as Record<string, unknown>,
       }));
   }
 }

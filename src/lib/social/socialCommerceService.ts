@@ -80,7 +80,7 @@ export class SocialCommerceService {
   async connectPlatform(organizationId: string, platform: string, config: Record<string, unknown>): Promise<SocialPlatform> {
     const socialPlatform = await prisma.socialPlatform.upsert({
       where: {
-        organizationId_name: { organizationId, name: platform as any }
+        organizationId_name: { organizationId, name: platform as 'facebook' | 'instagram' | 'tiktok' | 'pinterest' | 'twitter' }
       },
       update: {
         config,
@@ -89,7 +89,7 @@ export class SocialCommerceService {
       },
       create: {
         organizationId,
-        name: platform as any,
+        name: platform as 'facebook' | 'instagram' | 'tiktok' | 'pinterest' | 'twitter',
         config,
         isActive: true,
         lastSync: new Date()

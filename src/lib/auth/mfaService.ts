@@ -45,7 +45,7 @@ export class MFAService {
   private readonly backupCodeLength = 8;
 
   // Helper method to get MFA data from UserPreference
-  private async getMFAData(userId: string, type?: string): Promise<any> {
+  private async getMFAData(userId: string, type?: string): Promise<Record<string, unknown> | null> {
     const userPref = await prisma.userPreference.findUnique({
       where: { userId },
     });
@@ -64,18 +64,18 @@ export class MFAService {
       where: { userId },
       update: {
         notifications: {
-          ...(userPref?.notifications as any || {}),
+          ...(userPref?.notifications as Record<string, unknown> || {}),
           mfa: {
             ...((userPref?.notifications as Record<string, unknown> & { mfa?: Record<string, unknown> })?.mfa || {}),
             ...updates,
           },
-        } as any,
+        } as Record<string, unknown>,
       },
       create: {
         userId,
         notifications: {
           mfa: updates,
-        } as any,
+        } as Record<string, unknown>,
       },
     });
   }
@@ -561,7 +561,7 @@ export class MFAService {
   /**
    * Get MFA authentication logs (not implemented in current schema)
    */
-  async getMFALogs(userId: string, limit = 50): Promise<any[]> {
+  async getMFALogs(userId: string, limit = 50): Promise<Array<Record<string, unknown>>> {
     try {
       // MFA logs stored in UserPreference metadata or Activity model
       // TODO: Use Activity model for MFA logs instead of mfaLog
@@ -609,7 +609,7 @@ export class MFAService {
     userId: string,
     action: string,
     result: 'success' | 'failure' | 'error',
-    details?: any
+    details?: Record<string, unknown>
   ): Promise<void> {
     try {
       // Store MFA log in Activity model

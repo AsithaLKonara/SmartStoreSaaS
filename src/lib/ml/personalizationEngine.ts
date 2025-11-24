@@ -60,7 +60,7 @@ export interface PersonalizationRecommendation {
     id: string;
     score: number;
     reason: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }>;
   algorithm: string;
   confidence: number;
@@ -72,7 +72,7 @@ export interface ABTestVariant {
   id: string;
   name: string;
   description: string;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   trafficAllocation: number; // percentage
   isActive: boolean;
   metrics: {
@@ -94,8 +94,8 @@ export interface PersonalizationExperiment {
   variants: ABTestVariant[];
   targetAudience: {
     segments?: string[];
-    demographics?: Record<string, any>;
-    behaviors?: Record<string, any>;
+    demographics?: Record<string, unknown>;
+    behaviors?: Record<string, unknown>;
   };
   startDate: Date;
   endDate?: Date;

@@ -86,7 +86,7 @@ export class IoTService {
     await this.checkThresholds(device.id, sensorType, value);
   }
 
-  async getDeviceStatus(deviceId: string): Promise<any> {
+  async getDeviceStatus(deviceId: string): Promise<{ id: string; deviceId: string; name: string; type: string; location: string | null; isActive: boolean; lastSeen: Date | null; warehouse: string | null; sensors: Array<{ type: string; value: number | null; unit: string; threshold: number | null; lastReading: Date | null }> }> {
     const device = await prisma.ioTDevice.findUnique({
       where: { deviceId },
       include: {
@@ -118,7 +118,7 @@ export class IoTService {
     };
   }
 
-  async getWarehouseDevices(warehouseId: string): Promise<any[]> {
+  async getWarehouseDevices(warehouseId: string): Promise<Array<{ id: string; deviceId: string; name: string; type: string; location: string | null; isActive: boolean; lastSeen: Date | null; sensors: Array<{ id: string; sensorType: string; currentValue: number | null; unit: string; threshold: number | null; lastReading: Date | null }> }>> {
     const devices = await prisma.ioTDevice.findMany({
       where: { warehouseId },
       include: {
