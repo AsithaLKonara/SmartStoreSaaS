@@ -87,7 +87,7 @@ export function IntegrationManager({ organizationId }: IntegrationManagerProps) 
     }
   };
 
-  const setupIntegration = async (type: string, config: any) => {
+  const setupIntegration = async (type: string, config: Record<string, unknown>) => {
     try {
       setSetupLoading(true);
       const response = await fetch('/api/integrations/setup', {

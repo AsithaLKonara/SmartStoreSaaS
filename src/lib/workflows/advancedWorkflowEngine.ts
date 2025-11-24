@@ -30,7 +30,7 @@ export interface WorkflowDefinition {
   createdAt: Date;
   updatedAt: Date;
   organizationId: string;
-  config?: any;
+  config?: Record<string, unknown>;
 }
 
 export interface WorkflowExecution {
@@ -70,7 +70,7 @@ export interface WorkflowTemplate {
   isPublic: boolean;
   createdAt: Date;
   updatedAt: Date;
-  config?: any;
+  config?: Record<string, unknown>;
 }
 
 export class AdvancedWorkflowEngine {
@@ -123,9 +123,9 @@ export class AdvancedWorkflowEngine {
 
       const definition: WorkflowDefinition = {
         ...workflow,
-        nodes: (workflow.nodes as any) || [],
-        connections: (workflow.connections as any) || [],
-        triggers: (workflow.triggers as any) || [],
+        nodes: (workflow.nodes as Array<Record<string, unknown>>) || [],
+        connections: (workflow.connections as Array<Record<string, unknown>>) || [],
+        triggers: (workflow.triggers as Array<string>) || [],
         version: workflow.version || 1,
         organizationId: workflow.organizationId,
         config: workflow.config,

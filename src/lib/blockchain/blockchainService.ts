@@ -83,7 +83,7 @@ export class BlockchainService {
   async createNFTCertificate(
     organizationId: string,
     productId: string,
-    metadata: any
+    metadata: Record<string, unknown>
   ): Promise<string> {
     // In production, this would mint an NFT on blockchain
     const transaction = await this.createTransaction(

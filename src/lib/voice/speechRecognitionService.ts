@@ -42,7 +42,7 @@ export class SpeechRecognitionService {
 
   constructor() {
     if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognition = (window as Record<string, unknown> & { SpeechRecognition?: new () => SpeechRecognition; webkitSpeechRecognition?: new () => SpeechRecognition }).SpeechRecognition || (window as Record<string, unknown> & { SpeechRecognition?: new () => SpeechRecognition; webkitSpeechRecognition?: new () => SpeechRecognition }).webkitSpeechRecognition;
       this.isSupported = !!SpeechRecognition;
       
       if (this.isSupported) {
