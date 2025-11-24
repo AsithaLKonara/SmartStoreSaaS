@@ -1,4 +1,3 @@
-import { usePWA } from '@/hooks/usePWA';
 
 export interface PushNotification {
   id: string;

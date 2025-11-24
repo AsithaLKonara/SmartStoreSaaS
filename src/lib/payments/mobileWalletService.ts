@@ -1,4 +1,3 @@
-import axios from 'axios';
 
 export interface MobileWalletProvider {
   name: 'apple_pay' | 'google_pay' | 'samsung_pay';

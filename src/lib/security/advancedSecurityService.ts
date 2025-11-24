@@ -1,10 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { realTimeSyncService } from '@/lib/sync/realTimeSyncService';
 import { emailService } from '@/lib/email/emailService';
-import { smsService } from '@/lib/sms/smsService';
 import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 
 interface SecurityEvent {
   id?: string;
@@ -57,15 +54,7 @@ interface SecurityMetrics {
   }>;
 }
 
-interface SecurityRule {
-  id: string;
-  name: string;
-  type: 'rate_limit' | 'geo_block' | 'device_trust' | 'behavior_analysis' | 'ip_reputation';
-  conditions: Record<string, unknown>;
-  actions: Array<'block' | 'alert' | 'challenge' | 'log' | 'notify_admin'>;
-  isActive: boolean;
-  priority: number;
-}
+// SecurityRule interface removed - not currently used
 
 interface BruteForceProtection {
   maxAttempts: number;
