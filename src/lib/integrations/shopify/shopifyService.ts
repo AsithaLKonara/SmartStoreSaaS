@@ -498,7 +498,7 @@ export class ShopifyService {
     });
   }
 
-  async createWebhook(topic: string, address: string): Promise<any> {
+  async createWebhook(topic: string, address: string): Promise<Record<string, unknown>> {
     const response = await this.client.post('/webhooks.json', {
       webhook: {
         topic,
