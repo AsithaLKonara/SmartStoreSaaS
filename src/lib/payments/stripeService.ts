@@ -161,7 +161,7 @@ export class StripeService {
   /**
    * Cancel a subscription
    */
-  async cancelSubscription(subscriptionId: string): Promise<any> {
+  async cancelSubscription(subscriptionId: string): Promise<Record<string, unknown>> {
     try {
       return await stripe.subscriptions.cancel(subscriptionId);
     } catch (error) {

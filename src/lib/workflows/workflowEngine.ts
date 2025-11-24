@@ -8,7 +8,7 @@ interface WorkflowStep {
   id: string;
   name: string;
   action: string;
-  conditions?: Record<string, any>;
+  conditions?: Record<string, unknown>;
   delay?: number; // milliseconds
   retryCount?: number;
   maxRetries?: number;
@@ -28,7 +28,7 @@ interface WorkflowExecution {
   workflowId: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
   currentStep: number;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   startedAt: Date;
   completedAt?: Date;
   error?: string;
@@ -195,7 +195,7 @@ export class WorkflowEngine {
   }
 
   // Trigger a workflow
-  async triggerWorkflow(trigger: string, data: Record<string, any>, organizationId: string): Promise<void> {
+  async triggerWorkflow(trigger: string, data: Record<string, unknown>, organizationId: string): Promise<void> {
     const workflows = Array.from(this.workflows.values()).filter(
       w => w.trigger === trigger && w.isActive && w.organizationId === organizationId
     );
@@ -206,7 +206,7 @@ export class WorkflowEngine {
   }
 
   // Execute a workflow
-  private async executeWorkflow(workflow: Workflow, data: Record<string, any>): Promise<void> {
+  private async executeWorkflow(workflow: Workflow, data: Record<string, unknown>): Promise<void> {
     const execution: WorkflowExecution = {
       id: `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       workflowId: workflow.id,
@@ -252,7 +252,7 @@ export class WorkflowEngine {
   }
 
   // Execute a single workflow step
-  private async executeStep(step: WorkflowStep, data: Record<string, any>): Promise<void> {
+  private async executeStep(step: WorkflowStep, data: Record<string, unknown>): Promise<void> {
     console.log(`Executing step: ${step.name}`);
 
     switch (step.action) {
@@ -313,7 +313,7 @@ export class WorkflowEngine {
   }
 
   // Evaluate conditions
-  private evaluateConditions(conditions: Record<string, any>, data: Record<string, any>): boolean {
+  private evaluateConditions(conditions: Record<string, unknown>, data: Record<string, unknown>): boolean {
     for (const [key, value] of Object.entries(conditions)) {
       if (data[key] !== value) {
         return false;
@@ -323,7 +323,7 @@ export class WorkflowEngine {
   }
 
   // Order Processing Actions
-  private async validateOrder(data: Record<string, any>): Promise<void> {
+  private async validateOrder(data: Record<string, unknown>): Promise<void> {
     const order = await prisma.order.findUnique({
       where: { id: data.orderId },
       include: { customer: true, items: { include: { product: true } } },
@@ -350,7 +350,7 @@ export class WorkflowEngine {
     }
   }
 
-  private async checkInventory(data: Record<string, any>): Promise<void> {
+  private async checkInventory(data: Record<string, unknown>): Promise<void> {
     const order = await prisma.order.findUnique({
       where: { id: data.orderId },
       include: { items: { include: { product: true } } },
@@ -365,7 +365,7 @@ export class WorkflowEngine {
     }
   }
 
-  private async processPayment(data: Record<string, any>): Promise<void> {
+  private async processPayment(data: Record<string, unknown>): Promise<void> {
     const order = await prisma.order.findUnique({
       where: { id: data.orderId },
     });
@@ -384,14 +384,14 @@ export class WorkflowEngine {
     });
   }
 
-  private async updateOrderStatus(data: Record<string, any>): Promise<void> {
+  private async updateOrderStatus(data: Record<string, unknown>): Promise<void> {
     await prisma.order.update({
       where: { id: data.orderId },
       data: { status: data.newStatus },
     });
   }
 
-  private async sendOrderConfirmation(data: Record<string, any>): Promise<void> {
+  private async sendOrderConfirmation(data: Record<string, unknown>): Promise<void> {
     const order = await prisma.order.findUnique({
       where: { id: data.orderId },
       include: { 
@@ -426,7 +426,7 @@ export class WorkflowEngine {
     }
   }
 
-  private async assignCourier(data: Record<string, any>): Promise<void> {
+  private async assignCourier(data: Record<string, unknown>): Promise<void> {
     const order = await prisma.order.findUnique({
       where: { id: data.orderId },
       include: { customer: true },
@@ -452,7 +452,7 @@ export class WorkflowEngine {
   }
 
   // Inventory Management Actions
-  private async checkReorderPoint(data: Record<string, any>): Promise<void> {
+  private async checkReorderPoint(data: Record<string, unknown>): Promise<void> {
     const products = await prisma.product.findMany({
       where: { organizationId: data.organizationId },
     });
@@ -468,23 +468,23 @@ export class WorkflowEngine {
     }
   }
 
-  private async createPurchaseOrder(data: Record<string, any>): Promise<void> {
+  private async createPurchaseOrder(data: Record<string, unknown>): Promise<void> {
     // Create purchase order logic
     console.log('Creating purchase order for low stock items');
   }
 
-  private async notifySupplier(data: Record<string, any>): Promise<void> {
+  private async notifySupplier(data: Record<string, unknown>): Promise<void> {
     // Notify supplier logic
     console.log('Notifying supplier about low stock');
   }
 
-  private async updateInventoryStatus(data: Record<string, any>): Promise<void> {
+  private async updateInventoryStatus(data: Record<string, unknown>): Promise<void> {
     // Update inventory status logic
     console.log('Updating inventory status');
   }
 
   // Customer Engagement Actions
-  private async sendWelcomeMessage(data: Record<string, any>): Promise<void> {
+  private async sendWelcomeMessage(data: Record<string, unknown>): Promise<void> {
     const customer = await prisma.customer.findUnique({
       where: { id: data.customerId },
     });
@@ -517,28 +517,28 @@ export class WorkflowEngine {
     }
   }
 
-  private async createCustomerProfile(data: Record<string, any>): Promise<void> {
+  private async createCustomerProfile(data: Record<string, unknown>): Promise<void> {
     // Create customer profile logic
     console.log('Creating customer profile');
   }
 
-  private async assignCustomerSegment(data: Record<string, any>): Promise<void> {
+  private async assignCustomerSegment(data: Record<string, unknown>): Promise<void> {
     // Assign customer segment logic
     console.log('Assigning customer segment');
   }
 
-  private async scheduleFollowUp(data: Record<string, any>): Promise<void> {
+  private async scheduleFollowUp(data: Record<string, unknown>): Promise<void> {
     // Schedule follow-up logic
     console.log('Scheduling follow-up');
   }
 
   // Payment Processing Actions
-  private async validatePayment(data: Record<string, any>): Promise<void> {
+  private async validatePayment(data: Record<string, unknown>): Promise<void> {
     // Validate payment logic
     console.log('Validating payment');
   }
 
-  private async sendReceipt(data: Record<string, any>): Promise<void> {
+  private async sendReceipt(data: Record<string, unknown>): Promise<void> {
     const order = await prisma.order.findUnique({
       where: { id: data.orderId },
       include: { customer: true },
@@ -557,7 +557,7 @@ export class WorkflowEngine {
     }
   }
 
-  private async triggerFulfillment(data: Record<string, any>): Promise<void> {
+  private async triggerFulfillment(data: Record<string, unknown>): Promise<void> {
     // Trigger fulfillment logic
     console.log('Triggering fulfillment');
   }
@@ -569,7 +569,7 @@ export class WorkflowEngine {
   }
 
   // Get workflow statistics
-  async getWorkflowStats(organizationId: string): Promise<any> {
+  async getWorkflowStats(organizationId: string): Promise<Record<string, unknown>> {
     // This would query workflow execution statistics
     return {
       totalExecutions: 0,

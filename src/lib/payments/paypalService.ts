@@ -307,7 +307,7 @@ export class PayPalService {
   /**
    * Get order details
    */
-  async getOrder(paypalOrderId: string): Promise<any> {
+  async getOrder(paypalOrderId: string): Promise<Record<string, unknown>> {
     try {
       const accessToken = await this.getAccessToken();
 

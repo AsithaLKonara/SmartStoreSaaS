@@ -875,7 +875,7 @@ export class InventoryService {
         });
 
         if (organizationForAlert) {
-          const orgSettings = (organizationForAlert.settings as any) || {};
+          const orgSettings = (organizationForAlert.settings as OrganizationSettings) || {};
           const stockAlerts = orgSettings.stockAlerts || {};
           const alertKey = `${alert.productId}-${alert.warehouseId}-${alert.type}`;
           
