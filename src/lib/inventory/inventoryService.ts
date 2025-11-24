@@ -379,7 +379,7 @@ export class InventoryService {
             throw new Error(`Warehouse not found: ${item.warehouseId}`);
           }
 
-          const warehouseSettings = (warehouse.settings as any) || {};
+          const warehouseSettings = (warehouse.settings as Record<string, unknown>) || {};
           const inventoryData = warehouseSettings.inventory || {};
           const currentInventory = inventoryData[item.productId] || {};
           const quantity = currentInventory.quantity || 0;
@@ -471,7 +471,7 @@ export class InventoryService {
           });
 
           if (warehouse) {
-            const warehouseSettings = (warehouse.settings as any) || {};
+            const warehouseSettings = (warehouse.settings as Record<string, unknown>) || {};
             const inventoryData = warehouseSettings.inventory || {};
             const currentInventory = inventoryData[reservation.productId] || {};
             const currentQuantity = currentInventory.quantity || 0;
@@ -575,7 +575,7 @@ export class InventoryService {
       if (!product || !warehouse) return;
 
       // Get inventory data from warehouse settings
-      const warehouseSettings = (warehouse.settings as any) || {};
+      const warehouseSettings = (warehouse.settings as Record<string, unknown>) || {};
       const inventoryData = warehouseSettings.inventory?.[productId] || {};
       const reorderLevel = inventoryData.reorderLevel || product.lowStockThreshold || 0;
       const maxStockLevel = inventoryData.maxStockLevel || 0;
@@ -730,7 +730,7 @@ export class InventoryService {
 
       if (!warehouse) return;
 
-      const warehouseSettings = (warehouse.settings as any) || {};
+      const warehouseSettings = (warehouse.settings as Record<string, unknown>) || {};
       const inventoryData = warehouseSettings.inventory?.[productId] || {};
       const reorderLevel = inventoryData.reorderLevel || 0;
       const maxStockLevel = inventoryData.maxStockLevel || 0;
@@ -936,7 +936,7 @@ export class InventoryService {
 
       if (!warehouse) return null;
 
-      const warehouseSettings = (warehouse.settings as any) || {};
+      const warehouseSettings = (warehouse.settings as Record<string, unknown>) || {};
       const inventoryData = warehouseSettings.inventory?.[productId] || {};
       const quantity = inventoryData.quantity || 0;
       const reservedQuantity = inventoryData.reservedQuantity || 0;
@@ -1024,7 +1024,7 @@ export class InventoryService {
 
       // Calculate from warehouse inventory data
       for (const warehouse of warehouses) {
-        const warehouseSettings = (warehouse.settings as any) || {};
+        const warehouseSettings = (warehouse.settings as Record<string, unknown>) || {};
         const inventoryData = warehouseSettings.inventory || {};
 
         for (const product of products) {
@@ -1288,7 +1288,7 @@ export class InventoryService {
 
         if (!warehouse) continue;
 
-        const warehouseSettings = (warehouse.settings as any) || {};
+        const warehouseSettings = (warehouse.settings as Record<string, unknown>) || {};
         const inventoryData = warehouseSettings.inventory || {};
         const currentInventory = inventoryData[item.productId] || {};
         const currentQuantity = currentInventory.quantity || 0;
