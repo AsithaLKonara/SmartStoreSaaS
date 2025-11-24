@@ -459,7 +459,7 @@ export class AIAnalyticsService {
   }
 
   // Business Intelligence Dashboard
-  async generateBusinessInsights(organizationId: string): Promise<any> {
+  async generateBusinessInsights(organizationId: string): Promise<Record<string, unknown>> {
     try {
       const [
         customerSegments,
