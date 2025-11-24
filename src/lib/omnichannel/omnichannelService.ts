@@ -414,7 +414,7 @@ export class OmnichannelService {
     return [];
   }
 
-  private async fetchInstagramMessages(config: any): Promise<any[]> {
+  private async fetchInstagramMessages(config: Record<string, unknown>): Promise<Array<Record<string, unknown>>> {
     const integration = await prisma.instagramIntegration.findFirst({
       where: { organizationId: config.organizationId },
     });

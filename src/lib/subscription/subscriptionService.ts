@@ -294,7 +294,7 @@ export class SubscriptionService {
         where: { userId: user?.id || '' },
         update: {
           notifications: {
-            ...(userPref?.notifications as any || {}),
+            ...(userPref?.notifications as Record<string, unknown> || {}),
             subscriptionId: subscription.id,
           } as Record<string, unknown>,
         },
@@ -432,7 +432,7 @@ export class SubscriptionService {
       const organization = subscription.customer?.organizationId ? await prisma.organization.findUnique({
         where: { id: subscription.customer.organizationId },
       }) : null;
-      const plan = planId && organization ? ((organization.settings as any)?.subscriptionPlans || []).find((p: any) => p.id === planId) : null;
+      const plan = planId && organization ? ((organization.settings as Record<string, unknown> & { subscriptionPlans?: Array<Record<string, unknown>> })?.subscriptionPlans || []).find((p: Record<string, unknown> & { id?: string }) => p.id === planId) : null;
 
       // Send cancellation email
       await this.sendCancellationEmail(updatedSubscription.id);
@@ -636,23 +636,23 @@ export class SubscriptionService {
       });
 
       // Calculate totals
-      const totalSpent = orders.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0);
+      const totalSpent = orders.reduce((sum: number, order: { totalAmount?: number }) => sum + (order.totalAmount || 0), 0);
       const totalOrders = orders.length;
 
       // Get membership status from UserPreference
       const userPref = await prisma.userPreference.findUnique({
         where: { userId: user?.id || '' },
       });
-      const membershipData = (userPref?.notifications as any)?.membershipStatus || {};
+      const membershipData = (userPref?.notifications as Record<string, unknown> & { membershipStatus?: Record<string, unknown> })?.membershipStatus || {};
       const memberSince = membershipData.memberSince ? new Date(membershipData.memberSince) : user.createdAt;
 
       // Get all tiers from Organization settings
       const organization = await prisma.organization.findUnique({
         where: { id: user.organizationId },
       });
-      if (!organization) return null as any;
+      if (!organization) return null;
       const settings = (organization.settings as Record<string, unknown> & { subscriptionPlans?: Array<Record<string, unknown>> }) || {};
-      const tiers = (settings.membershipTiers || []).sort((a: any, b: any) => (a.level || 0) - (b.level || 0));
+      const tiers = (settings.membershipTiers || []).sort((a: Record<string, unknown> & { level?: number }, b: Record<string, unknown> & { level?: number }) => (a.level || 0) - (b.level || 0));
 
       // Find appropriate tier
       let currentTier = tiers[0]; // Default to lowest tier
@@ -670,11 +670,11 @@ export class SubscriptionService {
       }
 
       // Find next tier
-      const nextTier = tiers.find((tier: any) => (tier.level || 0) > (currentTier.level || 0));
+      const nextTier = tiers.find((tier: Record<string, unknown> & { level?: number }) => (tier.level || 0) > ((currentTier as Record<string, unknown> & { level?: number }).level || 0));
       
       let nextTierProgress;
       if (nextTier) {
-        const nextRequirements = nextTier.requirements as any;
+        const nextRequirements = nextTier.requirements as Record<string, unknown> & { minSpent?: number; minOrders?: number; membershipDuration?: number };
         const requiredAmount = nextRequirements.minSpent || 0;
         const currentProgress = Math.min(totalSpent, requiredAmount);
         
@@ -700,7 +700,7 @@ export class SubscriptionService {
         where: { userId: user?.id || '' },
         update: {
           notifications: {
-            ...(userPref?.notifications as any || {}),
+            ...(userPref?.notifications as Record<string, unknown> || {}),
             membershipStatus,
           } as Record<string, unknown>,
         },
@@ -762,7 +762,7 @@ export class SubscriptionService {
     }
   }
 
-  async getSubscriptionBoxes(customerId: string): Promise<any[]> {
+  async getSubscriptionBoxes(customerId: string): Promise<Array<Record<string, unknown>>> {
     try {
       // Note: SubscriptionBox model doesn't exist in the schema
       // This functionality needs to be implemented with actual models
@@ -803,9 +803,9 @@ export class SubscriptionService {
     const planId = subMetadata.planId;
     if (!planId) return;
 
-    const settings = (organization.settings as any) || {};
+    const settings = (organization.settings as Record<string, unknown> & { subscriptionPlans?: Array<Record<string, unknown>> }) || {};
     const subscriptionPlans = settings.subscriptionPlans || [];
-    const plan = subscriptionPlans.find((p: any) => p.id === planId);
+    const plan = subscriptionPlans.find((p: Record<string, unknown> & { id?: string }) => p.id === planId);
     if (!plan) return;
 
     const limits = plan.limits || {};
@@ -823,11 +823,11 @@ export class SubscriptionService {
       const periodStart = subscriptionRecord.currentPeriodStart.getTime();
       const periodEnd = subscriptionRecord.currentPeriodEnd.getTime();
     const periodUsage = usageRecords
-      .filter((r: any) => {
+      .filter((r: Record<string, unknown> & { timestamp?: Date | string; metricType?: string }) => {
         const timestamp = new Date(r.timestamp).getTime();
         return r.metricType === metricType && timestamp >= periodStart && timestamp <= periodEnd;
       })
-      .reduce((sum: number, r: any) => sum + (r.quantity || 0), 0);
+      .reduce((sum: number, r: Record<string, unknown> & { quantity?: number }) => sum + (r.quantity || 0), 0);
     const usage = { _sum: { quantity: periodUsage } };
 
     const totalUsage = usage._sum.quantity || 0;

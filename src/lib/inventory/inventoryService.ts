@@ -528,7 +528,7 @@ export class InventoryService {
           }
 
           // Update reservation status in Order metadata
-          const updatedReservations = reservations.map((r: any) => 
+          const updatedReservations = reservations.map((r: { productId: string; warehouseId: string; status?: string }) => 
             r.productId === reservation.productId && r.warehouseId === reservation.warehouseId
               ? { ...r, status: fulfill ? 'FULFILLED' : 'CANCELLED' }
               : r
@@ -794,7 +794,7 @@ export class InventoryService {
   }
 
   private async sendStockAlertNotifications(
-    alert: any,
+    alert: StockAlert,
     organizationId: string
   ): Promise<void> {
     try {
@@ -902,7 +902,7 @@ export class InventoryService {
     }
   }
 
-  private getAlertMessage(alert: any, productName: string, warehouseName: string): string {
+  private getAlertMessage(alert: StockAlert, productName: string, warehouseName: string): string {
     switch (alert.type) {
       case 'LOW_STOCK':
         return `⚠️ LOW STOCK: ${productName} at ${warehouseName} has only ${alert.currentQuantity} units remaining (threshold: ${alert.threshold})`;

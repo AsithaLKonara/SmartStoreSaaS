@@ -277,7 +277,7 @@ export class BIService {
     };
   }
 
-  private groupByDay(orders: any[]): Record<string, number> {
+  private groupByDay(orders: Array<{ createdAt: Date; totalAmount?: number }>): Record<string, number> {
     const daily: Record<string, number> = {};
 
     orders.forEach(order => {

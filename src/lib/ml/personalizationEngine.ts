@@ -658,7 +658,7 @@ export class PersonalizationEngine {
     ) || [];
 
     // Analyze search history
-    const searchHistory = user.searchHistory?.map((search: any) => ({
+    const searchHistory = user.searchHistory?.map((search: { query: string; timestamp: Date; resultClicks?: number }) => ({
       query: search.query,
       timestamp: search.timestamp,
       resultClicks: search.resultClicks || 0,
@@ -681,7 +681,7 @@ export class PersonalizationEngine {
   }
 
   private async segmentUser(
-    user: any,
+    user: { id: string; email?: string | null },
     preferences: UserProfile['preferences'],
     behavior: UserProfile['behavior']
   ): Promise<string[]> {
@@ -715,8 +715,8 @@ export class PersonalizationEngine {
     return segments;
   }
 
-  private calculateLifetimeValue(orders: any[]): number {
-    return orders.reduce((sum, order) => sum + order.total, 0);
+  private calculateLifetimeValue(orders: Array<{ total?: number; price?: number; totalAmount?: number }>): number {
+    return orders.reduce((sum, order) => sum + (order.total || order.price || order.totalAmount || 0), 0);
   }
 
   private async predictChurn(userId: string, behavior: UserProfile['behavior']): Promise<number> {
@@ -882,7 +882,7 @@ export class PersonalizationEngine {
   private async generateCrossUpsellOffers(
     userId: string,
     context: RealTimeContext
-  ): Promise<any[]> {
+  ): Promise<Array<Record<string, unknown>>> {
     // Generate cross-sell and upsell offers
     return [];
   }
@@ -898,7 +898,7 @@ export class PersonalizationEngine {
   private async generateRetentionPopups(
     userProfile: UserProfile,
     context: RealTimeContext
-  ): Promise<any[]> {
+  ): Promise<Array<Record<string, unknown>>> {
     // Generate retention popups
     return [];
   }
@@ -906,7 +906,7 @@ export class PersonalizationEngine {
   private async generateExitIntentOffers(
     userProfile: UserProfile,
     context: RealTimeContext
-  ): Promise<any[]> {
+  ): Promise<Array<Record<string, unknown>>> {
     // Generate exit intent offers
     return [];
   }

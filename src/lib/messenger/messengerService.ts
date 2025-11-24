@@ -593,7 +593,7 @@ export class MessengerService {
     }
   }
 
-  private async processDeliveryReceipt(event: any, organizationId: string): Promise<void> {
+  private async processDeliveryReceipt(event: Record<string, unknown>, organizationId: string): Promise<void> {
     try {
       // Update message delivery status
       // Note: messengerMessage model doesn't exist in Prisma schema
@@ -604,7 +604,7 @@ export class MessengerService {
     }
   }
 
-  private async processReadReceipt(event: any, organizationId: string): Promise<void> {
+  private async processReadReceipt(event: Record<string, unknown>, organizationId: string): Promise<void> {
     try {
       // Update message read status
       // Note: messengerMessage model doesn't exist in Prisma schema
