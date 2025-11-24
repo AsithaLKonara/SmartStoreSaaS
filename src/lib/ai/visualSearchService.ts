@@ -30,7 +30,7 @@ export interface ProductRecognition {
     height: number;
   };
   category?: string;
-  attributes?: Record<string, any>;
+  attributes?: Record<string, unknown>;
 }
 
 export class VisualSearchService {

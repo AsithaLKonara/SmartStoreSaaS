@@ -20,7 +20,7 @@ export interface EmailOptions {
   metadata?: Record<string, unknown>;
   replyTo?: string;
   templateId?: string;
-  templateData?: Record<string, any>;
+  templateData?: Record<string, unknown>;
 }
 
 export interface BulkEmailOptions {
@@ -31,7 +31,7 @@ export interface BulkEmailOptions {
   };
   recipients: Array<{
     email: string;
-    templateData: Record<string, any>;
+    templateData: Record<string, unknown>;
   }>;
   subject: string;
   replyTo?: string;
@@ -52,7 +52,7 @@ export interface EmailSubscription {
   email: string;
   listId: string;
   isActive: boolean;
-  customFields?: Record<string, any>;
+  customFields?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }

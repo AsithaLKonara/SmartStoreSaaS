@@ -82,7 +82,7 @@ export class PricingService {
     if (!organization) {
       throw new Error('Organization not found');
     }
-    const settings = (organization.settings as any) || {};
+    const settings = (organization.settings as Record<string, unknown>) || {};
     if (!settings.regionalPricing) {
       settings.regionalPricing = {};
     }
