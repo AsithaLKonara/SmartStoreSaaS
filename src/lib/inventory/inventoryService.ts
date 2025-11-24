@@ -1150,7 +1150,7 @@ export class InventoryService {
           // If settings contain expiration data, count those items
           let expiringCount = 0;
           for (const warehouse of warehouses) {
-            const settings = warehouse.settings as any;
+            const settings = warehouse.settings as Record<string, unknown>;
             if (settings?.expirationTracking?.enabled && settings?.expiringItems) {
               expiringCount += settings.expiringItems.length || 0;
             }
