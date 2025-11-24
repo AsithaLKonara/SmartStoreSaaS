@@ -193,7 +193,7 @@ export class SecurityService {
     ipAddress: string,
     userAgent: string,
     success: boolean,
-    details?: any
+    details?: Record<string, unknown>
   ): Promise<void> {
     try {
       // securityAudit model doesn't exist
@@ -264,7 +264,7 @@ export class SecurityService {
     message: string,
     userId?: string,
     ipAddress?: string,
-    details?: any
+    details?: Record<string, unknown>
   ): Promise<SecurityAlert> {
     try {
       // securityAlert model doesn't exist - logging to console
