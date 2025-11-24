@@ -20,7 +20,7 @@ interface BIWidget {
 export function BIDashboard() {
   const [widgets, setWidgets] = useState<BIWidget[]>([]);
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<Record<string, any>>({});
+  const [data, setData] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
     loadDashboard();
