@@ -459,7 +459,7 @@ export class InventoryService {
 
         if (!order) return false;
 
-        const orderMetadata = (order.metadata as any) || {};
+        const orderMetadata = (order.metadata as Record<string, unknown>) || {};
         const reservations = orderMetadata.inventoryReservations || [];
 
         for (const reservation of reservations) {
@@ -670,7 +670,7 @@ export class InventoryService {
 
       if (!organization) return;
 
-      const orgSettings = (organization.settings as any) || {};
+      const orgSettings = (organization.settings as OrganizationSettings) || {};
       const stockAlerts = orgSettings.stockAlerts || {};
       const alertKey = `${productId}-${warehouseId}-${type}`;
 
@@ -709,7 +709,7 @@ export class InventoryService {
           settings: {
             ...orgSettings,
             stockAlerts,
-          } as any,
+          } as OrganizationSettings,
         },
       });
     } catch (error) {
@@ -763,7 +763,7 @@ export class InventoryService {
         });
 
         if (organization) {
-          const orgSettings = (organization.settings as any) || {};
+          const orgSettings = (organization.settings as OrganizationSettings) || {};
           const stockAlerts = orgSettings.stockAlerts || {};
 
           alertsToResolve.forEach(type => {
@@ -812,7 +812,7 @@ export class InventoryService {
           const userPref = await prisma.userPreference.findUnique({
             where: { userId: user.id },
           });
-          const notifications = (userPref?.notifications as any) || {};
+          const notifications = (userPref?.notifications as UserNotifications) || {};
           const stockAlertsEnabled = notifications.stockAlerts !== false; // Default to true
           return stockAlertsEnabled ? user : null;
         })
@@ -1019,8 +1019,8 @@ export class InventoryService {
 
       let totalValue = 0;
       let totalQuantity = 0;
-      const byCategory: Record<string, any> = {};
-      const byWarehouse: Record<string, any> = {};
+      const byCategory: Record<string, unknown> = {};
+      const byWarehouse: Record<string, unknown> = {};
 
       // Calculate from warehouse inventory data
       for (const warehouse of warehouses) {

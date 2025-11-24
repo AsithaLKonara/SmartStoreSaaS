@@ -183,7 +183,7 @@ export class IoTService {
     productId: string,
     location: string,
     threshold: number
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     const deviceId = `shelf_${Date.now()}`;
     
     const device = await this.registerDevice(

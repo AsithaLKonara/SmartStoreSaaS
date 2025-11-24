@@ -351,7 +351,7 @@ export class PersonalizationEngine {
     context: RealTimeContext
   ): Promise<{
     layout: string;
-    content: Record<string, any>;
+    content: Record<string, unknown>;
     promotions: string[];
     messaging: string[];
   }> {
@@ -499,7 +499,7 @@ export class PersonalizationEngine {
     itemId: string,
     itemType: 'product' | 'category' | 'brand' | 'content',
     context: RealTimeContext,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     try {
       // Store interaction
@@ -841,7 +841,7 @@ export class PersonalizationEngine {
     userProfile: UserProfile,
     pageType: string,
     context: RealTimeContext
-  ): Promise<Record<string, any>> {
+  ): Promise<Record<string, unknown>> {
     // Personalize page content
     return {};
   }

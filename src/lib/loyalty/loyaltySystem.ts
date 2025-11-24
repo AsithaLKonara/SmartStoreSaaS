@@ -353,7 +353,7 @@ export class LoyaltySystem {
     }
   }
 
-  async getReferralStats(customerId: string): Promise<any> {
+  async getReferralStats(customerId: string): Promise<Record<string, unknown>> {
     try {
       const customer = await prisma.customer.findUnique({
         where: { id: customerId },

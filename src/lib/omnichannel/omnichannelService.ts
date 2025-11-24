@@ -358,17 +358,17 @@ export class OmnichannelService {
   }
 
   // Channel-specific implementations
-  private async sendWhatsAppMessage(customerId: string, message: string): Promise<any> {
+  private async sendWhatsAppMessage(customerId: string, message: string): Promise<Record<string, unknown>> {
     // WhatsApp Business API implementation
     return { status: 'sent', messageId: `wa_${Date.now()}` };
   }
 
-  private async sendFacebookMessage(customerId: string, message: string): Promise<any> {
+  private async sendFacebookMessage(customerId: string, message: string): Promise<Record<string, unknown>> {
     // Facebook Messenger API implementation
     return { status: 'sent', messageId: `fb_${Date.now()}` };
   }
 
-  private async sendInstagramMessage(customerId: string, message: string): Promise<any> {
+  private async sendInstagramMessage(customerId: string, message: string): Promise<Record<string, unknown>> {
     const integration = await prisma.instagramIntegration.findFirst({
       where: { organizationId: customerId }, // This needs to be updated to get organizationId properly
     });
@@ -394,12 +394,12 @@ export class OmnichannelService {
     return response.data;
   }
 
-  private async sendEmailMessage(customerId: string, message: string): Promise<any> {
+  private async sendEmailMessage(customerId: string, message: string): Promise<Record<string, unknown>> {
     // Email service implementation
     return { status: 'sent', messageId: `email_${Date.now()}` };
   }
 
-  private async sendSMSMessage(customerId: string, message: string): Promise<any> {
+  private async sendSMSMessage(customerId: string, message: string): Promise<Record<string, unknown>> {
     // SMS service implementation
     return { status: 'sent', messageId: `sms_${Date.now()}` };
   }

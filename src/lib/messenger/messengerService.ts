@@ -310,7 +310,7 @@ export class MessengerService {
       // Log the attachment activity
       await prisma.activity.create({
         data: {
-          type: 'messenger_attachment_sent' as any, // Use type assertion to bypass constraint
+          type: 'messenger_attachment_sent' as string, // Use type assertion to bypass constraint
           description: `Messenger attachment sent to ${recipientId}`,
           metadata: {
             platform: 'messenger',
@@ -546,7 +546,7 @@ export class MessengerService {
       // Log the received message activity
       await prisma.activity.create({
         data: {
-          type: 'messenger_message_received' as any, // Use type assertion to bypass constraint
+          type: 'messenger_message_received' as string, // Use type assertion to bypass constraint
           description: `Messenger message received from ${message.senderId || 'unknown'}`,
           metadata: {
             platform: 'messenger',
