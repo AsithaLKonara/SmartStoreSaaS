@@ -55,7 +55,7 @@ export class StripeService {
    */
   async createPaymentIntent(
     amount: number,
-    currency: string = 'usd',
+    _currency: string = 'usd',
     customerId?: string,
     metadata?: Record<string, string>
   ): Promise<PaymentIntent> {
