@@ -658,7 +658,7 @@ export class SubscriptionService {
       let currentTier = tiers[0]; // Default to lowest tier
       
       for (const tier of tiers) {
-        const requirements = tier.requirements as any;
+        const requirements = (tier as Record<string, unknown> & { requirements?: Record<string, unknown> & { minSpent?: number; minOrders?: number; membershipDuration?: number } }).requirements as Record<string, unknown> & { minSpent?: number; minOrders?: number; membershipDuration?: number } | undefined;
         const meetsSpending = !requirements.minSpent || totalSpent >= requirements.minSpent;
         const meetsOrders = !requirements.minOrders || totalOrders >= requirements.minOrders;
         const meetsDuration = !requirements.membershipDuration || 

@@ -394,7 +394,7 @@ export class SocialCommerceService {
 
   async getScheduledPosts(platformId?: string): Promise<SocialPost[]> {
     try {
-      const whereClause: any = {
+      const whereClause: { status: string; scheduledAt: { gte: Date }; platformId?: string } = {
         status: 'scheduled',
         scheduledAt: { gte: new Date() }
       };
@@ -488,7 +488,7 @@ export class SocialCommerceService {
     }
   }
 
-  private async syncProductToPlatform(platform: any, product: any): Promise<string> {
+  private async syncProductToPlatform(platform: SocialPlatform, product: { id: string }): Promise<string> {
     switch (platform.name) {
       case 'facebook':
         return this.syncToFacebook(platform, product);
@@ -505,7 +505,7 @@ export class SocialCommerceService {
     }
   }
 
-  private async publishToPlatform(platform: any, post: any): Promise<string> {
+  private async publishToPlatform(platform: SocialPlatform, post: SocialPost): Promise<string> {
     switch (platform.name) {
       case 'facebook':
         return this.publishToFacebook(platform, post);
@@ -522,7 +522,7 @@ export class SocialCommerceService {
     }
   }
 
-  private async deleteFromPlatform(platform: any, platformPostId: string): Promise<void> {
+  private async deleteFromPlatform(platform: SocialPlatform, platformPostId: string): Promise<void> {
     switch (platform.name) {
       case 'facebook':
         return this.deleteFromFacebook(platform, platformPostId);
@@ -539,7 +539,7 @@ export class SocialCommerceService {
     }
   }
 
-  private async updateInventoryOnPlatform(platform: any, socialProduct: any): Promise<void> {
+  private async updateInventoryOnPlatform(platform: SocialPlatform, socialProduct: SocialProduct): Promise<void> {
     switch (platform.name) {
       case 'facebook':
         return this.updateInventoryOnFacebook(platform, socialProduct);
@@ -557,7 +557,7 @@ export class SocialCommerceService {
   }
 
   // Platform-specific implementation methods
-  private async syncToFacebook(platform: any, product: any): Promise<string> {
+  private async syncToFacebook(platform: SocialPlatform, product: { id: string }): Promise<string> {
     const { FacebookCommerceService } = await import('@/lib/integrations/facebook/facebookCommerceService');
     const integration = await prisma.facebookIntegration.findFirst({
       where: { organizationId: platform.organizationId },
@@ -578,7 +578,7 @@ export class SocialCommerceService {
     return `fb_product_${product.id}`;
   }
 
-  private async publishToFacebook(platform: any, post: any): Promise<string> {
+  private async publishToFacebook(platform: SocialPlatform, post: SocialPost): Promise<string> {
     const { FacebookCommerceService } = await import('@/lib/integrations/facebook/facebookCommerceService');
     const integration = await prisma.facebookIntegration.findFirst({
       where: { organizationId: platform.organizationId },
@@ -612,7 +612,7 @@ export class SocialCommerceService {
     return response.data.id;
   }
 
-  private async deleteFromFacebook(platform: any, platformPostId: string): Promise<void> {
+  private async deleteFromFacebook(platform: SocialPlatform, platformPostId: string): Promise<void> {
     const integration = await prisma.facebookIntegration.findFirst({
       where: { organizationId: platform.organizationId },
     });
@@ -632,7 +632,7 @@ export class SocialCommerceService {
     );
   }
 
-  private async updateInventoryOnFacebook(platform: any, socialProduct: any): Promise<void> {
+  private async updateInventoryOnFacebook(platform: SocialPlatform, socialProduct: SocialProduct): Promise<void> {
     const { FacebookCommerceService } = await import('@/lib/integrations/facebook/facebookCommerceService');
     const integration = await prisma.facebookIntegration.findFirst({
       where: { organizationId: platform.organizationId },
@@ -658,7 +658,7 @@ export class SocialCommerceService {
     }
   }
 
-  private async syncToInstagram(platform: any, product: any): Promise<string> {
+  private async syncToInstagram(platform: SocialPlatform, product: { id: string }): Promise<string> {
     const { InstagramShoppingService } = await import('@/lib/integrations/instagram/instagramShoppingService');
     const integration = await prisma.instagramIntegration.findFirst({
       where: { organizationId: platform.organizationId },
@@ -679,7 +679,7 @@ export class SocialCommerceService {
     return `ig_product_${product.id}`;
   }
 
-  private async publishToInstagram(platform: any, post: any): Promise<string> {
+  private async publishToInstagram(platform: SocialPlatform, post: SocialPost): Promise<string> {
     const { InstagramShoppingService } = await import('@/lib/integrations/instagram/instagramShoppingService');
     const integration = await prisma.instagramIntegration.findFirst({
       where: { organizationId: platform.organizationId },
@@ -729,7 +729,7 @@ export class SocialCommerceService {
     return publishResponse.data.id;
   }
 
-  private async deleteFromInstagram(platform: any, platformPostId: string): Promise<void> {
+  private async deleteFromInstagram(platform: SocialPlatform, platformPostId: string): Promise<void> {
     const integration = await prisma.instagramIntegration.findFirst({
       where: { organizationId: platform.organizationId },
     });
@@ -749,7 +749,7 @@ export class SocialCommerceService {
     );
   }
 
-  private async updateInventoryOnInstagram(platform: any, socialProduct: any): Promise<void> {
+  private async updateInventoryOnInstagram(platform: SocialPlatform, socialProduct: SocialProduct): Promise<void> {
     const { InstagramShoppingService } = await import('@/lib/integrations/instagram/instagramShoppingService');
     const integration = await prisma.instagramIntegration.findFirst({
       where: { organizationId: platform.organizationId },
@@ -776,7 +776,7 @@ export class SocialCommerceService {
     }
   }
 
-  private async syncToTikTok(platform: any, product: any): Promise<string> {
+  private async syncToTikTok(platform: SocialPlatform, product: { id: string }): Promise<string> {
     const { TikTokShopService } = await import('@/lib/integrations/tiktok/tiktokShopService');
     const integration = await prisma.tikTokIntegration.findFirst({
       where: { organizationId: platform.organizationId },
@@ -796,7 +796,7 @@ export class SocialCommerceService {
     return `tt_product_${product.id}`;
   }
 
-  private async publishToTikTok(platform: any, post: any): Promise<string> {
+  private async publishToTikTok(platform: SocialPlatform, post: SocialPost): Promise<string> {
     const { TikTokShopService } = await import('@/lib/integrations/tiktok/tiktokShopService');
     const integration = await prisma.tikTokIntegration.findFirst({
       where: { organizationId: platform.organizationId },
@@ -825,7 +825,7 @@ export class SocialCommerceService {
     return `tt_post_${Date.now()}`;
   }
 
-  private async deleteFromTikTok(platform: any, platformPostId: string): Promise<void> {
+  private async deleteFromTikTok(platform: SocialPlatform, platformPostId: string): Promise<void> {
     const integration = await prisma.tikTokIntegration.findFirst({
       where: { organizationId: platform.organizationId },
     });
@@ -845,7 +845,7 @@ export class SocialCommerceService {
     );
   }
 
-  private async updateInventoryOnTikTok(platform: any, socialProduct: any): Promise<void> {
+  private async updateInventoryOnTikTok(platform: SocialPlatform, socialProduct: SocialProduct): Promise<void> {
     const { TikTokShopService } = await import('@/lib/integrations/tiktok/tiktokShopService');
     const integration = await prisma.tikTokIntegration.findFirst({
       where: { organizationId: platform.organizationId },
@@ -870,7 +870,7 @@ export class SocialCommerceService {
     }
   }
 
-  private async syncToPinterest(platform: any, product: any): Promise<string> {
+  private async syncToPinterest(platform: SocialPlatform, product: { id: string; images: string[]; name: string; description?: string | null; slug: string }): Promise<string> {
     const { PinterestService } = await import('@/lib/integrations/pinterest/pinterestService');
     const integration = await prisma.pinterestIntegration.findFirst({
       where: { organizationId: platform.organizationId },
@@ -897,7 +897,7 @@ export class SocialCommerceService {
     return pinId;
   }
 
-  private async publishToPinterest(platform: any, post: any): Promise<string> {
+  private async publishToPinterest(platform: SocialPlatform, post: SocialPost): Promise<string> {
     const { PinterestService } = await import('@/lib/integrations/pinterest/pinterestService');
     const integration = await prisma.pinterestIntegration.findFirst({
       where: { organizationId: platform.organizationId },
@@ -924,7 +924,7 @@ export class SocialCommerceService {
     return pinId;
   }
 
-  private async deleteFromPinterest(platform: any, platformPostId: string): Promise<void> {
+  private async deleteFromPinterest(platform: SocialPlatform, platformPostId: string): Promise<void> {
     const integration = await prisma.pinterestIntegration.findFirst({
       where: { organizationId: platform.organizationId },
     });
@@ -944,7 +944,7 @@ export class SocialCommerceService {
     );
   }
 
-  private async updateInventoryOnPinterest(platform: any, socialProduct: any): Promise<void> {
+  private async updateInventoryOnPinterest(platform: SocialPlatform, socialProduct: SocialProduct): Promise<void> {
     // Pinterest pins don't support direct inventory updates
     // Would need to update the pin or create a new one
     const integration = await prisma.pinterestIntegration.findFirst({
