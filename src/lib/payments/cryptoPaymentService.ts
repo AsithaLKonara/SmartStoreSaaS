@@ -15,7 +15,7 @@ export class CryptoPaymentService {
     amount: number,
     currency: string,
     cryptoCurrency: 'BTC' | 'ETH' | 'USDT' | 'USDC',
-    orderId: string
+    _orderId: string
   ): Promise<CryptoPayment> {
     // In production, this would integrate with a crypto payment gateway
     // like Coinbase Commerce, BitPay, or a custom wallet service
@@ -41,8 +41,8 @@ export class CryptoPaymentService {
   }
 
   async checkPaymentStatus(
-    paymentId: string,
-    cryptoCurrency: string
+    _paymentId: string,
+    _cryptoCurrency: string
   ): Promise<{ status: string; transactionHash?: string }> {
     // In production, this would check the blockchain or payment gateway
     // For now, return mock status

@@ -197,7 +197,7 @@ export class AdvancedPaymentService {
     return customer;
   }
 
-  async updateCustomerStripeId(customerId: string, stripeCustomerId: string): Promise<void> {
+  async updateCustomerStripeId(_customerId: string, _stripeCustomerId: string): Promise<void> {
     // Note: Customer model doesn't have metadata field
     // Consider storing this information in a separate table or using tags
     // await prisma.customer.update({
@@ -210,7 +210,7 @@ export class AdvancedPaymentService {
     // });
   }
 
-  async findCustomerByStripeId(stripeCustomerId: string): Promise<Record<string, unknown> | null> {
+  async findCustomerByStripeId(_stripeCustomerId: string): Promise<Record<string, unknown> | null> {
     // Note: Customer model doesn't have metadata field
     // Consider implementing this functionality when the field is available
     // For now, return null since we can't query by Stripe ID

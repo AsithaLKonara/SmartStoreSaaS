@@ -399,17 +399,17 @@ export class OmnichannelService {
     return { status: 'sent', messageId: `email_${Date.now()}` };
   }
 
-  private async sendSMSMessage(customerId: string, message: string): Promise<Record<string, unknown>> {
+  private async sendSMSMessage(_customerId: string, _message: string): Promise<Record<string, unknown>> {
     // SMS service implementation
     return { status: 'sent', messageId: `sms_${Date.now()}` };
   }
 
-  private async fetchWhatsAppMessages(config: Record<string, unknown>): Promise<Array<Record<string, unknown>>> {
+  private async fetchWhatsAppMessages(_config: Record<string, unknown>): Promise<Array<Record<string, unknown>>> {
     // WhatsApp Business API message fetching
     return [];
   }
 
-  private async fetchFacebookMessages(config: Record<string, unknown>): Promise<Array<Record<string, unknown>>> {
+  private async fetchFacebookMessages(_config: Record<string, unknown>): Promise<Array<Record<string, unknown>>> {
     // Facebook Messenger API message fetching
     return [];
   }

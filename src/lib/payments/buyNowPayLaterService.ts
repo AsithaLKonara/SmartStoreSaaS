@@ -266,7 +266,7 @@ export class BuyNowPayLaterService {
   async confirmSession(
     provider: BNPLProvider,
     sessionId: string,
-    token?: string
+    _token?: string
   ): Promise<{ status: string; transactionId?: string }> {
     // Implementation would confirm the BNPL session
     // This varies by provider
