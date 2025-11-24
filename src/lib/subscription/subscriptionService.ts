@@ -353,7 +353,7 @@ export class SubscriptionService {
 
   async updateSubscription(
     subscriptionId: string,
-    updates: Partial<Subscription>
+    _updates: Partial<Subscription>
   ): Promise<Subscription> {
     try {
       const updatedSubscription = await prisma.subscription.update({

@@ -499,7 +499,7 @@ export class AIAnalyticsService {
     }
   }
 
-  private async generateRecommendations(organizationId: string): Promise<string[]> {
+  private async generateRecommendations(_organizationId: string): Promise<string[]> {
     try {
       const prompt = `
         Based on the business data, provide 5 actionable recommendations for improving the business.

@@ -289,7 +289,7 @@ export class PersonalizationEngine {
     userId: string,
     context: RealTimeContext,
     count: number = 10,
-    type: 'product' | 'category' | 'mixed' = 'mixed'
+    _type: 'product' | 'category' | 'mixed' = 'mixed'
   ): Promise<PersonalizationRecommendation[]> {
     try {
       const userProfile = await this.getUserProfile(userId);
@@ -771,17 +771,17 @@ export class PersonalizationEngine {
   }
 
   private async generateDeepLearningRecommendations(
-    userProfile: UserProfile,
-    context: RealTimeContext,
-    count: number
+    _userProfile: UserProfile,
+    _context: RealTimeContext,
+    _count: number
   ): Promise<PersonalizationRecommendation[]> {
     // Implement deep learning recommendations
     return [];
   }
 
   private async generateTrendingRecommendations(
-    context: RealTimeContext,
-    count: number
+    _context: RealTimeContext,
+    _count: number
   ): Promise<PersonalizationRecommendation[]> {
     // Implement trending/popular recommendations
     return [];

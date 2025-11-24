@@ -130,7 +130,7 @@ export class EmailService {
   }
 
   private async sendWithSES(options: EmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    const destinations = Array.isArray(options.to) ? options.to : [options.to];
+    const _destinations = Array.isArray(options.to) ? options.to : [options.to];
     
     // This part of the code was removed as per the edit hint.
     // const command = new SendEmailCommand({
@@ -185,7 +185,7 @@ export class EmailService {
   }
 
   private async sendBulkWithSendGrid(options: BulkEmailOptions): Promise<{ success: boolean; results: Array<Record<string, unknown>> }> {
-    const msg = {
+    const _msg = {
       from: options.from,
       templateId: options.templateId,
       personalizations: options.recipients.map(recipient => ({
@@ -204,7 +204,7 @@ export class EmailService {
     return { success: true, results: ['mock-message-id'] }; // Mock response
   }
 
-  private async sendBulkWithSES(options: BulkEmailOptions): Promise<{ success: boolean; results: Array<Record<string, unknown>> }> {
+  private async sendBulkWithSES(_options: BulkEmailOptions): Promise<{ success: boolean; results: Array<Record<string, unknown>> }> {
     // This part of the code was removed as per the edit hint.
     // const command = new SendBulkTemplatedEmailCommand({
     //   Source: options.from.email,
@@ -231,7 +231,7 @@ export class EmailService {
   /**
    * Create email template
    */
-  async createTemplate(template: Omit<EmailTemplate, 'id'>, organizationId: string): Promise<EmailTemplate> {
+  async createTemplate(template: Omit<EmailTemplate, 'id'>, _organizationId: string): Promise<EmailTemplate> {
     try {
       // Store email template in Organization settings
       if (!template.organizationId) {
@@ -327,7 +327,7 @@ export class EmailService {
       throw new Error('Customer email is required');
     }
 
-    const templateData = {
+    const _templateData = {
       customerName: order.customer.name,
       orderId: order.id,
       orderTotal: order.totalAmount,
@@ -438,7 +438,7 @@ export class EmailService {
   /**
    * Get email analytics
    */
-  async getEmailAnalytics(organizationId: string, dateRange?: { start: Date; end: Date }): Promise<EmailAnalytics> {
+  async getEmailAnalytics(_organizationId: string, _dateRange?: { start: Date; end: Date }): Promise<EmailAnalytics> {
     // Since email models don't exist, return mock data
     // In a real implementation, you'd want to create these models
     return {
