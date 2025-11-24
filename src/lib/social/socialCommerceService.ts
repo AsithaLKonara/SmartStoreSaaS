@@ -19,6 +19,13 @@ export interface SocialProduct {
   lastSync: Date;
 }
 
+export interface SocialEngagement {
+  likes: number;
+  comments: number;
+  shares: number;
+  clicks: number;
+}
+
 export interface SocialPost {
   id: string;
   platformId: string;
@@ -29,12 +36,7 @@ export interface SocialPost {
   scheduledAt?: Date;
   publishedAt?: Date;
   status: 'draft' | 'scheduled' | 'published' | 'failed';
-  engagement: {
-    likes: number;
-    comments: number;
-    shares: number;
-    clicks: number;
-  };
+  engagement: SocialEngagement;
 }
 
 export interface SocialAnalytics {
