@@ -58,7 +58,7 @@ export class WooCommerceService extends EventEmitter {
     };
   }
 
-  private async makeRequest(config: WooCommerceConfig, endpoint: string, method: string = 'GET', data?: any): Promise<any> {
+  private async makeRequest(config: WooCommerceConfig, endpoint: string, method: string = 'GET', data?: Record<string, unknown>): Promise<Record<string, unknown>> {
     const url = `${config.siteUrl}/wp-json/wc/${config.version}/${endpoint}`;
     
     const options: RequestInit = {
@@ -106,7 +106,7 @@ export class WooCommerceService extends EventEmitter {
     }
   }
 
-  private async syncProductToWooCommerce(product: any, config: WooCommerceConfig): Promise<void> {
+  private async syncProductToWooCommerce(product: { id: string; name: string; slug?: string | null; description?: string | null; price: number | null; stockQuantity: number; isActive: boolean; images?: string[] | null; wooCommerceId?: string | null; dimensions?: Record<string, unknown> | null }, config: WooCommerceConfig): Promise<void> {
     const wooProduct = {
       name: product.name,
       slug: product.slug || product.name.toLowerCase().replace(/\s+/g, '-'),
@@ -142,9 +142,9 @@ export class WooCommerceService extends EventEmitter {
           where: { id: product.id },
           data: { 
             dimensions: {
-              ...(product.dimensions as any || {}),
+              ...(product.dimensions as Record<string, unknown> || {}),
               wooCommerceId: response.id.toString(),
-            } as any,
+            } as Record<string, unknown>,
           }
         });
       }
@@ -172,11 +172,11 @@ export class WooCommerceService extends EventEmitter {
     this.emit('integration_added', config);
   }
 
-  private async syncProductEvent(product: any, action: string, organizationId: string): Promise<void> {
+  private async syncProductEvent(product: { id: string }, action: string, organizationId: string): Promise<void> {
     const syncEvent: SyncEvent = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: 'product',
-      action: action as any,
+      action: action as 'create' | 'update' | 'delete' | 'sync' | 'conflict',
       entityId: product.id || '',
       organizationId,
       data: product,

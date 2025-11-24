@@ -5,7 +5,7 @@ export interface WorkflowNode {
   type: 'TRIGGER' | 'ACTION' | 'CONDITION' | 'DELAY' | 'WEBHOOK' | 'EMAIL' | 'SMS';
   name: string;
   description: string;
-  config: any;
+  config: Record<string, unknown>;
   position: { x: number; y: number };
   connections: string[];
 }
@@ -38,9 +38,9 @@ export interface WorkflowExecution {
   workflowId: string;
   status: string; // Changed from enum to string to match Prisma schema
   currentNodeId?: string | null;
-  data?: any;
-  input?: any;
-  output?: any;
+  data?: Record<string, unknown>;
+  input?: Record<string, unknown>;
+  output?: Record<string, unknown>;
   startedAt: Date;
   completedAt?: Date;
   logs: WorkflowLog[];
@@ -54,7 +54,7 @@ export interface WorkflowLog {
   action: string;
   status: 'SUCCESS' | 'FAILED' | 'SKIPPED';
   message: string;
-  data?: any;
+  data?: Record<string, unknown>;
   timestamp: Date;
   duration: number;
 }
@@ -64,8 +64,8 @@ export interface WorkflowTemplate {
   name: string;
   description?: string | null;
   category?: string | null;
-  definition?: any;
-  tags?: any;
+  definition?: Record<string, unknown>;
+  tags?: Array<string>;
   usageCount: number;
   isPublic: boolean;
   createdAt: Date;
@@ -85,8 +85,8 @@ export class AdvancedWorkflowEngine {
           description: definition.description,
           type: 'custom', // Add required type field
           version: definition.version,
-          nodes: definition.nodes as any, // Store as JSON
-          connections: definition.connections as any,
+          nodes: definition.nodes as Array<Record<string, unknown>>, // Store as JSON
+          connections: definition.connections as Array<Record<string, unknown>>,
           triggers: definition.triggers,
           isActive: definition.isActive,
           organizationId: definition.organizationId,
@@ -111,7 +111,7 @@ export class AdvancedWorkflowEngine {
   /**
    * Execute a workflow
    */
-  async executeWorkflow(workflowId: string, triggerData: any): Promise<WorkflowExecution> {
+  async executeWorkflow(workflowId: string, triggerData: Record<string, unknown>): Promise<WorkflowExecution> {
     try {
       const workflow = await prisma.workflow.findUnique({
         where: { id: workflowId },
@@ -165,7 +165,7 @@ export class AdvancedWorkflowEngine {
   /**
    * Run workflow execution asynchronously
    */
-  private async runWorkflowExecution(executionId: string, definition: WorkflowDefinition, data: any): Promise<void> {
+  private async runWorkflowExecution(executionId: string, definition: WorkflowDefinition, data: Record<string, unknown>): Promise<void> {
     try {
       // Update execution status to running
       await prisma.workflowExecution.update({
@@ -291,7 +291,7 @@ export class AdvancedWorkflowEngine {
   /**
    * Execute a single workflow node
    */
-  private async executeNode(node: WorkflowNode, data: any): Promise<any> {
+  private async executeNode(node: WorkflowNode, data: Record<string, unknown>): Promise<Record<string, unknown>> {
     switch (node.type) {
       case 'TRIGGER':
         return this.executeTrigger(node, data);
@@ -312,12 +312,12 @@ export class AdvancedWorkflowEngine {
     }
   }
 
-  private async executeTrigger(node: WorkflowNode, data: any): Promise<any> {
+  private async executeTrigger(node: WorkflowNode, data: Record<string, unknown>): Promise<Record<string, unknown>> {
     // Trigger nodes typically just pass data through
     return data;
   }
 
-  private async executeAction(node: WorkflowNode, data: any): Promise<any> {
+  private async executeAction(node: WorkflowNode, data: Record<string, unknown>): Promise<Record<string, unknown>> {
     const action = node.config.action;
     
     switch (action) {
@@ -336,7 +336,7 @@ export class AdvancedWorkflowEngine {
     }
   }
 
-  private async executeCondition(node: WorkflowNode, data: any): Promise<any> {
+  private async executeCondition(node: WorkflowNode, data: Record<string, unknown>): Promise<Record<string, unknown>> {
     const condition = node.config.condition;
     
     // Evaluate condition using a simple expression evaluator
@@ -345,13 +345,13 @@ export class AdvancedWorkflowEngine {
     return { conditionResult: result };
   }
 
-  private async executeDelay(node: WorkflowNode, data: any): Promise<any> {
+  private async executeDelay(node: WorkflowNode, data: Record<string, unknown>): Promise<Record<string, unknown>> {
     const delayMs = node.config.delayMs || 1000;
     await new Promise(resolve => setTimeout(resolve, delayMs));
     return data;
   }
 
-  private async executeWebhook(node: WorkflowNode, data: any): Promise<any> {
+  private async executeWebhook(node: WorkflowNode, data: Record<string, unknown>): Promise<Record<string, unknown>> {
     const url = node.config.url;
     const method = node.config.method || 'POST';
     const headers = node.config.headers || {};
@@ -372,7 +372,7 @@ export class AdvancedWorkflowEngine {
     return await response.json();
   }
 
-  private async executeEmail(node: WorkflowNode, data: any): Promise<any> {
+  private async executeEmail(node: WorkflowNode, data: Record<string, unknown>): Promise<Record<string, unknown>> {
     const template = node.config.template;
     const recipients = node.config.recipients;
     const subject = node.config.subject;
@@ -384,7 +384,7 @@ export class AdvancedWorkflowEngine {
     return { emailSent: true, recipients };
   }
 
-  private async executeSMS(node: WorkflowNode, data: any): Promise<any> {
+  private async executeSMS(node: WorkflowNode, data: Record<string, unknown>): Promise<Record<string, unknown>> {
     const message = node.config.message;
     const recipients = node.config.recipients;
     
@@ -398,7 +398,7 @@ export class AdvancedWorkflowEngine {
   /**
    * Business logic implementations
    */
-  private async createOrder(data: any): Promise<any> {
+  private async createOrder(data: { customerId: string; totalAmount: number; subtotal?: number; tax?: number; shipping?: number; discount?: number; organizationId: string; createdById?: string }): Promise<Record<string, unknown>> {
     const order = await prisma.order.create({
       data: {
         customerId: data.customerId,
@@ -420,7 +420,7 @@ export class AdvancedWorkflowEngine {
     return { orderId: order.id, order };
   }
 
-  private async updateInventory(data: any): Promise<any> {
+  private async updateInventory(data: { productId: string; quantity: number; operation: 'ADD' | 'SUBTRACT' }): Promise<Record<string, unknown>> {
     const { productId, quantity, operation } = data;
     
     const product = await prisma.product.findUnique({
@@ -443,7 +443,7 @@ export class AdvancedWorkflowEngine {
     return { productId, newStock };
   }
 
-  private async sendNotification(data: any): Promise<any> {
+  private async sendNotification(data: { userId: string; message: string; type: string }): Promise<Record<string, unknown>> {
     const { userId, message, type } = data;
     
     // Send notification using your notification service
@@ -452,7 +452,7 @@ export class AdvancedWorkflowEngine {
     return { notificationSent: true, userId, type };
   }
 
-  private async assignTask(data: any): Promise<any> {
+  private async assignTask(data: { userId: string; task: string; priority: string }): Promise<Record<string, unknown>> {
     const { userId, task, priority } = data;
     
     // Assign task to user
@@ -461,7 +461,7 @@ export class AdvancedWorkflowEngine {
     return { taskAssigned: true, userId, task };
   }
 
-  private async updateCustomer(data: any): Promise<any> {
+  private async updateCustomer(data: { customerId: string; updates: Record<string, unknown> }): Promise<Record<string, unknown>> {
     const { customerId, updates } = data;
     
     const customer = await prisma.customer.update({
@@ -475,7 +475,7 @@ export class AdvancedWorkflowEngine {
   /**
    * Condition evaluation
    */
-  private evaluateCondition(condition: string, data: any): boolean {
+  private evaluateCondition(condition: string, data: Record<string, unknown>): boolean {
     // Simple condition evaluator
     // In production, use a proper expression evaluator library
     try {
@@ -569,7 +569,7 @@ export class AdvancedWorkflowEngine {
     limit: number = 50
   ): Promise<WorkflowExecution[]> {
     try {
-      const where: any = {};
+      const where: Record<string, unknown> = {};
       if (workflowId) where.workflowId = workflowId;
       if (status) where.status = status;
 
@@ -581,7 +581,7 @@ export class AdvancedWorkflowEngine {
         include: { logs: true },
       });
 
-      return executions.map((execution: any) => ({
+      return executions.map((execution) => ({
         id: execution.id,
         workflowId: execution.workflowId,
         status: execution.status,
@@ -599,7 +599,7 @@ export class AdvancedWorkflowEngine {
     }
   }
 
-  async getWorkflowAnalytics(workflowId: string, timeRange: { start: Date; end: Date }): Promise<any> {
+  async getWorkflowAnalytics(workflowId: string, timeRange: { start: Date; end: Date }): Promise<{ totalExecutions: number; successfulExecutions: number; failedExecutions: number; successRate: number; averageDuration: number; executionsByStatus: Record<string, number> }> {
     try {
       const executions = await prisma.workflowExecution.findMany({
         where: {

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 export interface VoiceCommandResult {
   intent: string;
   confidence: number;
-  entities: Record<string, any>;
+  entities: Record<string, unknown>;
   response: string;
   action?: string;
 }
@@ -57,8 +57,8 @@ export class VoiceCommerceService {
     }
   }
 
-  private extractEntities(command: string): Record<string, any> {
-    const entities: Record<string, any> = {};
+  private extractEntities(command: string): Record<string, unknown> {
+    const entities: Record<string, unknown> = {};
     const lowerCommand = command.toLowerCase();
 
     // Extract product names (simplified - would use NLP in production)
@@ -97,7 +97,7 @@ export class VoiceCommerceService {
 
   private async generateResponse(
     intent: string,
-    entities: Record<string, any>,
+    entities: Record<string, unknown>,
     organizationId: string
   ): Promise<string> {
     switch (intent) {
@@ -142,7 +142,7 @@ export class VoiceCommerceService {
     return actionMap[intent];
   }
 
-  private async searchProducts(organizationId: string, query: string): Promise<any[]> {
+  private async searchProducts(organizationId: string, query: string): Promise<Array<Record<string, unknown>>> {
     const products = await prisma.product.findMany({
       where: {
         organizationId,
@@ -161,7 +161,7 @@ export class VoiceCommerceService {
   async searchByVoice(
     organizationId: string,
     query: string
-  ): Promise<any[]> {
+  ): Promise<Array<Record<string, unknown>>> {
     return await this.searchProducts(organizationId, query);
   }
 
@@ -170,7 +170,7 @@ export class VoiceCommerceService {
     userId: string,
     productId: string,
     quantity: number = 1
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     const product = await prisma.product.findUnique({
       where: { id: productId },
     });

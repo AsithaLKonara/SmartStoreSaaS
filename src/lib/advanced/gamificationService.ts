@@ -16,7 +16,7 @@ export interface Achievement {
     type: 'purchase_count' | 'total_spent' | 'days_active' | 'reviews_written' | 'referrals' | 'custom';
     value: number;
     timeframe?: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'all_time';
-    conditions?: Record<string, any>;
+    conditions?: Record<string, unknown>;
   };
   rewards: {
     points: number;
@@ -76,7 +76,7 @@ export interface Challenge {
   requirements: {
     target: number;
     metric: 'purchases' | 'amount_spent' | 'products_reviewed' | 'days_active' | 'referrals';
-    conditions?: Record<string, any>;
+    conditions?: Record<string, unknown>;
   };
   rewards: {
     winner: {
@@ -142,7 +142,7 @@ export interface QuestStep {
   requirements: {
     type: string;
     target: number;
-    conditions?: Record<string, any>;
+    conditions?: Record<string, unknown>;
   };
   rewards: {
     points: number;
@@ -162,7 +162,7 @@ export class GamificationService {
         where: { userId },
       });
 
-      const gamificationData = (userPref?.notifications as any)?.gamification;
+      const gamificationData = (userPref?.notifications as Record<string, unknown> & { gamification?: unknown })?.gamification;
       if (gamificationData) {
         return this.getUserStats(userId);
       }
@@ -220,7 +220,7 @@ export class GamificationService {
     userId: string,
     points: number,
     reason: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<{
     newTotal: number;
     levelUp: boolean;
@@ -506,7 +506,7 @@ export class GamificationService {
         where: { userId },
       });
 
-      const gamificationData = (userPref?.notifications as any)?.gamification;
+      const gamificationData = (userPref?.notifications as Record<string, unknown> & { gamification?: unknown })?.gamification;
 
       if (!gamificationData) {
         return await this.initializeUserGamification(userId);
@@ -570,10 +570,10 @@ export class GamificationService {
       return {
         id: leaderboard.id,
         name: leaderboard.name,
-        description: (leaderboard.entries as any)?.description || '', // Store description in entries metadata
+        description: (leaderboard.entries as Record<string, unknown>)?.description as string || '', // Store description in entries metadata
         type: leaderboard.type as 'streak' | 'referrals' | 'points' | 'purchases' | 'reviews',
         period: leaderboard.period as 'daily' | 'weekly' | 'monthly' | 'yearly' | 'all_time',
-        maxEntries: (leaderboard.entries as any)?.maxEntries || 50, // Store maxEntries in entries metadata
+        maxEntries: (leaderboard.entries as Record<string, unknown>)?.maxEntries as number || 50, // Store maxEntries in entries metadata
         isActive: leaderboard.isActive,
         entries,
         lastUpdated: new Date(),
@@ -597,7 +597,7 @@ export class GamificationService {
     return Math.pow(level - 1, 2) * 100;
   }
 
-  private async checkAchievementRequirements(userId: string, achievement: any): Promise<boolean> {
+  private async checkAchievementRequirements(userId: string, achievement: { requirements: { type: string; value: number } }): Promise<boolean> {
     const requirements = achievement.requirements;
     
     switch (requirements.type) {
@@ -650,7 +650,7 @@ export class GamificationService {
       where: { userId },
     });
 
-    const gamificationData = (userPref?.notifications as any)?.gamification || {};
+    const gamificationData = (userPref?.notifications as Record<string, unknown> & { gamification?: Record<string, unknown> })?.gamification || {};
     const updatedGamification = {
       ...gamificationData,
       recentActivity: [
@@ -668,9 +668,9 @@ export class GamificationService {
       where: { userId },
       data: {
         notifications: {
-          ...(userPref?.notifications as any || {}),
+          ...(userPref?.notifications as Record<string, unknown> || {}),
           gamification: updatedGamification,
-        } as any,
+        } as Record<string, unknown>,
       },
     });
 
@@ -684,7 +684,7 @@ export class GamificationService {
     });
 
     if (userPref) {
-      const gamificationData = (userPref.notifications as any)?.gamification || {};
+      const gamificationData = (userPref.notifications as Record<string, unknown> & { gamification?: Record<string, unknown> })?.gamification || {};
       const currentBadges = (gamificationData.badges || []) as string[];
       const newBadges = Array.from(new Set([...currentBadges, ...badges]));
 
@@ -692,7 +692,7 @@ export class GamificationService {
         where: { userId },
         data: {
           notifications: {
-            ...(userPref.notifications as any || {}),
+            ...(userPref.notifications as Record<string, unknown> || {}),
             gamification: {
               ...gamificationData,
               badges: newBadges,
@@ -703,13 +703,13 @@ export class GamificationService {
     }
   }
 
-  private async applyAchievementDiscounts(userId: string, discounts: any[]): Promise<void> {
+  private async applyAchievementDiscounts(userId: string, discounts: Array<{ type: string; value: number; minPurchase?: number; validUntil?: Date }>): Promise<void> {
     // Apply achievement-based discounts - store in UserPreference metadata
     const userPref = await prisma.userPreference.findUnique({
       where: { userId },
     });
 
-    const existingDiscounts = (userPref?.notifications as any)?.discounts || [];
+    const existingDiscounts = (userPref?.notifications as Record<string, unknown> & { discounts?: Array<Record<string, unknown>> })?.discounts || [];
     const newDiscounts = discounts.map(d => ({
       userId,
       type: d.type,
@@ -724,14 +724,14 @@ export class GamificationService {
       where: { userId },
       data: {
         notifications: {
-          ...(userPref?.notifications as any || {}),
+          ...(userPref?.notifications as Record<string, unknown> || {}),
           discounts: [...existingDiscounts, ...newDiscounts],
-        } as any,
+        } as Record<string, unknown>,
       },
     });
   }
 
-  private async sendAchievementNotification(userId: string, achievement: any): Promise<void> {
+  private async sendAchievementNotification(userId: string, achievement: { name: string; description: string; rewards: { points: number } }): Promise<void> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user?.email) return;
 
@@ -771,7 +771,7 @@ export class GamificationService {
       where: { userId },
     });
 
-    const gamificationData = (userPref?.notifications as any)?.gamification;
+    const gamificationData = (userPref?.notifications as Record<string, unknown> & { gamification?: Record<string, unknown> })?.gamification;
     if (!gamificationData) return 0;
 
     const userPoints = gamificationData.totalPoints || 0;
@@ -783,7 +783,7 @@ export class GamificationService {
         notifications: {
           path: ['gamification', 'totalPoints'],
           gt: userPoints,
-        } as any,
+        } as Record<string, unknown>,
       },
     });
 
@@ -809,7 +809,7 @@ export class GamificationService {
     const profiles = allUserPrefs
       .map(up => ({
         user: up.user,
-        gamification: (up.notifications as any)?.gamification,
+        gamification: (up.notifications as Record<string, unknown> & { gamification?: Record<string, unknown> })?.gamification,
       }))
       .filter(p => p.gamification?.totalPoints !== undefined)
       .sort((a, b) => (b.gamification?.totalPoints || 0) - (a.gamification?.totalPoints || 0))

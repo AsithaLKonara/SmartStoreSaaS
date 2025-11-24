@@ -12,7 +12,7 @@ export interface CollaborationSession {
   sessionId: string;
   documentId: string;
   users: Map<string, CollaborationUser>;
-  changes: any[];
+  changes: Array<Record<string, unknown>>;
 }
 
 export class CollaborationService {
@@ -114,7 +114,7 @@ export class CollaborationService {
   applyChange(
     sessionId: string,
     userId: string,
-    change: any
+    change: Record<string, unknown>
   ): void {
     const session = this.sessions.get(sessionId);
     if (!session) {
@@ -174,7 +174,7 @@ export class CollaborationService {
 
   private broadcastToSession(
     sessionId: string,
-    message: any,
+    message: Record<string, unknown>,
     excludeUserId?: string
   ): void {
     const session = this.sessions.get(sessionId);
