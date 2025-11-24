@@ -5,7 +5,7 @@ export interface ModelTrainingConfig {
   trainingData: Array<Record<string, unknown>>;
   features: string[];
   targetVariable: string;
-  hyperparameters?: Record<string, any>;
+  hyperparameters?: Record<string, unknown>;
   validationSplit?: number;
 }
 
@@ -93,7 +93,7 @@ export class CustomModelService {
     }
   }
 
-  private async trainRecommendationModel(config: ModelTrainingConfig): Promise<any> {
+  private async trainRecommendationModel(config: ModelTrainingConfig): Promise<Record<string, unknown> & { accuracy?: number; metadata?: Record<string, unknown> }> {
     // Collaborative filtering or content-based recommendation
     // This would integrate with ML libraries like TensorFlow.js or scikit-learn API
     const { trainingData, features } = config;
@@ -113,7 +113,7 @@ export class CustomModelService {
     return model;
   }
 
-  private async trainForecastingModel(config: ModelTrainingConfig): Promise<any> {
+  private async trainForecastingModel(config: ModelTrainingConfig): Promise<Record<string, unknown> & { accuracy?: number; metadata?: Record<string, unknown> }> {
     // Time series forecasting (e.g., for sales, inventory)
     const { trainingData, targetVariable } = config;
     
@@ -132,7 +132,7 @@ export class CustomModelService {
     return model;
   }
 
-  private async trainClassificationModel(config: ModelTrainingConfig): Promise<any> {
+  private async trainClassificationModel(config: ModelTrainingConfig): Promise<Record<string, unknown> & { accuracy?: number; metadata?: Record<string, unknown> }> {
     // Classification model (e.g., customer segmentation, fraud detection)
     const { trainingData, features, targetVariable } = config;
     
@@ -150,7 +150,7 @@ export class CustomModelService {
     return model;
   }
 
-  private async trainRegressionModel(config: ModelTrainingConfig): Promise<any> {
+  private async trainRegressionModel(config: ModelTrainingConfig): Promise<Record<string, unknown> & { accuracy?: number; metadata?: Record<string, unknown> }> {
     // Regression model (e.g., price prediction, demand forecasting)
     const { trainingData, features, targetVariable } = config;
     
@@ -170,8 +170,8 @@ export class CustomModelService {
 
   async predict(
     modelId: string,
-    input: Record<string, any>
-  ): Promise<any> {
+    input: Record<string, unknown>
+  ): Promise<Record<string, unknown>> {
     const trainingJob = await prisma.mLTrainingJob.findUnique({
       where: { id: modelId },
     });
