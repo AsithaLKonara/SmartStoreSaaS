@@ -16,7 +16,7 @@ export class IoTService {
     deviceType: string,
     name: string,
     location?: string
-  ): Promise<any> {
+  ): Promise<{ id: string; deviceId: string; name: string; deviceType: string; location: string | null; isActive: boolean; lastSeen: Date | null; organizationId: string; warehouseId: string | null }> {
     const device = await prisma.ioTDevice.upsert({
       where: { deviceId },
       create: {
