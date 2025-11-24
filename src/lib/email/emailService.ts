@@ -455,7 +455,7 @@ export class EmailService {
   /**
    * Manage email lists and subscriptions
    */
-  async addToMailingList(email: string, listId: string, organizationId: string, customFields?: Record<string, any>): Promise<void> {
+  async addToMailingList(email: string, listId: string, organizationId: string, customFields?: Record<string, unknown>): Promise<void> {
     try {
       // Store email subscription in UserPreference metadata
       const user = await prisma.user.findFirst({

@@ -412,7 +412,7 @@ export class InventoryService {
           });
 
           if (order) {
-            const orderMetadata = (order.metadata as any) || {};
+            const orderMetadata = (order.metadata as Record<string, unknown>) || {};
             const reservations = orderMetadata.inventoryReservations || [];
             reservations.push({
               productId: item.productId,

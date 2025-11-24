@@ -181,7 +181,7 @@ export class GamificationService {
     type: string,
     value: unknown,
     pointsRequired?: number
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     const reward = await prisma.reward.create({
       data: {
         organizationId,

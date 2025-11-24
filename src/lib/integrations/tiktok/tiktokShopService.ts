@@ -255,7 +255,7 @@ export class TikTokShopService {
           createdById: orderData.organizationId, // Use organizationId as fallback
           metadata: {
             tiktokOrderId: orderData.metadata.tiktokOrderId,
-          } as any,
+          } as Record<string, unknown>,
         },
       });
     }

@@ -51,7 +51,7 @@ export interface ProductLookup {
   brand?: string;
   manufacturer?: string;
   images: string[];
-  specifications?: Record<string, any>;
+  specifications?: Record<string, unknown>;
   source: 'internal' | 'external';
 }
 
@@ -458,7 +458,7 @@ export class BarcodeService {
             settings: {
               ...settings,
               productLookupCache,
-            } as any,
+            } as Record<string, unknown>,
         },
       });
       }

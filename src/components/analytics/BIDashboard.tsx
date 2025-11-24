@@ -75,7 +75,7 @@ export function BIDashboard() {
       });
 
       const results = await Promise.all(dataPromises);
-      const dataMap: Record<string, any> = {};
+      const dataMap: Record<string, unknown> = {};
       results.forEach(({ widgetId, data }) => {
         dataMap[widgetId] = data;
       });

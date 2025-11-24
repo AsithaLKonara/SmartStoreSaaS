@@ -117,7 +117,7 @@ export class ShopifyWebhookService {
     // Check via dimensions metadata
     const allProducts = await prisma.product.findMany({});
     const product = allProducts.find(p => {
-      const dimensions = (p.dimensions as any) || {};
+      const dimensions = (p.dimensions as ProductDimensions) || {};
       return dimensions.shopifyVariantId === String(inventoryData.variant_id);
     });
 

@@ -30,6 +30,12 @@ export interface BIQuery {
   limit?: number;
 }
 
+export interface SalesForecast {
+  historical: Record<string, number>;
+  forecast: Record<string, number>;
+  confidence: number;
+}
+
 export class BIService {
   async executeQuery(
     organizationId: string,
@@ -203,7 +209,7 @@ export class BIService {
   async getSalesForecast(
     organizationId: string,
     days: number = 30
-  ): Promise<any> {
+  ): Promise<SalesForecast> {
     // Get historical sales data
     const orders = await prisma.order.findMany({
       where: {
@@ -228,7 +234,7 @@ export class BIService {
 
   async getCustomerSegmentation(
     organizationId: string
-  ): Promise<any> {
+  ): Promise<Array<Record<string, unknown>>> {
     const customers = await prisma.customer.findMany({
       where: { organizationId },
       include: {
