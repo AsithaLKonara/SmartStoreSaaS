@@ -2,6 +2,14 @@ import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { ShopifyService } from './shopifyService';
 
+interface ProductDimensions {
+  length?: number;
+  width?: number;
+  height?: number;
+  weight?: number;
+  [key: string]: unknown;
+}
+
 export interface ShopifyWebhook {
   id: number;
   topic: string;
