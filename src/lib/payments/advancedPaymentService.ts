@@ -550,7 +550,7 @@ export class AdvancedPaymentService {
         metadata: {
           stripeInvoiceId: invoice.id,
           ...invoice,
-        } as any
+        } as Record<string, unknown>
       }
     });
   }
@@ -566,7 +566,7 @@ export class AdvancedPaymentService {
         metadata: {
           stripeInvoiceId: invoice.id,
           ...invoice,
-        } as any
+        } as Record<string, unknown>
       }
     });
   }
