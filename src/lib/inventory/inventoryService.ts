@@ -236,7 +236,7 @@ export class InventoryService {
         }
 
         // Get current inventory from warehouse settings
-        const warehouseSettings = (warehouse.settings as any) || {};
+        const warehouseSettings = (warehouse.settings as Record<string, unknown> & { inventory?: Record<string, { quantity?: number; reservedQuantity?: number; lastStockUpdate?: Date; costPrice?: number }> }) || {};
         const inventoryData = warehouseSettings.inventory || {};
         const currentInventory = inventoryData[productId] || {};
         const previousQuantity = currentInventory.quantity || 0;

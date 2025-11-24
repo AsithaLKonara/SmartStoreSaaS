@@ -22,7 +22,7 @@ export class GamificationService {
     organizationId: string,
     userId: string,
     eventType: string,
-    eventData: any
+    eventData: Record<string, unknown>
   ): Promise<string[]> {
     const achievements = await prisma.achievement.findMany({
       where: {

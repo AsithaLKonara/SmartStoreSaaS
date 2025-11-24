@@ -52,7 +52,7 @@ export function AdvancedSearch({
   const [searchType, setSearchType] = useState(defaultType);
   const [filters, setFilters] = useState<SearchFilters>({});
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<{ searchTime?: number; totalResults?: number } | null>(null);
 
   const debouncedQuery = useDebounce(query, 300);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -175,7 +175,7 @@ export function AdvancedSearch({
   };
 
   // Handle filter changes
-  const handleFilterChange = (key: keyof SearchFilters, value: any) => {
+  const handleFilterChange = (key: keyof SearchFilters, value: string | number | { min?: number; max?: number } | { start: Date; end: Date } | string[] | undefined) => {
     setFilters(prev => ({
       ...prev,
       [key]: value

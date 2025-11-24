@@ -41,7 +41,7 @@ export interface Subscription {
   currentPeriodEnd: Date;
   cancelAtPeriodEnd: boolean;
   stripeSubscriptionId?: string | null;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,7 +52,7 @@ export interface UsageRecord {
   metricType: string;
   quantity: number;
   timestamp: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface MembershipTier {

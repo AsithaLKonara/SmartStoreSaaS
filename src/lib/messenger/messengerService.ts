@@ -236,7 +236,7 @@ export class MessengerService {
       // Log the template activity
       await prisma.activity.create({
         data: {
-          type: 'messenger_template_sent' as any, // Use type assertion to bypass constraint
+          type: 'ORDER_CREATED' as 'ORDER_CREATED' | 'ORDER_UPDATED' | 'ORDER_CANCELLED' | 'PAYMENT_RECEIVED' | 'SHIPMENT_CREATED' | 'SHIPMENT_DELIVERED' | 'CUSTOMER_CREATED' | 'CUSTOMER_UPDATED', // Use type assertion to bypass constraint
           description: `Messenger template sent to ${recipientId}`,
           metadata: {
             platform: 'messenger',

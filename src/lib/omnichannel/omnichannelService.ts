@@ -284,7 +284,7 @@ export class OmnichannelService {
     };
   }
 
-  private async sendToChannel(channel: string, customerId: string, message: string): Promise<any> {
+  private async sendToChannel(channel: string, customerId: string, message: string): Promise<Record<string, unknown>> {
     // Implementation for sending messages to different channels
     switch (channel) {
       case 'whatsapp':

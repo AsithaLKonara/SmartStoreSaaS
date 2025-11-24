@@ -12,7 +12,7 @@ interface SecurityEvent {
   userId?: string;
   ipAddress: string;
   userAgent: string;
-  details: any;
+  details: Record<string, unknown>;
   severity: 'low' | 'medium' | 'high' | 'critical';
   timestamp: Date;
   organizationId?: string;
@@ -95,7 +95,7 @@ interface SecurityAlert {
   ipAddress: string;
   timestamp: Date;
   resolved: boolean;
-  details: any;
+  details: Record<string, unknown>;
   organizationId?: string;
 }
 

@@ -134,7 +134,14 @@ export class IoTService {
       location: device.location,
       isActive: device.isActive,
       lastSeen: device.lastSeen,
-      sensors: device.sensors,
+      sensors: device.sensors.map(sensor => ({
+        id: sensor.id,
+        sensorType: sensor.sensorType,
+        currentValue: sensor.currentValue,
+        unit: sensor.unit,
+        threshold: sensor.threshold,
+        lastReading: sensor.lastReading,
+      })),
     }));
   }
 
