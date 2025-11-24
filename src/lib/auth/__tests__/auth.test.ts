@@ -32,14 +32,14 @@ describe('Auth Configuration', () => {
 
   it('should have Google provider configured', () => {
     const googleProvider = authOptions.providers.find(
-      (provider: any) => provider.id === 'google'
+      (provider: { id: string }) => provider.id === 'google'
     );
     expect(googleProvider).toBeDefined();
   });
 
   it('should have credentials provider configured', () => {
     const credentialsProvider = authOptions.providers.find(
-      (provider: any) => provider.id === 'credentials'
+      (provider: { id: string }) => provider.id === 'credentials'
     );
     expect(credentialsProvider).toBeDefined();
   });
@@ -47,8 +47,8 @@ describe('Auth Configuration', () => {
   describe('Credentials Provider', () => {
     it('should return null for missing credentials', async () => {
       const credentialsProvider = authOptions.providers.find(
-        (provider: any) => provider.id === 'credentials'
-      ) as any;
+        (provider: { id: string }) => provider.id === 'credentials'
+      ) as { authorize: (credentials: { email: string; password: string }) => Promise<{ id: string; email: string; name: string | null } | null> } | undefined;
 
       const result = await credentialsProvider.authorize({
         email: '',
@@ -62,8 +62,8 @@ describe('Auth Configuration', () => {
       (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
       const credentialsProvider = authOptions.providers.find(
-        (provider: any) => provider.id === 'credentials'
-      ) as any;
+        (provider: { id: string }) => provider.id === 'credentials'
+      ) as { authorize: (credentials: { email: string; password: string }) => Promise<{ id: string; email: string; name: string | null } | null> } | undefined;
 
       const result = await credentialsProvider.authorize({
         email: 'nonexistent@example.com',
@@ -87,8 +87,8 @@ describe('Auth Configuration', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       const credentialsProvider = authOptions.providers.find(
-        (provider: any) => provider.id === 'credentials'
-      ) as any;
+        (provider: { id: string }) => provider.id === 'credentials'
+      ) as { authorize: (credentials: { email: string; password: string }) => Promise<{ id: string; email: string; name: string | null } | null> } | undefined;
 
       const result = await credentialsProvider.authorize({
         email: 'test@example.com',
@@ -118,8 +118,8 @@ describe('Auth Configuration', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const credentialsProvider = authOptions.providers.find(
-        (provider: any) => provider.id === 'credentials'
-      ) as any;
+        (provider: { id: string }) => provider.id === 'credentials'
+      ) as { authorize: (credentials: { email: string; password: string }) => Promise<{ id: string; email: string; name: string | null } | null> } | undefined;
 
       expect(credentialsProvider).toBeDefined();
       expect(credentialsProvider.authorize).toBeDefined();
@@ -173,8 +173,8 @@ describe('Auth Configuration', () => {
       (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
 
       const credentialsProvider = authOptions.providers.find(
-        (provider: any) => provider.id === 'credentials'
-      ) as any;
+        (provider: { id: string }) => provider.id === 'credentials'
+      ) as { authorize: (credentials: { email: string; password: string }) => Promise<{ id: string; email: string; name: string | null } | null> } | undefined;
 
       const result = await credentialsProvider.authorize({
         email: 'test@example.com',

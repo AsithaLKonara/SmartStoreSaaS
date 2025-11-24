@@ -7,8 +7,8 @@ jest.mock('next/server', () => ({
   NextRequest: class {
     url: string;
     method: string;
-    body: any;
-    constructor(url: string, init?: any) {
+    body: unknown;
+    constructor(url: string, init?: { method?: string; body?: unknown }) {
       this.url = url;
       this.method = init?.method || 'GET';
       this.body = init?.body;
@@ -18,7 +18,7 @@ jest.mock('next/server', () => ({
     }
   },
   NextResponse: {
-    json: (data: any, init?: any) => ({
+    json: (data: unknown, init?: { status?: number }) => ({
       json: () => Promise.resolve(data),
       status: init?.status || 200,
     }),
@@ -77,7 +77,7 @@ describe('Products API Route', () => {
       (prisma.product.findMany as jest.Mock).mockResolvedValue(mockProducts);
       (prisma.product.count as jest.Mock).mockResolvedValue(1);
 
-      const request = { url: 'http://localhost:3000/api/products' } as any;
+      const request = { url: 'http://localhost:3000/api/products' } as NextRequest;
       const response = await GET(request);
       const data = await response.json();
 
@@ -91,7 +91,7 @@ describe('Products API Route', () => {
     it('should return 401 for unauthenticated user', async () => {
       (getServerSession as jest.Mock).mockResolvedValue(null);
 
-      const request = { url: 'http://localhost:3000/api/products' } as any;
+      const request = { url: 'http://localhost:3000/api/products' } as NextRequest;
       const response = await GET(request);
       const data = await response.json();
 
@@ -120,7 +120,7 @@ describe('Products API Route', () => {
       (prisma.product.findMany as jest.Mock).mockResolvedValue(mockProducts);
       (prisma.product.count as jest.Mock).mockResolvedValue(25);
 
-      const request = { url: 'http://localhost:3000/api/products?page=1&limit=10' } as any;
+      const request = { url: 'http://localhost:3000/api/products?page=1&limit=10' } as { url: string };
       const response = await GET(request);
       const data = await response.json();
 
@@ -155,7 +155,7 @@ describe('Products API Route', () => {
       (prisma.product.findMany as jest.Mock).mockResolvedValue(mockProducts);
       (prisma.product.count as jest.Mock).mockResolvedValue(1);
 
-      const request = { url: 'http://localhost:3000/api/products?search=Test' } as any;
+      const request = { url: 'http://localhost:3000/api/products?search=Test' } as { url: string };
       const response = await GET(request);
       const data = await response.json();
 
@@ -210,7 +210,7 @@ describe('Products API Route', () => {
           categoryId: 'category-1',
           stockQuantity: 10,
         })
-      } as any;
+      } as { url: string; json: () => Promise<unknown> };
 
       const response = await POST(request);
       const data = await response.json();
@@ -230,7 +230,7 @@ describe('Products API Route', () => {
           name: 'New Product',
           price: 99.99,
         })
-      } as any;
+      } as { url: string; json: () => Promise<unknown> };
 
       const response = await POST(request);
       const data = await response.json();
@@ -256,7 +256,7 @@ describe('Products API Route', () => {
         json: async () => ({
           // Missing required fields
         })
-      } as any;
+      } as { url: string; json: () => Promise<unknown> };
 
       const response = await POST(request);
       const data = await response.json();

@@ -7,7 +7,7 @@ class MockNextRequest {
   url: string;
   method: string;
   
-  constructor(url: string, init?: any) {
+  constructor(url: string, init?: { method?: string; body?: unknown }) {
     this.url = url;
     this.method = init?.method || 'GET';
   }

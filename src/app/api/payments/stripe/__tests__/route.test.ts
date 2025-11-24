@@ -10,7 +10,7 @@ class MockNextRequest {
   body: string;
   headers: Map<string, string>;
   
-  constructor(url: string, init?: any) {
+  constructor(url: string, init?: { method?: string; body?: unknown }) {
     this.url = url;
     this.method = init?.method || 'GET';
     this.body = init?.body || '{}';
