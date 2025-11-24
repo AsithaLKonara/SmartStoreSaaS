@@ -140,7 +140,7 @@ export class StripeService {
     customerId: string,
     priceId: string,
     metadata?: Record<string, string>
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     try {
       const subscription = await stripe.subscriptions.create({
         customer: customerId,
@@ -177,7 +177,7 @@ export class StripeService {
     paymentIntentId: string,
     amount?: number,
     reason?: 'duplicate' | 'fraudulent' | 'requested_by_customer'
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     try {
       const refundData: Record<string, unknown> = {
         payment_intent: paymentIntentId,

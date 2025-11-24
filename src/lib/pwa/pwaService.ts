@@ -371,7 +371,7 @@ export class PWAService {
   /**
    * Get offline data
    */
-  async getOfflineData(type: string, id?: string): Promise<any> {
+  async getOfflineData(type: string, id?: string): Promise<Record<string, unknown> | null> {
     return new Promise((resolve, reject) => {
       try {
         const request = indexedDB.open('SmartStoreOffline', 1);

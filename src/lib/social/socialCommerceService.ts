@@ -218,7 +218,7 @@ export class SocialCommerceService {
         scheduledAt: post.scheduledAt || undefined,
         publishedAt: post.publishedAt || undefined,
         status: post.status as 'draft' | 'scheduled' | 'published' | 'failed',
-        engagement: (post.engagement as any) || {
+        engagement: (post.engagement as SocialEngagement) || {
           likes: 0,
           comments: 0,
           shares: 0,
@@ -418,7 +418,7 @@ export class SocialCommerceService {
         scheduledAt: post.scheduledAt || undefined,
         publishedAt: post.publishedAt || undefined,
         status: post.status as 'draft' | 'scheduled' | 'published' | 'failed',
-        engagement: post.engagement as any
+        engagement: post.engagement as SocialEngagement
       }));
     } catch (error) {
       throw new Error(`Failed to get scheduled posts: ${error}`);
@@ -431,13 +431,13 @@ export class SocialCommerceService {
         where: { id: postId }
       });
 
-      if (post && post.status === 'published' && (post.metadata as any)?.platformPostId) {
+      if (post && post.status === 'published' && (post.metadata as Record<string, unknown> & { platformPostId?: string })?.platformPostId) {
         const platform = await prisma.socialPlatform.findUnique({
           where: { id: post.platformId }
         });
 
         if (platform) {
-          await this.deleteFromPlatform(platform, (post.metadata as any).platformPostId);
+          await this.deleteFromPlatform(platform, (post.metadata as Record<string, unknown> & { platformPostId: string }).platformPostId);
         }
       }
 

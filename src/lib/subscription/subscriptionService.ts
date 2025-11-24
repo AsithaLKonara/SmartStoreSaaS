@@ -437,11 +437,11 @@ export class SubscriptionService {
       // Send cancellation email
       await this.sendCancellationEmail(updatedSubscription.id);
 
-      const updatedMetadata = (updatedSubscription.metadata as any) || {};
+      const updatedMetadata = (updatedSubscription.metadata as Record<string, unknown>) || {};
       return {
         id: updatedSubscription.id,
         customerId: updatedSubscription.customerId,
-        status: updatedSubscription.status as any,
+        status: updatedSubscription.status as string,
         currentPeriodStart: updatedSubscription.currentPeriodStart,
         currentPeriodEnd: updatedSubscription.currentPeriodEnd,
         cancelAtPeriodEnd: updatedSubscription.cancelAtPeriodEnd,
@@ -449,7 +449,7 @@ export class SubscriptionService {
         createdAt: updatedSubscription.createdAt,
         updatedAt: updatedSubscription.updatedAt,
         // cancelAt/canceledAt not in Subscription interface - stored in metadata
-        metadata: updatedSubscription.metadata as any,
+        metadata: updatedSubscription.metadata as Record<string, unknown>,
       };
     } catch (error) {
       throw new Error(`Failed to cancel subscription: ${error}`);
@@ -460,7 +460,7 @@ export class SubscriptionService {
     subscriptionId: string,
     metricType: string,
     quantity: number,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<UsageRecord> {
     try {
       // Store usage record in Subscription metadata
@@ -505,7 +505,7 @@ export class SubscriptionService {
       }
 
       // Update usage in subscription metadata
-      const currentUsage = (subscription.metadata as any)?.usage || {};
+      const currentUsage = (subscription.metadata as Record<string, unknown> & { usage?: Record<string, unknown> })?.usage || {};
       const newUsage = {
         ...currentUsage,
         [metricType]: (currentUsage[metricType] || 0) + quantity,
@@ -516,7 +516,7 @@ export class SubscriptionService {
         where: { id: subscriptionId },
         data: {
           metadata: {
-            ...(subscription.metadata as Record<string, any> || {}),
+            ...(subscription.metadata as Record<string, unknown> || {}),
             usage: newUsage
           }
         }
@@ -545,7 +545,7 @@ export class SubscriptionService {
         metricType: usageRecord.metricType,
         quantity: usageRecord.quantity,
         timestamp: new Date(usageRecord.timestamp),
-        metadata: usageRecord.metadata as any,
+        metadata: usageRecord.metadata as Record<string, unknown>,
       };
     } catch (error) {
       throw new Error(`Failed to record usage: ${error}`);
@@ -555,7 +555,7 @@ export class SubscriptionService {
   async createMembershipTier(tier: Omit<MembershipTier, 'id'>): Promise<MembershipTier> {
     try {
       // Store membership tier in Organization settings
-      const orgId = (tier as any).organizationId;
+      const orgId = (tier as Record<string, unknown> & { organizationId?: string })?.organizationId;
       if (!orgId) {
         throw new Error('Organization ID is required');
       }
@@ -723,7 +723,7 @@ export class SubscriptionService {
   async createSubscriptionBox(box: Omit<SubscriptionBox, 'id'>): Promise<SubscriptionBox> {
     try {
       // Store subscription box in Organization settings
-      const orgId = (box as any).organizationId;
+      const orgId = (box as Record<string, unknown> & { organizationId?: string })?.organizationId;
       if (!orgId) {
         throw new Error('Organization ID is required');
       }
@@ -799,7 +799,7 @@ export class SubscriptionService {
     });
     if (!organization) return;
 
-    const subMetadata = (subscription.metadata as any) || {};
+    const subMetadata = (subscription.metadata as Record<string, unknown>) || {};
     const planId = subMetadata.planId;
     if (!planId) return;
 
@@ -864,7 +864,7 @@ export class SubscriptionService {
         templateId: 'subscription-welcome',
         templateData: {
           customerName: customer.name || 'Valued Customer',
-          planName: (subscription.metadata as any)?.plan || 'Premium Plan',
+          planName: (subscription.metadata as Record<string, unknown> & { plan?: string })?.plan || 'Premium Plan',
           startDate: subscription.currentPeriodStart.toLocaleDateString(),
           endDate: subscription.currentPeriodEnd.toLocaleDateString()
         }
@@ -900,7 +900,7 @@ export class SubscriptionService {
         templateId: 'subscription-cancelled',
         templateData: {
           customerName: customer.name || 'Valued Customer',
-          planName: (subscription.metadata as any)?.plan || 'Premium Plan',
+          planName: (subscription.metadata as Record<string, unknown> & { plan?: string })?.plan || 'Premium Plan',
           endDate: subscription.currentPeriodEnd.toLocaleDateString()
         }
       });
@@ -935,9 +935,9 @@ export class SubscriptionService {
         templateId: 'usage-limit-reached',
         templateData: {
           customerName: customer.name || 'Valued Customer',
-          planName: (subscription.metadata as any)?.plan || 'Premium Plan',
-          currentUsage: (subscription.metadata as any)?.usage || 0,
-          usageLimit: (subscription.metadata as any)?.usageLimit || 'Unlimited'
+          planName: (subscription.metadata as Record<string, unknown> & { plan?: string })?.plan || 'Premium Plan',
+          currentUsage: (subscription.metadata as Record<string, unknown> & { usage?: number })?.usage || 0,
+          usageLimit: (subscription.metadata as Record<string, unknown> & { usageLimit?: string })?.usageLimit || 'Unlimited'
         }
       });
     } catch (error) {
@@ -955,7 +955,7 @@ export class SubscriptionService {
 
       if (!subscription) return 0;
 
-      const usage = (subscription.metadata as any)?.usage || {};
+      const usage = (subscription.metadata as Record<string, unknown> & { usage?: Record<string, unknown> })?.usage || {};
       return usage[metricType] || 0;
     } catch (error) {
       console.warn('Failed to get current usage:', error);

@@ -20,7 +20,7 @@ export interface BulkSMSOptions {
   recipients: Array<{
     phone: string;
     message: string;
-    variables?: Record<string, any>;
+    variables?: Record<string, unknown>;
   }>;
   from?: string;
   scheduledTime?: Date;
@@ -481,7 +481,7 @@ export class SMSService {
   /**
    * Manage SMS subscriptions
    */
-  async addToSMSList(phone: string, listId: string, customFields?: Record<string, any>): Promise<void> {
+  async addToSMSList(phone: string, listId: string, customFields?: Record<string, unknown>): Promise<void> {
     try {
       // Since smsSubscription doesn't exist in schema, we'll store it in a different way
       // For now, we'll use a generic approach or store in metadata
@@ -526,7 +526,7 @@ export class SMSService {
     return cleaned.startsWith('+') ? cleaned : `+${cleaned}`;
   }
 
-  private processTemplate(template: string, variables: Record<string, any>): string {
+  private processTemplate(template: string, variables: Record<string, unknown>): string {
     let processed = template;
     
     for (const [key, value] of Object.entries(variables)) {

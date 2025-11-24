@@ -401,7 +401,7 @@ export class SecurityService {
     }
   }
 
-  async exportUserData(userId: string): Promise<any> {
+  async exportUserData(userId: string): Promise<Record<string, unknown>> {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },

@@ -268,7 +268,7 @@ export class PayPalService {
     amount?: number,
     currency: string = 'USD',
     note?: string
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     try {
       const accessToken = await this.getAccessToken();
 
@@ -403,13 +403,13 @@ export class PayPalService {
         metadata: {
           path: ['paypalOrderId'],
           equals: orderId,
-        } as any,
+        } as Record<string, unknown>,
       },
         data: {
           status: OrderStatus.CONFIRMED,
           metadata: {
           paypalPaymentId: paymentId,
-        } as any,
+        } as Record<string, unknown>,
         },
       });
     }
@@ -426,7 +426,7 @@ export class PayPalService {
         metadata: {
           path: ['paypalOrderId'],
           equals: orderId,
-        } as any,
+        } as Record<string, unknown>,
       },
         data: {
           status: OrderStatus.CANCELLED,
@@ -453,7 +453,7 @@ export class PayPalService {
     amount: number,
     currency: string = 'USD',
     interval: 'MONTH' | 'YEAR' = 'MONTH'
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     try {
       const accessToken = await this.getAccessToken();
 

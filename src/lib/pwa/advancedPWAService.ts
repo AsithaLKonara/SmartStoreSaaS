@@ -532,12 +532,12 @@ export class AdvancedPWAService {
   }
 
   async handleBackgroundSync(tag: string): Promise<void> {
-    if ('serviceWorker' in navigator && 'sync' in (navigator.serviceWorker as any)) {
+    if ('serviceWorker' in navigator && 'sync' in (navigator.serviceWorker as ServiceWorkerContainer & { sync?: unknown })) {
       const registration = await navigator.serviceWorker.ready;
       
       // Use type assertion for sync property
       if ('sync' in registration) {
-        await (registration as any).sync.register(tag);
+        await (registration as ServiceWorkerRegistration & { sync: { register: (tag: string) => Promise<void> } }).sync.register(tag);
       } else {
         console.warn('Background sync not supported');
       }

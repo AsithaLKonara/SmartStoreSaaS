@@ -185,7 +185,7 @@ export class AdvancedPaymentService {
     return customer.id;
   }
 
-  async findCustomerByEmail(email: string): Promise<any> {
+  async findCustomerByEmail(email: string): Promise<Record<string, unknown> | null> {
     const customer = await prisma.customer.findFirst({
       where: { email }
     });
@@ -210,7 +210,7 @@ export class AdvancedPaymentService {
     // });
   }
 
-  async findCustomerByStripeId(stripeCustomerId: string): Promise<any> {
+  async findCustomerByStripeId(stripeCustomerId: string): Promise<Record<string, unknown> | null> {
     // Note: Customer model doesn't have metadata field
     // Consider implementing this functionality when the field is available
     // For now, return null since we can't query by Stripe ID
@@ -351,7 +351,7 @@ export class AdvancedPaymentService {
           paymentIntentId: paymentIntent.id,
           reason: refund.reason || 'requested_by_customer',
           stripeRefundId: refund.id,
-        } as any,
+        } as Record<string, unknown>,
       }
     });
 
@@ -456,7 +456,7 @@ export class AdvancedPaymentService {
 
     if (paymentMethod) {
       // Detach from Stripe only if stripePaymentMethodId exists in metadata
-      const stripePaymentMethodId = (paymentMethod.metadata as any)?.stripePaymentMethodId;
+      const stripePaymentMethodId = (paymentMethod.metadata as Record<string, unknown> & { stripePaymentMethodId?: string })?.stripePaymentMethodId;
       if (stripePaymentMethodId) {
       await this.stripe.paymentMethods.detach(stripePaymentMethodId);
       }

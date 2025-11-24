@@ -795,7 +795,7 @@ export class AdvancedSecurityService {
       await this.notifyAdministrators({
         id: crypto.randomUUID(),
         type: 'SUSPICIOUS_ACTIVITY',
-        severity: detection.severity.toUpperCase() as any,
+        severity: detection.severity.toUpperCase() as SecurityEventSeverity,
         message: `Critical security threat: ${detection.reason}`,
         userId: event.userId,
         ipAddress: event.ipAddress,
