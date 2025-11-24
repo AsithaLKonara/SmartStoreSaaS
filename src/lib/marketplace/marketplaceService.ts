@@ -607,7 +607,7 @@ export class MarketplaceService {
     };
   }
 
-  private async processVendorPayout(vendorId: string, period: string): Promise<void> {
+  private async processVendorPayout(vendorId: string, _period: string): Promise<void> {
     // Get pending payouts for vendor
     const pendingOrders = await prisma.order.findMany({
       where: {
@@ -699,7 +699,7 @@ export class MarketplaceService {
     });
   }
 
-  private groupSalesByMonth(orders: Array<{ createdAt: Date; totalAmount: number }>, startDate: Date, endDate: Date): Array<{ month: string; revenue: number; orders: number }> {
+  private groupSalesByMonth(orders: Array<{ createdAt: Date; totalAmount: number }>, _startDate: Date, _endDate: Date): Array<{ month: string; revenue: number; orders: number }> {
     const months = new Map<string, { revenue: number; orders: number }>();
     
     for (const order of orders) {

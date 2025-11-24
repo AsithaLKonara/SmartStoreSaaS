@@ -93,7 +93,7 @@ describe('/api/orders', () => {
 
       const request = new MockNextRequest('http://localhost:3000/api/orders?status=COMPLETED');
       const response = await GET(request);
-      const data = await response.json();
+      const _data = await response.json();
 
       expect(response.status).toBe(200);
       expect(prisma.order.findMany).toHaveBeenCalled();

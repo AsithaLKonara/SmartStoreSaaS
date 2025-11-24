@@ -249,7 +249,7 @@ export class OmnichannelService {
     });
   }
 
-  async createConversation(customerId: string, channel: string, initialMessage: string): Promise<CustomerConversation> {
+  async createConversation(customerId: string, channel: string, _initialMessage: string): Promise<CustomerConversation> {
     const conversation = await prisma.customerConversation.create({
       data: {
         customerId,
@@ -358,12 +358,12 @@ export class OmnichannelService {
   }
 
   // Channel-specific implementations
-  private async sendWhatsAppMessage(customerId: string, message: string): Promise<Record<string, unknown>> {
+  private async sendWhatsAppMessage(_customerId: string, _message: string): Promise<Record<string, unknown>> {
     // WhatsApp Business API implementation
     return { status: 'sent', messageId: `wa_${Date.now()}` };
   }
 
-  private async sendFacebookMessage(customerId: string, message: string): Promise<Record<string, unknown>> {
+  private async sendFacebookMessage(_customerId: string, _message: string): Promise<Record<string, unknown>> {
     // Facebook Messenger API implementation
     return { status: 'sent', messageId: `fb_${Date.now()}` };
   }
@@ -394,7 +394,7 @@ export class OmnichannelService {
     return response.data;
   }
 
-  private async sendEmailMessage(customerId: string, message: string): Promise<Record<string, unknown>> {
+  private async sendEmailMessage(_customerId: string, _message: string): Promise<Record<string, unknown>> {
     // Email service implementation
     return { status: 'sent', messageId: `email_${Date.now()}` };
   }

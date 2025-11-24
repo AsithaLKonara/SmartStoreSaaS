@@ -83,7 +83,7 @@ export class LoyaltySystem {
   ];
 
   // Points Management
-  async awardPoints(customerId: string, amount: number, reason: string, orderId?: string): Promise<void> {
+  async awardPoints(customerId: string, amount: number, reason: string, _orderId?: string): Promise<void> {
     try {
       // Update customer points using the existing points field
       await prisma.customer.update({
@@ -145,7 +145,7 @@ export class LoyaltySystem {
     }
   }
 
-  async getPointsHistory(customerId: string): Promise<LoyaltyTransaction[]> {
+  async getPointsHistory(_customerId: string): Promise<LoyaltyTransaction[]> {
     try {
       // Since we don't have a metadata field, return empty history for now
       // In a real implementation, you'd create a LoyaltyTransaction model

@@ -789,8 +789,8 @@ export class PersonalizationEngine {
 
   private async applyBusinessRules(
     recommendations: PersonalizationRecommendation[],
-    userProfile: UserProfile,
-    context: RealTimeContext
+    _userProfile: UserProfile,
+    _context: RealTimeContext
   ): Promise<PersonalizationRecommendation[]> {
     // Apply business rules and filters
     return recommendations;
@@ -805,8 +805,8 @@ export class PersonalizationEngine {
   }
 
   private async trackRecommendations(
-    userId: string,
-    recommendations: PersonalizationRecommendation[]
+    _userId: string,
+    _recommendations: PersonalizationRecommendation[]
   ): Promise<void> {
     // Track recommendations for analysis
   }
@@ -816,8 +816,8 @@ export class PersonalizationEngine {
   }
 
   private async getActiveExperiment(
-    userId: string,
-    pageType: string
+    _userId: string,
+    _pageType: string
   ): Promise<PersonalizationExperiment | null> {
     // Get active experiment for user and page type
     return null;
@@ -829,102 +829,102 @@ export class PersonalizationEngine {
   }
 
   private async optimizeLayout(
-    userProfile: UserProfile,
-    pageType: string,
-    variant: ABTestVariant | null
+    _userProfile: UserProfile,
+    _pageType: string,
+    _variant: ABTestVariant | null
   ): Promise<string> {
     // Optimize layout based on user profile
     return 'default';
   }
 
   private async personalizePageContent(
-    userProfile: UserProfile,
-    pageType: string,
-    context: RealTimeContext
+    _userProfile: UserProfile,
+    _pageType: string,
+    _context: RealTimeContext
   ): Promise<Record<string, unknown>> {
     // Personalize page content
     return {};
   }
 
   private async selectPromotions(
-    userProfile: UserProfile,
-    context: RealTimeContext
+    _userProfile: UserProfile,
+    _context: RealTimeContext
   ): Promise<string[]> {
     // Select relevant promotions
     return [];
   }
 
   private async generatePersonalizedMessaging(
-    userProfile: UserProfile,
-    context: RealTimeContext
+    _userProfile: UserProfile,
+    _context: RealTimeContext
   ): Promise<string[]> {
     // Generate personalized messaging
     return [];
   }
 
   private async generateSimilarProductRecommendations(
-    productId: string,
-    userProfile: UserProfile,
-    context: RealTimeContext
+    _productId: string,
+    _userProfile: UserProfile,
+    _context: RealTimeContext
   ): Promise<PersonalizationRecommendation[]> {
     // Generate similar product recommendations
     return [];
   }
 
   private async generateComplementaryRecommendations(
-    userId: string,
-    context: RealTimeContext
+    _userId: string,
+    _context: RealTimeContext
   ): Promise<PersonalizationRecommendation[]> {
     // Generate complementary product recommendations
     return [];
   }
 
   private async generateCrossUpsellOffers(
-    userId: string,
-    context: RealTimeContext
+    _userId: string,
+    _context: RealTimeContext
   ): Promise<Array<Record<string, unknown>>> {
     // Generate cross-sell and upsell offers
     return [];
   }
 
   private async personalizeSearchResults(
-    userId: string,
-    context: RealTimeContext
+    _userId: string,
+    _context: RealTimeContext
   ): Promise<PersonalizationRecommendation[]> {
     // Personalize search results
     return [];
   }
 
   private async generateRetentionPopups(
-    userProfile: UserProfile,
-    context: RealTimeContext
+    _userProfile: UserProfile,
+    _context: RealTimeContext
   ): Promise<Array<Record<string, unknown>>> {
     // Generate retention popups
     return [];
   }
 
   private async generateExitIntentOffers(
-    userProfile: UserProfile,
-    context: RealTimeContext
+    _userProfile: UserProfile,
+    _context: RealTimeContext
   ): Promise<Array<Record<string, unknown>>> {
     // Generate exit intent offers
     return [];
   }
 
   private async generateContextualMessages(
-    userProfile: UserProfile,
-    context: RealTimeContext,
-    trigger: string
+    _userProfile: UserProfile,
+    _context: RealTimeContext,
+    _trigger: string
   ): Promise<string[]> {
     // Generate contextual messages
     return [];
   }
 
   private async updateUserProfileRealTime(
-    userId: string,
-    interactionType: string,
-    itemId: string,
-    itemType: string
+    _userId: string,
+    _interactionType: string,
+    _itemId: string,
+    _itemType: string
   ): Promise<void> {
     // Update user profile in real-time
   }

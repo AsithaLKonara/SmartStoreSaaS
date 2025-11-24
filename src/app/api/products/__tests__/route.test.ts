@@ -157,7 +157,7 @@ describe('Products API Route', () => {
 
       const request = { url: 'http://localhost:3000/api/products?search=Test' } as { url: string };
       const response = await GET(request);
-      const data = await response.json();
+      const _data = await response.json();
 
       expect(response.status).toBe(200);
       expect(prisma.product.findMany).toHaveBeenCalledWith(

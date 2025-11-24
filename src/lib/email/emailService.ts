@@ -648,19 +648,19 @@ export class EmailService {
     });
   }
 
-  async getEmailSubscriptions(organizationId: string): Promise<EmailSubscription[]> {
+  async getEmailSubscriptions(_organizationId: string): Promise<EmailSubscription[]> {
     // Since emailSubscription model doesn't exist, return empty array
     // In a real implementation, you'd want to create this model
     return [];
   }
 
-  async updateEmailSubscription(subscriptionId: string, updates: Partial<EmailSubscription>): Promise<EmailSubscription | null> {
+  async updateEmailSubscription(_subscriptionId: string, _updates: Partial<EmailSubscription>): Promise<EmailSubscription | null> {
     // Since emailSubscription model doesn't exist, return null
     // In a real implementation, you'd want to create this model
     return null;
   }
 
-  async getEmailCampaigns(organizationId: string): Promise<EmailCampaign[]> {
+  async getEmailCampaigns(_organizationId: string): Promise<EmailCampaign[]> {
     // Since emailCampaign model doesn't exist, return empty array
     // In a real implementation, you'd want to create this model
     return [];
@@ -684,7 +684,7 @@ export class EmailService {
     };
   }
 
-  async updateEmailCampaign(campaignId: string, updates: Partial<EmailCampaignData>): Promise<EmailCampaign | null> {
+  async updateEmailCampaign(_campaignId: string, _updates: Partial<EmailCampaignData>): Promise<EmailCampaign | null> {
     // Since emailCampaign model doesn't exist, return null
     // In a real implementation, you'd want to create this model
     return null;

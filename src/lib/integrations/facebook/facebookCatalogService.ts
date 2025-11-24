@@ -8,7 +8,7 @@ export class FacebookCatalogService {
     this.commerceService = commerceService;
   }
 
-  async syncProductCatalog(organizationId: string): Promise<{ success: number; failed: number }> {
+  async syncProductCatalog(_organizationId: string): Promise<{ success: number; failed: number }> {
     return await this.commerceService.syncProducts();
   }
 
