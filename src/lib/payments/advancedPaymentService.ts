@@ -370,20 +370,20 @@ export class AdvancedPaymentService {
       include: { paymentMethod: true }
     });
 
-    const successfulPayments = payments.filter((p: any) => p.status === 'succeeded');
-    const failedPayments = payments.filter((p: any) => p.status === 'failed');
+    const successfulPayments = payments.filter((p) => p.status === 'succeeded');
+    const failedPayments = payments.filter((p) => p.status === 'failed');
 
-    const totalRevenue = successfulPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
+    const totalRevenue = successfulPayments.reduce((sum: number, p) => sum + p.amount, 0);
     const averageOrderValue = successfulPayments.length > 0 ? totalRevenue / successfulPayments.length : 0;
 
     const paymentMethodDistribution: Record<string, number> = {};
-    successfulPayments.forEach((payment: any) => {
+    successfulPayments.forEach((payment) => {
       const method = payment.paymentMethod?.type || 'unknown';
       paymentMethodDistribution[method] = (paymentMethodDistribution[method] || 0) + 1;
     });
 
     const revenueByPeriod: Record<string, number> = {};
-    successfulPayments.forEach((payment: any) => {
+    successfulPayments.forEach((payment) => {
       const date = payment.createdAt.toISOString().split('T')[0];
       revenueByPeriod[date] = (revenueByPeriod[date] || 0) + payment.amount;
     });
@@ -468,7 +468,7 @@ export class AdvancedPaymentService {
     }
   }
 
-  async createPaymentLink(amount: number, currency: string, description: string, metadata?: any): Promise<string> {
+  async createPaymentLink(amount: number, currency: string, description: string, metadata?: Record<string, unknown>): Promise<string> {
     const paymentLink = await this.stripe.paymentLinks.create({
       line_items: [{
         price_data: {
@@ -479,14 +479,14 @@ export class AdvancedPaymentService {
           unit_amount: Math.round(amount * 100)
         },
         quantity: 1
-      } as any],
+      }],
       metadata
     });
 
     return paymentLink.url;
   }
 
-  async handleWebhook(event: any): Promise<void> {
+  async handleWebhook(event: { type: string; data: { object: Record<string, unknown> } }): Promise<void> {
     switch (event.type) {
       case 'payment_intent.succeeded':
         await this.handlePaymentSuccess(event.data.object);
@@ -509,7 +509,7 @@ export class AdvancedPaymentService {
     }
   }
 
-  private async handlePaymentSuccess(paymentIntent: any): Promise<void> {
+  private async handlePaymentSuccess(paymentIntent: { id: string; status: string; metadata?: { orderId?: string } }): Promise<void> {
     await prisma.paymentIntent.update({
       where: { stripePaymentIntentId: paymentIntent.id },
       data: { status: paymentIntent.status }
@@ -524,7 +524,7 @@ export class AdvancedPaymentService {
     }
   }
 
-  private async handlePaymentFailure(paymentIntent: any): Promise<void> {
+  private async handlePaymentFailure(paymentIntent: { id: string; status: string; metadata?: { orderId?: string } }): Promise<void> {
     await prisma.paymentIntent.update({
       where: { stripePaymentIntentId: paymentIntent.id },
       data: { status: paymentIntent.status }
@@ -539,7 +539,7 @@ export class AdvancedPaymentService {
     }
   }
 
-  private async handleInvoicePaymentSuccess(invoice: any): Promise<void> {
+  private async handleInvoicePaymentSuccess(invoice: { customer: string; subscription: string; amount_paid: number; status: string; id: string; [key: string]: unknown }): Promise<void> {
     // Handle successful subscription payment
     await prisma.invoice.create({
       data: {
@@ -555,7 +555,7 @@ export class AdvancedPaymentService {
     });
   }
 
-  private async handleInvoicePaymentFailure(invoice: any): Promise<void> {
+  private async handleInvoicePaymentFailure(invoice: { customer: string; subscription: string; amount_due: number; status: string; id: string; [key: string]: unknown }): Promise<void> {
     // Handle failed subscription payment
     await prisma.invoice.create({
       data: {
@@ -571,7 +571,7 @@ export class AdvancedPaymentService {
     });
   }
 
-  private async handleSubscriptionUpdate(subscription: any): Promise<void> {
+  private async handleSubscriptionUpdate(subscription: { id: string; status: string; current_period_start: number; current_period_end: number; cancel_at_period_end: boolean }): Promise<void> {
     await prisma.subscription.update({
       where: { stripeSubscriptionId: subscription.id },
       data: {
@@ -583,7 +583,7 @@ export class AdvancedPaymentService {
     });
   }
 
-  private async handleSubscriptionCancellation(subscription: any): Promise<void> {
+  private async handleSubscriptionCancellation(subscription: { id: string }): Promise<void> {
     await prisma.subscription.update({
       where: { stripeSubscriptionId: subscription.id },
       data: {

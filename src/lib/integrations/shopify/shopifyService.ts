@@ -513,7 +513,7 @@ export class ShopifyService {
     await this.client.delete(`/webhooks/${webhookId}.json`);
   }
 
-  async listWebhooks(): Promise<any[]> {
+  async listWebhooks(): Promise<Array<Record<string, unknown>>> {
     const response = await this.client.get('/webhooks.json');
     return response.data.webhooks;
   }

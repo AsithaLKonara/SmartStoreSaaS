@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function setupWhatsAppIntegration(config: any, organizationId: string) {
+async function setupWhatsAppIntegration(config: { phoneNumberId: string; accessToken: string; webhookSecret?: string; settings?: Record<string, unknown> }, organizationId: string) {
   try {
     // Validate WhatsApp configuration
     if (!config.phoneNumberId || !config.accessToken) {
@@ -130,7 +130,7 @@ async function setupWhatsAppIntegration(config: any, organizationId: string) {
   }
 }
 
-async function setupWooCommerceIntegration(config: any, organizationId: string) {
+async function setupWooCommerceIntegration(config: { siteUrl: string; consumerKey: string; consumerSecret: string; apiVersion?: string; settings?: Record<string, unknown>; organizationId: string }, organizationId: string) {
   try {
     // Validate WooCommerce configuration
     if (!config.siteUrl || !config.consumerKey || !config.consumerSecret) {
@@ -191,7 +191,7 @@ async function setupWooCommerceIntegration(config: any, organizationId: string) 
   }
 }
 
-async function setupCourierIntegration(config: any, organizationId: string) {
+async function setupCourierIntegration(config: { name: string; code: string; apiKey: string; apiSecret?: string; settings?: Record<string, unknown> }, organizationId: string) {
   try {
     // Validate courier configuration
     if (!config.name || !config.code || !config.apiKey) {
@@ -300,7 +300,7 @@ async function setupWhatsAppWebhooks(phoneNumberId: string, accessToken: string)
   }
 }
 
-async function setupWooCommerceWebhooks(config: any) {
+async function setupWooCommerceWebhooks(config: { consumerKey: string; consumerSecret: string; organizationId: string; siteUrl: string }) {
   try {
     const auth = Buffer.from(`${config.consumerKey}:${config.consumerSecret}`).toString('base64');
     const webhookUrl = `${process.env.NEXTAUTH_URL}/api/webhooks/woocommerce/${config.organizationId}`;

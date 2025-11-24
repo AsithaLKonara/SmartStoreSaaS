@@ -287,7 +287,7 @@ export class AIAnalyticsService {
     }
   }
 
-  async identifyTopPerformers(organizationId: string): Promise<any[]> {
+  async identifyTopPerformers(organizationId: string): Promise<Array<{ id: string; name: string; sales: number; revenue: number }>> {
     try {
       const products = await prisma.product.findMany({
         where: { organizationId },
@@ -340,7 +340,7 @@ export class AIAnalyticsService {
         }
         acc[area].push(order);
         return acc;
-      }, {} as Record<string, any[]>);
+      }, {} as Record<string, Array<{ id: string; totalAmount: number; customer: { id: string; name: string | null } }>>);
 
       return Object.entries(routes).map(([area, orders]) => ({
         area,
