@@ -439,7 +439,7 @@ export class WorkflowEngine {
 
     if (courier) {
       // Create shipment record
-      const shipment = await prisma.shipment.create({
+      const _shipment = await prisma.shipment.create({
         data: {
           orderId: order.id,
           courierId: courier.id,
