@@ -218,7 +218,7 @@ export class ThemeService {
 
   generateThemeCSS(config: ThemeConfig): string {
     const effectiveTheme = this.getEffectiveTheme(config);
-    const isDark = effectiveTheme === 'dark';
+    const _isDark = effectiveTheme === 'dark';
 
     return `
       :root {

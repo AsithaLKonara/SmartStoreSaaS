@@ -372,8 +372,8 @@ export class AdvancedWorkflowEngine {
     return await response.json();
   }
 
-  private async executeEmail(node: WorkflowNode, data: Record<string, unknown>): Promise<Record<string, unknown>> {
-    const template = node.config.template;
+  private async executeEmail(node: WorkflowNode, _data: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const _template = node.config.template;
     const recipients = node.config.recipients;
     const subject = node.config.subject;
     
@@ -384,7 +384,7 @@ export class AdvancedWorkflowEngine {
     return { emailSent: true, recipients };
   }
 
-  private async executeSMS(node: WorkflowNode, data: Record<string, unknown>): Promise<Record<string, unknown>> {
+  private async executeSMS(node: WorkflowNode, _data: Record<string, unknown>): Promise<Record<string, unknown>> {
     const message = node.config.message;
     const recipients = node.config.recipients;
     

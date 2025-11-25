@@ -1,4 +1,4 @@
-import NextAuth from "next-auth"
+// import NextAuth from "next-auth" // Unused import removed
 
 declare module "next-auth" {
   /**

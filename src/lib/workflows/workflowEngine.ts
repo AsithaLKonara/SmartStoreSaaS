@@ -1,8 +1,6 @@
 import { prisma } from '../prisma';
-import { AIChatService } from '../ai/chatService';
 import { emailService } from '../email';
 import { whatsAppService } from '../messaging';
-import { createNotification } from '../notifications';
 
 interface WorkflowStep {
   id: string;
