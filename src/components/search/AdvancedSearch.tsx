@@ -400,7 +400,7 @@ export function AdvancedSearch({
           {/* No Results */}
           {!isLoading && query.trim() && results.length === 0 && suggestions.length === 0 && (
             <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-              No results found for "{query}"
+              No results found for &quot;{query}&quot;
             </div>
           )}
 
