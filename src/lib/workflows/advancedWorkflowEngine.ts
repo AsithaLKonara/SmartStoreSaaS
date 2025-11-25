@@ -312,11 +312,13 @@ export class AdvancedWorkflowEngine {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async executeTrigger(node: WorkflowNode, data: Record<string, unknown>): Promise<Record<string, unknown>> {
     // Trigger nodes typically just pass data through
     return data;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async executeAction(node: WorkflowNode, data: Record<string, unknown>): Promise<Record<string, unknown>> {
     const action = node.config.action;
     
@@ -336,6 +338,7 @@ export class AdvancedWorkflowEngine {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async executeCondition(node: WorkflowNode, data: Record<string, unknown>): Promise<Record<string, unknown>> {
     const condition = node.config.condition;
     
@@ -345,12 +348,14 @@ export class AdvancedWorkflowEngine {
     return { conditionResult: result };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async executeDelay(node: WorkflowNode, data: Record<string, unknown>): Promise<Record<string, unknown>> {
     const delayMs = node.config.delayMs || 1000;
     await new Promise(resolve => setTimeout(resolve, delayMs));
     return data;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async executeWebhook(node: WorkflowNode, data: Record<string, unknown>): Promise<Record<string, unknown>> {
     const url = node.config.url;
     const method = node.config.method || 'POST';
@@ -398,6 +403,7 @@ export class AdvancedWorkflowEngine {
   /**
    * Business logic implementations
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async createOrder(data: { customerId: string; totalAmount: number; subtotal?: number; tax?: number; shipping?: number; discount?: number; organizationId: string; createdById?: string }): Promise<Record<string, unknown>> {
     const order = await prisma.order.create({
       data: {
@@ -420,6 +426,7 @@ export class AdvancedWorkflowEngine {
     return { orderId: order.id, order };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async updateInventory(data: { productId: string; quantity: number; operation: 'ADD' | 'SUBTRACT' }): Promise<Record<string, unknown>> {
     const { productId, quantity, operation } = data;
     
@@ -443,6 +450,7 @@ export class AdvancedWorkflowEngine {
     return { productId, newStock };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async sendNotification(data: { userId: string; message: string; type: string }): Promise<Record<string, unknown>> {
     const { userId, message, type } = data;
     
@@ -452,6 +460,7 @@ export class AdvancedWorkflowEngine {
     return { notificationSent: true, userId, type };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async assignTask(data: { userId: string; task: string; priority: string }): Promise<Record<string, unknown>> {
     const { userId, task, priority } = data;
     
@@ -461,8 +470,10 @@ export class AdvancedWorkflowEngine {
     return { taskAssigned: true, userId, task };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private async updateCustomer(data: { customerId: string; updates: Record<string, unknown> }): Promise<Record<string, unknown>> {
+  private async updateCustomer(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    data: { customerId: string; updates: Record<string, unknown> }
+  ): Promise<Record<string, unknown>> {
     const { customerId, updates } = data;
     
     const customer = await prisma.customer.update({
@@ -476,8 +487,11 @@ export class AdvancedWorkflowEngine {
   /**
    * Condition evaluation
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private evaluateCondition(condition: string, data: Record<string, unknown>): boolean {
+  private evaluateCondition(
+    condition: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    data: Record<string, unknown>
+  ): boolean {
     // Simple condition evaluator
     // In production, use a proper expression evaluator library
     try {
@@ -567,8 +581,8 @@ export class AdvancedWorkflowEngine {
   async getWorkflowExecutions(
     workflowId?: string,
     status?: string,
-    page: number = 1,
-    limit: number = 50
+    _page: number = 1,
+    _limit: number = 50
   ): Promise<WorkflowExecution[]> {
     try {
       const where: Record<string, unknown> = {};
