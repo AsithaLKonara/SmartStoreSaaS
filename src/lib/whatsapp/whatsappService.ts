@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { realTimeSyncService, SyncEvent } from '@/lib/sync/realTimeSyncService';
+import { realTimeSyncService } from '@/lib/sync/realTimeSyncService';
 import { EventEmitter } from 'events';
 import axios, { AxiosInstance } from 'axios';
 import crypto from 'crypto';

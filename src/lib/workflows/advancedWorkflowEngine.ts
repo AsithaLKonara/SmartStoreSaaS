@@ -461,6 +461,7 @@ export class AdvancedWorkflowEngine {
     return { taskAssigned: true, userId, task };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async updateCustomer(data: { customerId: string; updates: Record<string, unknown> }): Promise<Record<string, unknown>> {
     const { customerId, updates } = data;
     
@@ -475,6 +476,7 @@ export class AdvancedWorkflowEngine {
   /**
    * Condition evaluation
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private evaluateCondition(condition: string, data: Record<string, unknown>): boolean {
     // Simple condition evaluator
     // In production, use a proper expression evaluator library
