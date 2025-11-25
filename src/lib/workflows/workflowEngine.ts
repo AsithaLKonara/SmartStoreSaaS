@@ -466,17 +466,17 @@ export class WorkflowEngine {
     }
   }
 
-  private async createPurchaseOrder(data: Record<string, unknown>): Promise<void> {
+  private async createPurchaseOrder(_data: Record<string, unknown>): Promise<void> {
     // Create purchase order logic
     console.log('Creating purchase order for low stock items');
   }
 
-  private async notifySupplier(data: Record<string, unknown>): Promise<void> {
+  private async notifySupplier(_data: Record<string, unknown>): Promise<void> {
     // Notify supplier logic
     console.log('Notifying supplier about low stock');
   }
 
-  private async updateInventoryStatus(data: Record<string, unknown>): Promise<void> {
+  private async updateInventoryStatus(_data: Record<string, unknown>): Promise<void> {
     // Update inventory status logic
     console.log('Updating inventory status');
   }
@@ -515,23 +515,23 @@ export class WorkflowEngine {
     }
   }
 
-  private async createCustomerProfile(data: Record<string, unknown>): Promise<void> {
+  private async createCustomerProfile(_data: Record<string, unknown>): Promise<void> {
     // Create customer profile logic
     console.log('Creating customer profile');
   }
 
-  private async assignCustomerSegment(data: Record<string, unknown>): Promise<void> {
+  private async assignCustomerSegment(_data: Record<string, unknown>): Promise<void> {
     // Assign customer segment logic
     console.log('Assigning customer segment');
   }
 
-  private async scheduleFollowUp(data: Record<string, unknown>): Promise<void> {
+  private async scheduleFollowUp(_data: Record<string, unknown>): Promise<void> {
     // Schedule follow-up logic
     console.log('Scheduling follow-up');
   }
 
   // Payment Processing Actions
-  private async validatePayment(data: Record<string, unknown>): Promise<void> {
+  private async validatePayment(_data: Record<string, unknown>): Promise<void> {
     // Validate payment logic
     console.log('Validating payment');
   }
@@ -555,7 +555,7 @@ export class WorkflowEngine {
     }
   }
 
-  private async triggerFulfillment(data: Record<string, unknown>): Promise<void> {
+  private async triggerFulfillment(_data: Record<string, unknown>): Promise<void> {
     // Trigger fulfillment logic
     console.log('Triggering fulfillment');
   }
@@ -567,7 +567,7 @@ export class WorkflowEngine {
   }
 
   // Get workflow statistics
-  async getWorkflowStats(organizationId: string): Promise<Record<string, unknown>> {
+  async getWorkflowStats(_organizationId: string): Promise<Record<string, unknown>> {
     // This would query workflow execution statistics
     return {
       totalExecutions: 0,
