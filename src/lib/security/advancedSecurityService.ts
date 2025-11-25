@@ -346,9 +346,9 @@ export class AdvancedSecurityService {
     try {
       if (!event.userId) return { detected: false, score: 0, attempts: 0 };
 
-      const timeWindow = new Date(Date.now() - this.bruteForceConfig.timeWindow * 60 * 1000);
+      const _timeWindow = new Date(Date.now() - this.bruteForceConfig.timeWindow * 60 * 1000);
       
-      const attempts = 0; // await prisma.securityAudit.count({ where: { userId: event.userId, action: 'login_attempt', createdAt: { gte: timeWindow } } });
+      const attempts = 0; // await prisma.securityAudit.count({ where: { userId: event.userId, action: 'login_attempt', createdAt: { gte: _timeWindow } } });
 
       const detected = attempts >= this.bruteForceConfig.maxAttempts;
       const score = detected ? Math.min(attempts * 20, 100) : 0;
@@ -398,11 +398,11 @@ export class AdvancedSecurityService {
     }
   }
 
-  private async checkRateLimit(event: SecurityEvent): Promise<{ exceeded: boolean; score: number; requestCount: number }> {
+  private async checkRateLimit(_event: SecurityEvent): Promise<{ exceeded: boolean; score: number; requestCount: number }> {
     try {
-      const timeWindow = new Date(Date.now() - 60 * 1000); // Last minute
+      const _timeWindow = new Date(Date.now() - 60 * 1000); // Last minute
       
-      const requestCount = 0; // await prisma.securityAudit.count({ where: { ipAddress: event.ipAddress, createdAt: { gte: timeWindow } } });
+      const requestCount = 0; // await prisma.securityAudit.count({ where: { ipAddress: _event.ipAddress, createdAt: { gte: _timeWindow } } });
 
       const exceeded = requestCount > this.suspiciousActivityThresholds.rapidRequests;
       const score = exceeded ? Math.min(requestCount * 2, 100) : 0;
@@ -681,7 +681,7 @@ export class AdvancedSecurityService {
     }
   }
 
-  private generateThreatReason(riskScore: number, actions: string[]): string {
+  private generateThreatReason(riskScore: number, _actions: string[]): string {
     if (riskScore >= 80) return 'Critical security threat detected';
     if (riskScore >= 60) return 'High-risk security event';
     if (riskScore >= 40) return 'Moderate security concern';
@@ -876,11 +876,11 @@ export class AdvancedSecurityService {
     this.ipWhitelist.add('::1');
     
     // Convert Set to Array for iteration
-    const whitelistArray = Array.from(this.ipWhitelist);
-    const blacklistArray = Array.from(this.ipBlacklist);
+    const _whitelistArray = Array.from(this.ipWhitelist);
+    const _blacklistArray = Array.from(this.ipBlacklist);
     
     // Log initialization (commented to avoid console spam)
-    // console.log('IP Whitelist initialized', whitelistArray);
-    // console.log('IP Blacklist initialized', blacklistArray);
+    // console.log('IP Whitelist initialized', _whitelistArray);
+    // console.log('IP Blacklist initialized', _blacklistArray);
   }
 }

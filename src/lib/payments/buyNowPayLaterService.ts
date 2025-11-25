@@ -200,7 +200,7 @@ export class BuyNowPayLaterService {
     amount: number,
     currency: string,
     orderId: string,
-    customerInfo: Record<string, unknown>
+    _customerInfo: Record<string, unknown>
   ): Promise<BNPLSession> {
     // PayPal Pay Later uses PayPal Orders API
     const baseUrl = provider.environment === 'production'

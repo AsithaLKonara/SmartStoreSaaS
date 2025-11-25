@@ -27,7 +27,7 @@ export class DarkModeService {
   private initializeTheme(): void {
     // Check for saved theme preference or default to system
     const savedTheme = this.getStoredTheme();
-    const systemPrefersDark = this.getSystemPreference();
+    const _systemPrefersDark = this.getSystemPreference();
     
     if (savedTheme) {
       this.applyTheme(savedTheme);

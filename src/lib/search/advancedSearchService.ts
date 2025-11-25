@@ -437,7 +437,7 @@ export class AdvancedSearchService {
     return highlights;
   }
 
-  private async generateSearchAnalytics(organizationId: string, options: SearchOptions): Promise<SearchAnalytics> {
+  private async generateSearchAnalytics(organizationId: string, _options: SearchOptions): Promise<SearchAnalytics> {
     // Get facets for products
     const categories = await prisma.product.groupBy({
       by: ['categoryId'],

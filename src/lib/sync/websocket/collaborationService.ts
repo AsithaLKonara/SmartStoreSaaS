@@ -24,7 +24,7 @@ export class CollaborationService {
     documentId: string,
     userId: string,
     userName: string,
-    ws: WebSocket
+    _ws: WebSocket
   ): CollaborationSession {
     let session = this.sessions.get(sessionId);
     

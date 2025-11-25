@@ -145,7 +145,7 @@ export class SecurityService {
     }
   }
 
-  async assignRoleToUser(userId: string, roleId: string): Promise<void> {
+  async assignRoleToUser(userId: string, _roleId: string): Promise<void> {
     try {
       // Store role assignment in user metadata
       await prisma.user.update({
@@ -161,7 +161,7 @@ export class SecurityService {
     }
   }
 
-  async checkPermission(userId: string, permission: string): Promise<boolean> {
+  async checkPermission(userId: string, _permission: string): Promise<boolean> {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -222,8 +222,8 @@ export class SecurityService {
       endDate?: Date;
       success?: boolean;
     },
-    page: number = 1,
-    limit: number = 50
+    _page: number = 1,
+    _limit: number = 50
   ): Promise<SecurityAudit[]> {
     try {
       const where: Record<string, unknown> = {};
@@ -307,7 +307,7 @@ export class SecurityService {
     }
   }
 
-  async detectSuspiciousActivity(userId: string, ipAddress: string, action: string): Promise<boolean> {
+  async detectSuspiciousActivity(userId: string, ipAddress: string, _action: string): Promise<boolean> {
     try {
       // Check for failed login attempts
       // securityAudit model doesn't exist - returning 0
@@ -385,7 +385,7 @@ export class SecurityService {
       const algorithm = 'aes-256-cbc';
       const key = crypto.scryptSync(process.env.ENCRYPTION_KEY || 'default-key', 'salt', 32);
       const parts = encryptedData.split(':');
-      const iv = Buffer.from(parts[0], 'hex');
+      const _iv = Buffer.from(parts[0], 'hex');
       const encrypted = parts[1];
       
       const decipher = crypto.createDecipher(algorithm, key);

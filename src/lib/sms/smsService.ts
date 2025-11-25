@@ -118,7 +118,7 @@ export class SMSService {
     };
   }
 
-  private async sendWithAWSSNS(options: SMSOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  private async sendWithAWSSNS(_options: SMSOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
     // AWS SNS implementation would go here
     // For now, return error since AWS SDK is not available
     return {

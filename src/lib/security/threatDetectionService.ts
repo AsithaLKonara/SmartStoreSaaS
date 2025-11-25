@@ -62,8 +62,8 @@ export class ThreatDetectionService {
   }
 
   private async detectBruteForce(
-    organizationId: string,
-    event: ThreatEvent
+    _organizationId: string,
+    _event: ThreatEvent
   ): Promise<{ isThreat: boolean; action: string }> {
     // Count failed login attempts
     const failedAttempts = await prisma.activity.count({
@@ -145,8 +145,8 @@ export class ThreatDetectionService {
   }
 
   private async detectRateLimitExceeded(
-    organizationId: string,
-    event: ThreatEvent
+    _organizationId: string,
+    _event: ThreatEvent
   ): Promise<{ isThreat: boolean; action: string }> {
     // Check request rate
     const recentRequests = await prisma.activity.count({

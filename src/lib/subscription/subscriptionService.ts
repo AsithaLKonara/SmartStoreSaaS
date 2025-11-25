@@ -321,7 +321,7 @@ export class SubscriptionService {
         source: 'subscription-service',
       });
 
-      const subMetadata = (subscription.metadata as Record<string, unknown>) || {};
+      const _subMetadata = (subscription.metadata as Record<string, unknown>) || {};
       return {
         id: subscription.id,
         customerId: subscription.customerId,
@@ -428,16 +428,16 @@ export class SubscriptionService {
       // Get user and plan for email
       const userId = subMetadata.userId;
       const planId = subMetadata.planId;
-      const user = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
+      const _user = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
       const organization = subscription.customer?.organizationId ? await prisma.organization.findUnique({
         where: { id: subscription.customer.organizationId },
       }) : null;
-      const plan = planId && organization ? ((organization.settings as Record<string, unknown> & { subscriptionPlans?: Array<Record<string, unknown>> })?.subscriptionPlans || []).find((p: Record<string, unknown> & { id?: string }) => p.id === planId) : null;
+      const _plan = planId && organization ? ((organization.settings as Record<string, unknown> & { subscriptionPlans?: Array<Record<string, unknown>> })?.subscriptionPlans || []).find((p: Record<string, unknown> & { id?: string }) => p.id === planId) : null;
 
       // Send cancellation email
       await this.sendCancellationEmail(updatedSubscription.id);
 
-      const updatedMetadata = (updatedSubscription.metadata as Record<string, unknown>) || {};
+      const _updatedMetadata = (updatedSubscription.metadata as Record<string, unknown>) || {};
       return {
         id: updatedSubscription.id,
         customerId: updatedSubscription.customerId,
@@ -495,7 +495,7 @@ export class SubscriptionService {
       await this.checkUsageLimits(subscriptionId, metricType);
 
       // Get current subscription
-      const subscriptionRecord2 = await prisma.subscription.findUnique({
+      const _subscriptionRecord2 = await prisma.subscription.findUnique({
         where: { id: subscriptionId },
         select: { metadata: true }
       });
@@ -762,7 +762,7 @@ export class SubscriptionService {
     }
   }
 
-  async getSubscriptionBoxes(customerId: string): Promise<Array<Record<string, unknown>>> {
+  async getSubscriptionBoxes(_customerId: string): Promise<Array<Record<string, unknown>>> {
     try {
       // Note: SubscriptionBox model doesn't exist in the schema
       // This functionality needs to be implemented with actual models
@@ -810,7 +810,7 @@ export class SubscriptionService {
 
     const limits = plan.limits || {};
     const limit = limits[metricType];
-      const currentUsage = await this.getCurrentUsage(subscriptionId, metricType);
+      const _currentUsage = await this.getCurrentUsage(subscriptionId, metricType);
 
     // Get usage for current period from metadata
     const usageRecords = subMetadata.usageRecords || [];

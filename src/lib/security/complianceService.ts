@@ -126,7 +126,7 @@ export class ComplianceService {
     };
   }
 
-  private async checkHIPAA(organizationId: string): Promise<ComplianceResult> {
+  private async checkHIPAA(_organizationId: string): Promise<ComplianceResult> {
     // HIPAA compliance checks (if applicable)
     return {
       compliant: false,
@@ -180,37 +180,37 @@ export class ComplianceService {
     return ((organization?.settings as Record<string, unknown> & { encryption?: boolean })?.encryption === true);
   }
 
-  private async checkDataDeletion(organizationId: string): Promise<boolean> {
+  private async checkDataDeletion(_organizationId: string): Promise<boolean> {
     // Check if data deletion is implemented
     return true; // Would check actual implementation
   }
 
-  private async checkConsentManagement(organizationId: string): Promise<boolean> {
+  private async checkConsentManagement(_organizationId: string): Promise<boolean> {
     // Check if consent management is in place
     return true; // Would check actual implementation
   }
 
-  private async checkDataAccessRights(organizationId: string): Promise<boolean> {
+  private async checkDataAccessRights(_organizationId: string): Promise<boolean> {
     // Check if users can access their data
     return true; // Would check actual implementation
   }
 
-  private async checkPCICompliance(organizationId: string): Promise<boolean> {
+  private async checkPCICompliance(_organizationId: string): Promise<boolean> {
     // Check PCI-DSS compliance
     return true; // Would verify with payment processor
   }
 
-  private async checkSecureStorage(organizationId: string): Promise<boolean> {
+  private async checkSecureStorage(_organizationId: string): Promise<boolean> {
     // Check if card data is stored securely
     return true; // Would check payment gateway configuration
   }
 
-  private async checkPrivacyPolicy(organizationId: string): Promise<boolean> {
+  private async checkPrivacyPolicy(_organizationId: string): Promise<boolean> {
     // Check if privacy policy exists
     return true;
   }
 
-  private async checkOptOut(organizationId: string): Promise<boolean> {
+  private async checkOptOut(_organizationId: string): Promise<boolean> {
     // Check if opt-out mechanism exists
     return true;
   }

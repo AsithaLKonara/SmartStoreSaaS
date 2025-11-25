@@ -590,7 +590,7 @@ export class SocialCommerceService {
       throw new Error('Facebook integration not found or inactive');
     }
 
-    const facebookService = new FacebookCommerceService(
+    const _facebookService = new FacebookCommerceService(
       integration.id,
       integration.pageId,
       integration.accessToken
@@ -691,7 +691,7 @@ export class SocialCommerceService {
       throw new Error('Instagram integration not found or inactive');
     }
 
-    const instagramService = new InstagramShoppingService(
+    const _instagramService = new InstagramShoppingService(
       integration.id,
       integration.businessAccountId,
       integration.accessToken
