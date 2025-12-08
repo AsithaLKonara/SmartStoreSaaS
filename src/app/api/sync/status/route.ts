@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { validateOrganizationId } from '@/lib/prisma';
+import { handleApiError, validateSession } from '@/lib/api-error-handler';
 import { realTimeSyncService } from '@/lib/sync/realTimeSyncService';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ error: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get('organizationId');
+    const organizationIdParam = searchParams.get('organizationId');
+    const organizationId = organizationIdParam || validateOrganizationId(session?.user?.organizationId);
 
     if (!organizationId) {
       return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
@@ -21,18 +25,15 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json(status);
   } catch (error) {
-    console.error('Sync status error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

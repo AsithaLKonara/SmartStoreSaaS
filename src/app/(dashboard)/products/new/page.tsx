@@ -64,7 +64,7 @@ export default function NewProductPage() {
 
   useEffect(() => {
     if (status === 'loading') return;
-    if (!session) {
+    if (!session?.user?.organizationId) {
       router.push('/auth/signin');
       return;
     }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { MagentoService } from '@/lib/integrations/magento/magentoService';
@@ -7,7 +7,7 @@ import { MagentoService } from '@/lib/integrations/magento/magentoService';
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const { type } = body; // 'products', 'orders', 'all'
 
     const integration = await prisma.magentoIntegration.findFirst({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId: session?.user?.organizationId },
     });
 
     if (!integration || !integration.isActive) {

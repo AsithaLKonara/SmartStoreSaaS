@@ -1,0 +1,230 @@
+{
+  "routes": [
+    {
+      "path": "/api/products",
+      "methods": ["GET", "POST", "PUT", "DELETE"],
+      "prismaModels": ["product", "category"],
+      "requiresEmail": false,
+      "sampleGetResponse": {
+        "products": [],
+        "pagination": { "total": 0, "page": 1, "limit": 50 }
+      },
+      "samplePostBody": {
+        "name": "Test Product",
+        "sku": "TEST-001",
+        "price": 99.99,
+        "stockQuantity": 10,
+        "categoryId": "cat-1"
+      }
+    },
+    {
+      "path": "/api/products/bulk-delete",
+      "methods": ["POST"],
+      "prismaModels": ["product"],
+      "requiresEmail": false,
+      "samplePostBody": {
+        "productIds": ["product-1", "product-2"]
+      }
+    },
+    {
+      "path": "/api/orders",
+      "methods": ["GET", "POST", "PUT"],
+      "prismaModels": ["order", "customer", "product"],
+      "requiresEmail": false,
+      "sampleGetResponse": {
+        "orders": [],
+        "pagination": { "total": 0, "page": 1, "limit": 50 }
+      },
+      "samplePostBody": {
+        "customerId": "cust-1",
+        "items": [
+          { "productId": "prod-1", "quantity": 2, "price": 99.99 }
+        ]
+      }
+    },
+    {
+      "path": "/api/analytics",
+      "methods": ["GET"],
+      "prismaModels": ["order", "product", "customer"],
+      "requiresEmail": false,
+      "sampleGetResponse": {
+        "revenue": 0,
+        "orders": 0,
+        "customers": 0
+      }
+    },
+    {
+      "path": "/api/analytics/dashboard-stats",
+      "methods": ["GET"],
+      "prismaModels": ["order", "product", "customer"],
+      "requiresEmail": false,
+      "sampleGetResponse": {
+        "totalRevenue": 0,
+        "totalOrders": 0,
+        "totalCustomers": 0
+      }
+    },
+    {
+      "path": "/api/integrations/shopify",
+      "methods": ["GET", "POST"],
+      "prismaModels": ["shopifyIntegration"],
+      "services": ["shopifyService"],
+      "requiresEmail": false,
+      "sampleGetResponse": {
+        "connected": false,
+        "storeName": null
+      },
+      "samplePostBody": {
+        "apiKey": "test-key",
+        "apiSecret": "test-secret",
+        "storeName": "test-store"
+      }
+    },
+    {
+      "path": "/api/integrations/facebook",
+      "methods": ["GET", "POST"],
+      "prismaModels": ["facebookIntegration"],
+      "services": ["facebookService"],
+      "requiresEmail": false
+    },
+    {
+      "path": "/api/integrations/instagram",
+      "methods": ["GET", "POST"],
+      "prismaModels": ["instagramIntegration"],
+      "services": ["instagramService"],
+      "requiresEmail": false
+    },
+    {
+      "path": "/api/integrations/tiktok",
+      "methods": ["GET", "POST"],
+      "prismaModels": ["tiktokIntegration"],
+      "services": ["tiktokService"],
+      "requiresEmail": false
+    },
+    {
+      "path": "/api/integrations/pinterest",
+      "methods": ["GET", "POST"],
+      "prismaModels": ["pinterestIntegration"],
+      "services": ["pinterestService"],
+      "requiresEmail": false
+    },
+    {
+      "path": "/api/integrations/magento",
+      "methods": ["GET", "POST"],
+      "prismaModels": ["magentoIntegration"],
+      "services": ["magentoService"],
+      "requiresEmail": false
+    },
+    {
+      "path": "/api/integrations/woocommerce",
+      "methods": ["GET", "POST"],
+      "prismaModels": ["wooCommerceIntegration"],
+      "services": ["woocommerceService"],
+      "requiresEmail": false
+    },
+    {
+      "path": "/api/integrations/crm",
+      "methods": ["GET", "POST"],
+      "prismaModels": ["crmIntegration"],
+      "services": ["crmService"],
+      "requiresEmail": false
+    },
+    {
+      "path": "/api/integrations/accounting",
+      "methods": ["GET", "POST"],
+      "prismaModels": ["accountingIntegration"],
+      "services": ["accountingService"],
+      "requiresEmail": false
+    },
+    {
+      "path": "/api/integrations/setup",
+      "methods": ["GET", "POST"],
+      "prismaModels": [],
+      "requiresEmail": false
+    },
+    {
+      "path": "/api/ai/business-intelligence",
+      "methods": ["GET", "POST"],
+      "prismaModels": [],
+      "services": ["businessIntelligenceService"],
+      "requiresEmail": false
+    },
+    {
+      "path": "/api/ai/customer-intelligence",
+      "methods": ["GET", "POST"],
+      "prismaModels": [],
+      "services": ["customerIntelligenceService"],
+      "requiresEmail": false
+    },
+    {
+      "path": "/api/ai/ml/predict",
+      "methods": ["POST"],
+      "prismaModels": [],
+      "services": ["mlService"],
+      "requiresEmail": false,
+      "samplePostBody": {
+        "model": "sales-forecast",
+        "input": {}
+      }
+    },
+    {
+      "path": "/api/ai/ml/train",
+      "methods": ["POST"],
+      "prismaModels": [],
+      "services": ["mlService"],
+      "requiresEmail": false,
+      "samplePostBody": {
+        "model": "sales-forecast",
+        "data": []
+      }
+    },
+    {
+      "path": "/api/ai/analytics/advanced",
+      "methods": ["GET", "POST"],
+      "prismaModels": [],
+      "services": ["analyticsService"],
+      "requiresEmail": false
+    },
+    {
+      "path": "/api/ai/analytics/inventory",
+      "methods": ["GET", "POST"],
+      "prismaModels": [],
+      "services": ["analyticsService"],
+      "requiresEmail": false
+    },
+    {
+      "path": "/api/health",
+      "methods": ["GET"],
+      "prismaModels": [],
+      "requiresEmail": false,
+      "noAuth": true,
+      "sampleGetResponse": {
+        "status": "healthy",
+        "services": {}
+      }
+    },
+    {
+      "path": "/api/security",
+      "methods": ["GET"],
+      "prismaModels": ["user", "activity"],
+      "requiresEmail": false,
+      "sampleGetResponse": {
+        "mfaEnabled": 0,
+        "recentThreats": []
+      }
+    },
+    {
+      "path": "/api/search/advanced",
+      "methods": ["GET", "POST"],
+      "prismaModels": ["product", "customer"],
+      "requiresEmail": false
+    },
+    {
+      "path": "/api/omnichannel",
+      "methods": ["GET", "POST"],
+      "prismaModels": [],
+      "requiresEmail": false
+    }
+  ]
+}
+

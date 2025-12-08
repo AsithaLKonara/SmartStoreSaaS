@@ -1,48 +1,58 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma, executePrismaQuery, validateOrganizationId } from '@/lib/prisma';
+import { handleApiError, validateSession } from '@/lib/api-error-handler';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+    
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
     // Current period data (last 30 days)
-    const currentOrders = await prisma.order.findMany({
+    const [currentOrders, currentCustomers, previousOrders, previousCustomers] = await Promise.all([
+      executePrismaQuery(() =>
+        prisma.order.findMany({
       where: {
-        organizationId: session.user.organizationId,
+            organizationId,
         createdAt: { gte: thirtyDaysAgo },
       },
-    });
-
-    const currentCustomers = await prisma.customer.findMany({
+        })
+      ),
+      executePrismaQuery(() =>
+        prisma.customer.findMany({
       where: {
-        organizationId: session.user.organizationId,
+            organizationId,
         createdAt: { gte: thirtyDaysAgo },
       },
-    });
-
-    // Previous period data (30-60 days ago)
-    const previousOrders = await prisma.order.findMany({
+        })
+      ),
+      executePrismaQuery(() =>
+        prisma.order.findMany({
       where: {
-        organizationId: session.user.organizationId,
+            organizationId,
         createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo },
       },
-    });
-
-    const previousCustomers = await prisma.customer.findMany({
+        })
+      ),
+      executePrismaQuery(() =>
+        prisma.customer.findMany({
       where: {
-        organizationId: session.user.organizationId,
+            organizationId,
         createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo },
       },
-    });
+        })
+      ),
+    ]);
 
     // Calculate metrics
     const currentRevenue = currentOrders.reduce((sum, order) => sum + order.totalAmount, 0);
@@ -63,13 +73,22 @@ export async function GET() {
       ? ((currentCustomerCount - previousCustomerCount) / previousCustomerCount) * 100 
       : (currentCustomerCount > 0 ? 100 : 0);
 
-    // Get total products count
-    const totalProducts = await prisma.product.count({
+    // Get total products and customers count
+    const [totalProducts, totalCustomers] = await Promise.all([
+      executePrismaQuery(() =>
+        prisma.product.count({
       where: {
-        organizationId: session.user.organizationId,
+            organizationId,
         isActive: true,
       },
-    });
+        })
+      ),
+      executePrismaQuery(() =>
+        prisma.customer.count({
+          where: { organizationId },
+        })
+      ),
+    ]);
 
     // Product change is based on active products (simplified)
     const productChange = 0; // For now, we don't track product changes over time
@@ -77,9 +96,7 @@ export async function GET() {
     return NextResponse.json({
       totalRevenue: Math.round(currentRevenue * 100) / 100,
       totalOrders: currentOrderCount,
-      totalCustomers: await prisma.customer.count({
-        where: { organizationId: session.user.organizationId },
-      }),
+      totalCustomers,
       totalProducts,
       revenueChange: Math.round(revenueChange * 10) / 10,
       ordersChange: Math.round(orderChange * 10) / 10,
@@ -87,8 +104,8 @@ export async function GET() {
       productsChange: productChange,
     });
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 }
 

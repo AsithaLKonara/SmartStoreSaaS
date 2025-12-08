@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { Prisma } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { securityService } from '@/lib/security/securityService';
 import { prisma } from '@/lib/prisma';
@@ -23,13 +24,13 @@ function getPermissionsForRole(role: string): string[] {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session || !session.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
-    const organizationId = session.user.organizationId;
+    const organizationId = session?.user?.organizationId;
 
     switch (type) {
       case 'audit-logs':
@@ -90,7 +91,7 @@ export async function GET(request: NextRequest) {
         });
         
         return NextResponse.json({ 
-          mfaEnabled: (userPref?.notifications as Record<string, unknown> & { mfaEnabled?: boolean })?.mfaEnabled || false,
+          mfaEnabled: (userPref?.notifications as Prisma.InputJsonValue & { mfaEnabled?: boolean })?.mfaEnabled || false,
         });
 
       case 'security-summary':
@@ -113,7 +114,7 @@ export async function GET(request: NextRequest) {
         });
         
         const mfaEnabledUsers = usersWithMFA.filter((pref) => {
-          const notifications = pref.notifications as Record<string, unknown>;
+          const notifications = pref.notifications as Prisma.InputJsonValue;
           return notifications?.mfaEnabled === true;
         }).length;
 
@@ -153,13 +154,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session || !session.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
     const { action, data } = body;
-    const organizationId = session.user.organizationId;
+    const organizationId = session?.user?.organizationId;
 
     if (!organizationId) {
       return NextResponse.json({ error: 'Organization ID not found' }, { status: 400 });
@@ -251,10 +252,10 @@ export async function POST(request: NextRequest) {
           data: { 
             settings: {
               securitySettings: settings,
-            } as Record<string, unknown>,
+            } as Prisma.InputJsonValue,
           },
         });
-        return NextResponse.json({ settings: (updatedSettings.settings as Record<string, unknown> & { securitySettings?: unknown })?.securitySettings });
+        return NextResponse.json({ settings: (updatedSettings.settings as Prisma.InputJsonValue & { securitySettings?: unknown })?.securitySettings });
 
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

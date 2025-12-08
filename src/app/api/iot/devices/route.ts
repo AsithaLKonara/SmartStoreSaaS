@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { IoTService } from '@/lib/iot/iotService';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     if (action === 'register') {
       const { warehouseId, deviceId, deviceType, name, location } = body;
       const device = await service.registerDevice(
-        session.user.organizationId,
+        session?.user?.organizationId,
         warehouseId || null,
         deviceId,
         deviceType,
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     } else if (action === 'smart-shelf') {
       const { warehouseId, productId, location, threshold } = body;
       const device = await service.createSmartShelf(
-        session.user.organizationId,
+        session?.user?.organizationId,
         warehouseId,
         productId,
         location,

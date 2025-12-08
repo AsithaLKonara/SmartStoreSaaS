@@ -127,3 +127,158 @@ global.WebSocket = jest.fn().mockImplementation(() => ({
   CLOSED: 3,
 }))
 
+// Mock next-auth and next-auth/next before any imports
+jest.mock('next-auth', () => ({
+  getServerSession: jest.fn(),
+  default: jest.fn(),
+}))
+
+jest.mock('next-auth/next', () => ({
+  getServerSession: jest.fn(),
+}))
+
+jest.mock('next-auth/react', () => ({
+  signIn: jest.fn(),
+  signOut: jest.fn(),
+  useSession: jest.fn(() => ({ data: null, status: 'unauthenticated' })),
+  SessionProvider: ({ children }) => children,
+}))
+
+// Mock Twilio
+jest.mock('twilio', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
+    messages: {
+      create: jest.fn(),
+    },
+  })),
+}))
+
+// Mock courier service before Prisma to prevent initialization issues
+jest.mock('@/lib/courier/sriLankaCourierService', () => ({
+  sriLankaCourierService: {
+    track: jest.fn(),
+    getCouriers: jest.fn().mockResolvedValue([]),
+  },
+}));
+
+// Mock real-time sync service
+jest.mock('@/lib/sync/realTimeSyncService', () => ({
+  realTimeSyncService: {
+    connect: jest.fn(),
+    disconnect: jest.fn(),
+    isConnected: jest.fn().mockReturnValue(false),
+    getStatus: jest.fn().mockResolvedValue({
+      isOnline: false,
+      pendingEvents: 0,
+      activeConnections: 0,
+    }),
+  },
+}));
+
+// Mock Prisma client browser check
+jest.mock('@/lib/prisma', () => {
+  const mockPrisma = {
+    user: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    organization: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    product: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    order: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    customer: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+    payment: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    warehouse: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    inventory: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    courier: {
+      findUnique: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([]),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    userPreference: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      upsert: jest.fn(),
+    },
+    securityEvent: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      count: jest.fn(),
+    },
+    subscription: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    searchHistory: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+    report: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    $transaction: jest.fn(),
+    $queryRaw: jest.fn(),
+  };
+  return { prisma: mockPrisma };
+})
+

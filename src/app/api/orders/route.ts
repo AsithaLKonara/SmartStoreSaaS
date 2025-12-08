@@ -1,18 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../lib/auth';
-import { prisma } from '../../../lib/prisma';
+import { prisma, executePrismaQuery, validateOrganizationId } from '../../../lib/prisma';
+import { handleApiError, validateSession } from '../../../lib/api-error-handler';
 import { generateOrderNumber } from '../../../lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+    
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+    const paymentStatus = searchParams.get('paymentStatus');
     const search = searchParams.get('search');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
@@ -31,7 +36,7 @@ export async function GET(request: NextRequest) {
         };
       }>;
     } = {
-      organizationId: session.user.organizationId,
+      organizationId,
     };
 
     if (status) {
@@ -52,9 +57,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count for pagination
-    const total = await prisma.order.count({ where });
+    const total = await executePrismaQuery(() =>
+      prisma.order.count({ where })
+    );
 
-    const orders = await prisma.order.findMany({
+    const orders = await executePrismaQuery(() =>
+      prisma.order.findMany({
       where,
       include: {
         customer: true,
@@ -67,7 +75,8 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,
-    });
+      })
+    );
 
     return NextResponse.json({ 
       orders, 
@@ -81,19 +90,20 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Error fetching orders:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId || session.user.organizationId === null) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
     
-    const organizationId = session.user.organizationId;
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const body = await request.json();
     const {
@@ -112,7 +122,8 @@ export async function POST(request: NextRequest) {
     const orderNumber = generateOrderNumber();
 
     // Use transaction to ensure data consistency
-    const order = await prisma.$transaction(async (tx) => {
+    const order = await executePrismaQuery(async () => {
+      return await prisma.$transaction(async (tx) => {
       // Validate all products exist and calculate total within transaction
       let totalAmount = 0;
       const validatedItems = [];
@@ -172,11 +183,12 @@ export async function POST(request: NextRequest) {
           },
         },
       });
+      });
     });
 
     return NextResponse.json({ order }, { status: 201 });
   } catch (error) {
-    console.error('Error creating order:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 } 

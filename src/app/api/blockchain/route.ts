@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { BlockchainService } from '@/lib/blockchain/blockchainService';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     if (type === 'payment' && action === 'create') {
       const { orderId, amount, currency, fromAddress } = body;
       const txHash = await service.processCryptoPayment(
-        session.user.organizationId,
+        session?.user?.organizationId,
         orderId,
         amount,
         currency,
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     } else if (type === 'supply_chain' && action === 'track') {
       const { productId, fromLocation, toLocation, metadata } = body;
       const txHash = await service.trackSupplyChain(
-        session.user.organizationId,
+        session?.user?.organizationId,
         productId,
         fromLocation,
         toLocation,
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     } else if (type === 'nft' && action === 'create') {
       const { productId, metadata } = body;
       const txHash = await service.createNFTCertificate(
-        session.user.organizationId,
+        session?.user?.organizationId,
         productId,
         metadata
       );
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 

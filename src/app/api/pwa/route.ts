@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { Prisma } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { advancedPWAService } from '@/lib/pwa/advancedPWAService';
 import { prisma } from '@/lib/prisma';
@@ -7,13 +8,13 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session || !session.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
-    const organizationId = session.user.organizationId;
+    const organizationId = session?.user?.organizationId;
 
     if (!organizationId) {
       return NextResponse.json({ error: 'Organization ID not found' }, { status: 400 });
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
           where: { id: organizationId || '' },
           select: { settings: true },
         });
-        const currentStats = (org?.settings as Record<string, unknown> & { pwaStats?: { totalInstalls: number; activeUsers: number; offlineUsage: number; pushSubscriptions: number } })?.pwaStats || {
+        const currentStats = (org?.settings as Prisma.InputJsonValue & { pwaStats?: { totalInstalls: number; activeUsers: number; offlineUsage: number; pushSubscriptions: number } })?.pwaStats || {
           totalInstalls: 0,
           activeUsers: 0,
           offlineUsage: 0,
@@ -80,13 +81,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session || !session.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
     const { action, data } = body;
-    const organizationId = session.user.organizationId;
+    const organizationId = session?.user?.organizationId;
 
     if (!organizationId) {
       return NextResponse.json({ error: 'Organization ID not found' }, { status: 400 });
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
               metadata: {
                 subscription: subscription.toJSON(),
                 isActive: true,
-              } as Record<string, unknown>,
+              } as Prisma.InputJsonValue,
             },
           });
         }
@@ -198,7 +199,7 @@ export async function POST(request: NextRequest) {
                 pushSubscriptions,
                 recordedAt: new Date(),
               },
-            } as Record<string, unknown>,
+            } as Prisma.InputJsonValue,
           },
         });
         return NextResponse.json({ success: true });

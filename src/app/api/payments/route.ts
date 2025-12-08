@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { Prisma } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma, executePrismaQuery, validateOrganizationId } from '@/lib/prisma';
+import { handleApiError, validateSession } from '@/lib/api-error-handler';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+    
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
@@ -30,7 +35,7 @@ export async function GET(request: NextRequest) {
         transactionId?: { contains: string; mode: 'insensitive' };
       }>;
     } = {
-      organizationId: session.user.organizationId,
+      organizationId,
     };
 
     if (status) {
@@ -50,7 +55,8 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const payments = await prisma.payment.findMany({
+    const payments = await executePrismaQuery(() =>
+      prisma.payment.findMany({
       where,
       include: {
         order: {
@@ -66,7 +72,8 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: { createdAt: 'desc' },
-    });
+      })
+    );
 
     // Transform the data to match the frontend interface
     const transformedPayments = payments.map(payment => ({
@@ -77,7 +84,7 @@ export async function GET(request: NextRequest) {
       amount: payment.amount,
       method: payment.method,
       status: payment.status,
-      transactionId: (payment.metadata as Record<string, unknown> & { transactionId?: string })?.transactionId || null,
+      transactionId: (payment.metadata as Prisma.InputJsonValue & { transactionId?: string })?.transactionId || null,
       gateway: payment.gateway,
       createdAt: payment.createdAt,
       updatedAt: payment.updatedAt,
@@ -86,17 +93,20 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ payments: transformedPayments });
   } catch (error) {
-    console.error('Error fetching payments:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+    
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const body = await request.json();
     const {
@@ -114,31 +124,36 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if order exists and belongs to organization
-    const order = await prisma.order.findFirst({
+    const order = await executePrismaQuery(() =>
+      prisma.order.findFirst({
       where: {
         id: orderId,
-        organizationId: session.user.organizationId,
+          organizationId,
       },
-    });
+      })
+    );
 
     if (!order) {
       return NextResponse.json({ message: 'Order not found' }, { status: 404 });
     }
 
     // Check if payment already exists for this order
-    const existingPayment = await prisma.payment.findFirst({
+    const existingPayment = await executePrismaQuery(() =>
+      prisma.payment.findFirst({
       where: {
         orderId,
-        organizationId: session.user.organizationId,
+          organizationId,
       },
-    });
+      })
+    );
 
     if (existingPayment) {
       return NextResponse.json({ message: 'Payment already exists for this order' }, { status: 400 });
     }
 
     // Create payment
-    const payment = await prisma.payment.create({
+    const payment = await executePrismaQuery(() =>
+      prisma.payment.create({
       data: {
         orderId,
         amount,
@@ -148,7 +163,7 @@ export async function POST(request: NextRequest) {
           transactionId: transactionId || `TXN_${Date.now()}`,
         },
         gateway: gateway || method,
-        organizationId: session.user.organizationId,
+        organizationId,
       },
       include: {
         order: {
@@ -163,19 +178,22 @@ export async function POST(request: NextRequest) {
           },
         },
       },
-    });
+      })
+    );
 
     // Update order payment status
-    await prisma.order.update({
+    await executePrismaQuery(() =>
+      prisma.order.update({
       where: { id: orderId },
       data: {
         paymentStatus: status === 'PAID' ? 'PAID' : 'PENDING',
       },
-    });
+      })
+    );
 
     return NextResponse.json({ payment }, { status: 201 });
   } catch (error) {
-    console.error('Error creating payment:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 } 

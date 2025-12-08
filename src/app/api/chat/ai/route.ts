@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { aiChatService } from '@/lib/ai/chatService';
 import { prisma } from '@/lib/prisma';
@@ -19,7 +19,7 @@ interface ChatMessageMetadata {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -78,13 +78,13 @@ export async function POST(request: NextRequest) {
       // Extract order number from message
       const orderMatch = message.match(/#?([A-Z0-9-]+)/);
       if (orderMatch) {
-        aiResponse = await aiChatService.provideOrderStatus(orderMatch[1], session.user.organizationId);
+        aiResponse = await aiChatService.provideOrderStatus(orderMatch[1], session?.user?.organizationId);
       } else {
         aiResponse = "I'd be happy to help you check your order status. Could you please provide your order number?";
       }
     } else if (message.toLowerCase().includes('product') || message.toLowerCase().includes('item')) {
       // Product discovery
-      const recommendations = await aiChatService.findProductsByDescription(message, session.user.organizationId);
+      const recommendations = await aiChatService.findProductsByDescription(message, session?.user?.organizationId);
       if (recommendations.length > 0) {
         aiResponse = `I found some products that might interest you:\n\n${recommendations
           .slice(0, 3)
@@ -120,10 +120,10 @@ export async function POST(request: NextRequest) {
       }
     } else if (message.toLowerCase().includes('help') || message.toLowerCase().includes('support')) {
       // FAQ handling
-      aiResponse = await aiChatService.answerFAQ(message, session.user.organizationId);
+      aiResponse = await aiChatService.answerFAQ(message, session?.user?.organizationId);
     } else if (conversation?.customerId && (message.toLowerCase().includes('recommend') || message.toLowerCase().includes('suggest'))) {
       // Product recommendations based on customer history
-      const recommendations = await aiChatService.recommendProducts(conversation.customerId, message, session.user.organizationId);
+      const recommendations = await aiChatService.recommendProducts(conversation.customerId, message, session?.user?.organizationId);
       if (recommendations.length > 0) {
         aiResponse = `Based on your preferences, here are some recommendations:\n\n${recommendations
           .slice(0, 3)
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
         .map((msg) => `${msg.direction}: ${msg.content}`)
         .join('\n');
 
-      aiResponse = await generateContextualResponse(message, context, session.user.organizationId);
+      aiResponse = await generateContextualResponse(message, context, session?.user?.organizationId);
     }
 
     // Save AI response to conversation
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
         type: 'TEXT',
         status: 'SENT',
         customerId: conversation?.customerId || '',
-        organizationId: session.user.organizationId,
+        organizationId: session?.user?.organizationId,
         metadata: {
           sentiment,
           isUrgent,
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
 
     // If urgent issue detected, create notification
     if (isUrgent) {
-      await createUrgentIssueNotification(conversation, message, session.user.organizationId);
+      await createUrgentIssueNotification(conversation, message, session?.user?.organizationId);
     }
 
     // Update conversation
@@ -239,7 +239,7 @@ async function createUrgentIssueNotification(conversation: ConversationForNotifi
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -261,7 +261,7 @@ export async function GET(request: NextRequest) {
         });
 
       case 'stats':
-        const stats = await getAIChatStats(session.user.organizationId);
+        const stats = await getAIChatStats(session?.user?.organizationId);
         return NextResponse.json(stats);
 
       default:

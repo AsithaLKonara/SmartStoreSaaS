@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { ShopifyService } from '@/lib/integrations/shopify/shopifyService';
@@ -7,12 +7,12 @@ import { ShopifyService } from '@/lib/integrations/shopify/shopifyService';
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const integration = await prisma.shopifyIntegration.findFirst({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId: session?.user?.organizationId },
     });
 
     if (!integration) {
@@ -37,7 +37,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -68,9 +68,9 @@ export async function POST(request: NextRequest) {
 
     // Create or update integration
     const integration = await prisma.shopifyIntegration.upsert({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId: session?.user?.organizationId },
       create: {
-        organizationId: session.user.organizationId,
+        organizationId: session?.user?.organizationId,
         shopDomain,
         accessToken,
         apiKey,
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       accessToken
     );
 
-    const webhookUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/webhooks/shopify/${session.user.organizationId}`;
+    const webhookUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/webhooks/shopify/${session?.user?.organizationId}`;
     
     try {
       // Create webhooks for key events
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -139,7 +139,7 @@ export async function PUT(request: NextRequest) {
     const { syncProducts, syncOrders, syncInventory, isActive } = body;
 
     const integration = await prisma.shopifyIntegration.findFirst({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId: session?.user?.organizationId },
     });
 
     if (!integration) {
@@ -166,12 +166,12 @@ export async function PUT(request: NextRequest) {
 export async function DELETE() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const integration = await prisma.shopifyIntegration.findFirst({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId: session?.user?.organizationId },
     });
 
     if (!integration) {

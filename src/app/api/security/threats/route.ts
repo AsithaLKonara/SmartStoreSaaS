@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { ThreatDetectionService, ThreatEvent } from '@/lib/security/threatDetectionService';
 import { FraudPreventionService } from '@/lib/security/fraudPreventionService';
@@ -7,7 +7,7 @@ import { FraudPreventionService } from '@/lib/security/fraudPreventionService';
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -25,12 +25,12 @@ export async function POST(request: NextRequest) {
       };
 
       const result = await threatService.detectThreats(
-        session.user.organizationId,
+        session?.user?.organizationId,
         threatEvent
       );
 
       if (result.isThreat) {
-        await threatService.logThreat(session.user.organizationId, threatEvent);
+        await threatService.logThreat(session?.user?.organizationId, threatEvent);
       }
 
       return NextResponse.json(result);

@@ -1,21 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma, executePrismaQuery, validateOrganizationId } from '@/lib/prisma';
+import { handleApiError, validateSession } from '@/lib/api-error-handler';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+    
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '10');
 
-    const orders = await prisma.order.findMany({
+    const orders = await executePrismaQuery(() =>
+      prisma.order.findMany({
       where: {
-        organizationId: session.user.organizationId,
+          organizationId,
       },
       include: {
         customer: {
@@ -39,7 +44,8 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { createdAt: 'desc' },
       take: limit,
-    });
+      })
+    );
 
     // Format orders for dashboard display
     const formattedOrders = orders.map(order => ({
@@ -53,8 +59,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formattedOrders);
   } catch (error) {
-    console.error('Error fetching recent orders:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 }
 

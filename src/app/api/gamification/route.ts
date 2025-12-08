@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { GamificationService } from '@/lib/gamification/gamificationService';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session || !session.user?.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       const achievements = await service.getUserAchievements(session.user.id);
       return NextResponse.json(achievements);
     } else if (type === 'leaderboard') {
-      const organizationId = session.user.organizationId;
+      const organizationId = session?.user?.organizationId;
       if (!organizationId) {
         return NextResponse.json({ message: 'Organization not found' }, { status: 400 });
       }
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId || !session?.user?.id) {
+    if (!session || !session.user?.organizationId || !session?.user?.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     if (action === 'check') {
       const unlocked = await service.checkAndUnlockAchievements(
-        session.user.organizationId,
+        session?.user?.organizationId,
         session.user.id,
         eventType,
         eventData

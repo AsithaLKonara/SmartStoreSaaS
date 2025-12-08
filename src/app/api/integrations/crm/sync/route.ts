@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { CRMSyncService } from '@/lib/integrations/crm/crmSyncService';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     const syncService = new CRMSyncService();
     const results = await syncService.syncToCRM(
-      session.user.organizationId,
+      session?.user?.organizationId,
       type || 'all'
     );
 

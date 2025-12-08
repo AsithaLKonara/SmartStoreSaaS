@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { Prisma } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     // Get orders that need delivery
     const orders = await prisma.order.findMany({
       where: {
-        organizationId: session.user.organizationId,
+        organizationId: session?.user?.organizationId,
         status: { in: ['CONFIRMED', 'PACKED', 'OUT_FOR_DELIVERY'] }
       },
       include: {
@@ -39,7 +40,7 @@ export async function GET() {
         orderNumber: order.orderNumber,
         customerName: order.customer?.name || 'Unknown',
         pickupAddress: 'Warehouse Address', // This would come from warehouse settings
-        deliveryAddress: (order.metadata as Record<string, unknown> & { shippingAddress?: string })?.shippingAddress || 'Address not available',
+        deliveryAddress: (order.metadata as Prisma.InputJsonValue & { shippingAddress?: string })?.shippingAddress || 'Address not available',
         status: order.status === 'CONFIRMED' ? 'ASSIGNED' : 
                 order.status === 'PACKED' ? 'PICKED_UP' : 
                 order.status === 'OUT_FOR_DELIVERY' ? 'IN_TRANSIT' : 'ASSIGNED',
@@ -63,7 +64,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 

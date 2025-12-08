@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { Prisma } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { stripeService } from '@/lib/payments/stripeService';
 import { prisma } from '@/lib/prisma';
@@ -7,8 +8,13 @@ import { prisma } from '@/lib/prisma';
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session || !session.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const organizationId = session.user.organizationId;
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization ID required' }, { status: 400 });
     }
 
     const { action, ...data } = await request.json();
@@ -30,7 +36,7 @@ export async function POST(request: NextRequest) {
         return await cancelSubscription(data, session.user.id);
       
       case 'create-refund':
-        return await createRefund(data, session.user.id);
+        return await createRefund(data, session.user.id, organizationId);
       
       case 'get-subscription-plans':
         return await getSubscriptionPlans();
@@ -70,7 +76,7 @@ async function createPaymentIntent(data: PaymentIntentData, userId: string) {
   const userPref = await prisma.userPreference.findUnique({
     where: { userId },
   });
-  let stripeCustomerId = (userPref?.notifications as Record<string, unknown> & { stripeCustomerId?: string })?.stripeCustomerId;
+  let stripeCustomerId = (userPref?.notifications as Prisma.InputJsonValue & { stripeCustomerId?: string })?.stripeCustomerId;
   
   if (!stripeCustomerId) {
     stripeCustomerId = await stripeService.createCustomer(
@@ -85,13 +91,13 @@ async function createPaymentIntent(data: PaymentIntentData, userId: string) {
       update: {
         notifications: {
           stripeCustomerId,
-        } as Record<string, unknown>,
+        } as Prisma.InputJsonValue,
       },
       create: {
         userId,
         notifications: {
           stripeCustomerId,
-        } as Record<string, unknown>,
+        } as Prisma.InputJsonValue,
       },
     });
   }
@@ -134,13 +140,13 @@ async function createCustomer(data: CustomerData, userId: string) {
     update: {
       notifications: {
         stripeCustomerId: customerId,
-      } as Record<string, unknown>,
+      } as Prisma.InputJsonValue,
     },
     create: {
       userId,
       notifications: {
         stripeCustomerId: customerId,
-      } as Record<string, unknown>,
+      } as Prisma.InputJsonValue,
     },
   });
 
@@ -152,7 +158,7 @@ async function getPaymentMethods(_data: unknown, userId: string) {
     where: { userId },
   });
 
-  const stripeCustomerId = (userPref?.notifications as Record<string, unknown> & { stripeCustomerId?: string })?.stripeCustomerId;
+  const stripeCustomerId = (userPref?.notifications as Prisma.InputJsonValue & { stripeCustomerId?: string })?.stripeCustomerId;
   if (!stripeCustomerId) {
     return NextResponse.json({ paymentMethods: [] });
   }
@@ -173,7 +179,7 @@ async function createSubscription(data: SubscriptionData, userId: string) {
     where: { userId },
   });
 
-  const stripeCustomerId = (userPref?.notifications as Record<string, unknown> & { stripeCustomerId?: string })?.stripeCustomerId;
+  const stripeCustomerId = (userPref?.notifications as Prisma.InputJsonValue & { stripeCustomerId?: string })?.stripeCustomerId;
   if (!stripeCustomerId) {
     throw new Error('Customer not found');
   }
@@ -216,7 +222,7 @@ interface RefundData {
   reason?: string;
 }
 
-async function createRefund(data: RefundData, userId: string) {
+async function createRefund(data: RefundData, userId: string, organizationId: string) {
   const { paymentIntentId, amount, reason } = data;
   
   // Verify user owns this payment
@@ -226,7 +232,7 @@ async function createRefund(data: RefundData, userId: string) {
         path: ['stripePaymentIntentId'],
         equals: paymentIntentId,
       } as { path: string[]; equals: string },
-      organizationId: userId, // Assuming organization ownership
+      organizationId: organizationId,
     },
   });
 
@@ -248,7 +254,7 @@ async function createSetupIntent(_data: unknown, userId: string) {
   const userPref = await prisma.userPreference.findUnique({
     where: { userId },
   });
-  const stripeCustomerId = (userPref?.notifications as Record<string, unknown> & { stripeCustomerId?: string })?.stripeCustomerId;
+  const stripeCustomerId = (userPref?.notifications as Prisma.InputJsonValue & { stripeCustomerId?: string })?.stripeCustomerId;
   if (!stripeCustomerId) {
     throw new Error('Customer not found');
   }

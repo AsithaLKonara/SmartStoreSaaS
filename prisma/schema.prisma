@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "binary"
 }
 
@@ -13,24 +13,23 @@ datasource db {
 
 // User Management
 model User {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  email         String    @unique
-  name          String?
-  password      String?
-  image         String?
-  role          UserRole  @default(STAFF)
-  isActive      Boolean   @default(true)
-  emailVerified DateTime?
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  email            String    @unique
+  name             String?
+  password         String?
+  image            String?
+  role             UserRole  @default(STAFF)
+  isActive         Boolean   @default(true)
+  emailVerified    DateTime?
   stripeCustomerId String? // Stripe customer ID for payments
-  mfaEnabled    Boolean   @default(false) // MFA status
-  mfaSecret    String?   // MFA secret for TOTP
-  mfaBackupCodes String[] // MFA backup codes
-  deletedAt     DateTime? // Soft delete timestamp
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  mfaEnabled       Boolean   @default(false) // MFA status
+  mfaSecret        String? // MFA secret for TOTP
+  mfaBackupCodes   String[] // MFA backup codes
+  deletedAt        DateTime? // Soft delete timestamp
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   // Relations
-<<<<<<< HEAD
   organization           Organization?          @relation(fields: [organizationId], references: [id])
   organizationId         String?                @db.ObjectId
   sessions               Session[]
@@ -47,24 +46,7 @@ model User {
   inventoryMovements     InventoryMovement[]    @relation("InventoryMovementCreatedBy")
   notifications          Notification[]
   assignedSupportTickets SupportTicket[]
-=======
-  organization    Organization? @relation(fields: [organizationId], references: [id])
-  organizationId  String?       @db.ObjectId
-  sessions        Session[]
-  accounts        Account[]
-  activities      Activity[]
-  assignedChats   ChatMessage[]
-  createdOrders   Order[] @relation("OrderCreatedBy")
-  updatedOrders   Order[] @relation("OrderUpdatedBy")
-  createdProducts Product[] @relation("ProductCreatedBy")
-  updatedProducts Product[] @relation("ProductUpdatedBy")
-  preferences     UserPreference?
-  searchHistory   SearchHistory[]
-  assignedConversations CustomerConversation[]
-  createdPurchaseOrders PurchaseOrder[] @relation("PurchaseOrderCreatedBy")
-  assignedChatConversations ChatConversation[] @relation("ChatConversationAssignedTo")
-  mfaMethods        UserMFA[]
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
+  mfaSettings            UserMFA[]
 
   @@map("users")
 }
@@ -125,7 +107,6 @@ model VerificationToken {
 
 // Organization & Multi-tenancy
 model Organization {
-<<<<<<< HEAD
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   slug      String   @unique
@@ -136,19 +117,6 @@ model Organization {
   plan      PlanType @default(STARTER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-=======
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  slug        String   @unique
-  domain      String?
-  logo        String?
-  settings    Json?
-  securitySettings Json? // Security configuration
-  isActive    Boolean  @default(true)
-  plan        PlanType @default(STARTER)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
   // Relations
   users                   User[]
@@ -171,7 +139,6 @@ model Organization {
   whatsAppMessages        WhatsAppMessage[]
   whatsAppCatalogs        WhatsAppCatalog[]
   wooCommerceIntegrations WooCommerceIntegration[]
-<<<<<<< HEAD
   bulkOperations          BulkOperation[]
   reports                 Report[]
   reportTemplates         ReportTemplate[]
@@ -195,41 +162,24 @@ model Organization {
   notifications           Notification[]
   kpiTargets              KpiTarget[]
   scheduledReports        ScheduledReport[]
-=======
-  bulkOperations BulkOperation[] // Added missing relation
-  reviews Review[]
-  supportTickets SupportTicket[]
-  suppliers Supplier[]
-  purchaseOrders PurchaseOrder[]
-  customerSegments CustomerSegment[]
-  customerOffers CustomerOffer[]
-  customerSegmentCustomers CustomerSegmentCustomer[]
-  customerOfferSegments CustomerOfferSegment[]
-  customerOfferCustomers CustomerOfferCustomer[]
-  chatConversations ChatConversation[]
-  notifications Notification[]
-  securityAudits SecurityAudit[]
-  securityAlerts SecurityAlert[]
-  smsLogs SmsLog[]
-  smsTemplates SmsTemplate[]
-  smsCampaigns SmsCampaign[]
-  smsCampaignSegments SmsCampaignSegment[]
-  voiceCommands VoiceCommand[]
-  whatsAppTemplates WhatsAppTemplate[]
-  shipments Shipment[]
-  productEmbeddings ProductEmbedding[]
-  userMFAs UserMFA[]
-  emailTemplates EmailTemplate[]
-  emailSubscriptions EmailSubscription[]
-  emailCampaigns EmailCampaign[]
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
+  SecurityAudit           SecurityAudit[]
+  SecurityAlert           SecurityAlert[]
+  SmsLog                  SmsLog[]
+  SmsTemplate             SmsTemplate[]
+  SmsCampaign             SmsCampaign[]
+  SmsCampaignSegment      SmsCampaignSegment[]
+  ProductEmbedding        ProductEmbedding[]
+  UserMFA                 UserMFA[]
+  WhatsAppTemplate        WhatsAppTemplate[]
+  EmailTemplate           EmailTemplate[]
+  EmailSubscription       EmailSubscription[]
+  EmailCampaign           EmailCampaign[]
 
   @@map("organizations")
 }
 
 // Customer CRM
 model Customer {
-<<<<<<< HEAD
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   phone      String?
   email      String?
@@ -242,21 +192,6 @@ model Customer {
   points     Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-=======
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  phone       String?
-  email       String?
-  name        String?
-  avatar      String?
-  address     String?  // Customer address for shipping/billing
-  tags        String[]
-  source      String?
-  isActive    Boolean  @default(true)
-  totalSpent  Float    @default(0)
-  points      Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
   // Relations
   organization     Organization           @relation(fields: [organizationId], references: [id])
@@ -271,18 +206,10 @@ model Customer {
   invoices         Invoice[]
   socialProducts   SocialProduct[]
   whatsAppMessages WhatsAppMessage[]
-<<<<<<< HEAD
   courierRatings   CourierRating[]
   customerOffers   CustomerOffer[]
   reviews          Review[]
   supportTickets   SupportTicket[]
-=======
-  reviews Review[]
-  supportTickets SupportTicket[]
-  customerSegmentCustomers CustomerSegmentCustomer[]
-  customerOfferCustomers CustomerOfferCustomer[]
-  chatConversations ChatConversation[]
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
   @@unique([organizationId, phone])
   @@unique([organizationId, email])
@@ -328,7 +255,6 @@ model Category {
 }
 
 model Product {
-<<<<<<< HEAD
   id                String   @id @default(auto()) @map("_id") @db.ObjectId
   name              String
   slug              String
@@ -347,51 +273,25 @@ model Product {
   sortOrder         Int      @default(0)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-=======
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  slug        String
-  description String?
-  sku         String?
-  price       Float
-  comparePrice Float?
-  costPrice   Float? // Changed from 'cost' to 'costPrice' to match API
-  stockQuantity Int    @default(0) // Changed from 'stock' to 'stockQuantity' to match API
-  lowStockThreshold Int @default(0) // Changed from 'minStock' to 'lowStockThreshold' to match API
-  reorderPoint Int @default(0) // Added reorder point for inventory management
-  weight      Float?
-  dimensions  Json?
-  images      String[]
-  isActive    Boolean  @default(true)
-  isFeatured  Boolean  @default(false)
-  sortOrder   Int      @default(0)
-  syncedAt    DateTime? // Added for sync tracking
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
   // Relations
-  organization   Organization        @relation(fields: [organizationId], references: [id])
-  organizationId String              @db.ObjectId
-  category       Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  categoryId     String?             @db.ObjectId
-  createdBy      User                @relation("ProductCreatedBy", fields: [createdById], references: [id])
-  createdById    String              @db.ObjectId
-  updatedBy      User?               @relation("ProductUpdatedBy", fields: [updatedById], references: [id])
-  updatedById    String?             @db.ObjectId
-  variants       ProductVariant[]
-  orderItems     OrderItem[]
-  activities     ProductActivity[]
-  socialProducts SocialProduct[]
-<<<<<<< HEAD
-  movements      InventoryMovement[]
-  arModel        ARModel?
-  iotSensors     IoTSensor[]
-  reviews        Review[]
-=======
-  reviews Review[]
-  embeddings    ProductEmbedding[]
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
+  organization     Organization        @relation(fields: [organizationId], references: [id])
+  organizationId   String              @db.ObjectId
+  category         Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId       String?             @db.ObjectId
+  createdBy        User                @relation("ProductCreatedBy", fields: [createdById], references: [id])
+  createdById      String              @db.ObjectId
+  updatedBy        User?               @relation("ProductUpdatedBy", fields: [updatedById], references: [id])
+  updatedById      String?             @db.ObjectId
+  variants         ProductVariant[]
+  orderItems       OrderItem[]
+  activities       ProductActivity[]
+  socialProducts   SocialProduct[]
+  movements        InventoryMovement[]
+  arModel          ARModel?
+  iotSensors       IoTSensor[]
+  reviews          Review[]
+  ProductEmbedding ProductEmbedding[]
 
   @@unique([organizationId, slug])
   @@unique([organizationId, sku])
@@ -434,31 +334,26 @@ model ProductActivity {
 
 // Order Management
 model Order {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
-  orderNumber   String      @unique
-  status        OrderStatus @default(DRAFT)
-<<<<<<< HEAD
-  totalAmount   Float // Changed from 'total' to 'totalAmount' to match API
-=======
-  totalAmount   Float     // Changed from 'total' to 'totalAmount' to match API (use totalAmount instead of total)
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
-  subtotal      Float
-  tax           Float       @default(0)
-  shipping      Float       @default(0)
-  discount      Float       @default(0)
-  currency      String      @default("USD")
-  paymentMethod String      @default("COD") // Added to match API
-  paymentStatus String      @default("PENDING") // Added to match API
-  paypalOrderId String?     // PayPal order ID for tracking
-  paypalPaymentId String?   // PayPal payment ID for tracking
+  id                    String      @id @default(auto()) @map("_id") @db.ObjectId
+  orderNumber           String      @unique
+  status                OrderStatus @default(DRAFT)
+  totalAmount           Float // Changed from 'total' to 'totalAmount' to match API
+  subtotal              Float
+  tax                   Float       @default(0)
+  shipping              Float       @default(0)
+  discount              Float       @default(0)
+  currency              String      @default("USD")
+  paymentMethod         String      @default("COD") // Added to match API
+  paymentStatus         String      @default("PENDING") // Added to match API
+  paypalOrderId         String? // PayPal order ID for tracking
+  paypalPaymentId       String? // PayPal payment ID for tracking
   stripePaymentIntentId String? // Stripe payment intent ID for tracking
-  notes         String?
-  metadata      Json?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  notes                 String?
+  metadata              Json?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
 
   // Relations
-<<<<<<< HEAD
   organization       Organization        @relation(fields: [organizationId], references: [id])
   organizationId     String              @db.ObjectId
   customer           Customer            @relation(fields: [customerId], references: [id])
@@ -469,31 +364,13 @@ model Order {
   updatedById        String?             @db.ObjectId
   items              OrderItem[]
   payments           Payment[]
+  supportTickets     SupportTicket[]
   shipments          Shipment[]
   activities         OrderActivity[]
   paymentIntents     PaymentIntent[]
   whatsAppMessages   WhatsAppMessage[]
   inventoryMovements InventoryMovement[]
   courierDeliveries  CourierDelivery[]
-  supportTickets     SupportTicket[]
-=======
-  organization  Organization @relation(fields: [organizationId], references: [id])
-  organizationId String      @db.ObjectId
-  customer      Customer @relation(fields: [customerId], references: [id])
-  customerId    String      @db.ObjectId
-  createdBy     User     @relation("OrderCreatedBy", fields: [createdById], references: [id])
-  createdById   String   @db.ObjectId
-  updatedBy     User?    @relation("OrderUpdatedBy", fields: [updatedById], references: [id])
-  updatedById   String?  @db.ObjectId
-  items         OrderItem[]
-  payments      Payment[]
-  shipments     Shipment[]
-  activities    OrderActivity[]
-  paymentIntents PaymentIntent[]
-  whatsAppMessages WhatsAppMessage[]
-  reviews Review[]
-  supportTickets SupportTicket[]
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
   @@map("orders")
 }
@@ -584,19 +461,10 @@ model Shipment {
   updatedAt      DateTime       @updatedAt
 
   // Relations
-<<<<<<< HEAD
   order     Order    @relation(fields: [orderId], references: [id])
   orderId   String   @db.ObjectId
   courier   Courier? @relation(fields: [courierId], references: [id])
   courierId String?  @db.ObjectId
-=======
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  order         Order    @relation(fields: [orderId], references: [id])
-  orderId       String   @db.ObjectId
-  courier       Courier? @relation(fields: [courierId], references: [id])
-  courierId     String?  @db.ObjectId
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
   @@map("shipments")
 }
@@ -631,23 +499,12 @@ model ChatMessage {
   createdAt DateTime         @default(now())
 
   // Relations
-<<<<<<< HEAD
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId String       @db.ObjectId
   customer       Customer     @relation(fields: [customerId], references: [id])
   customerId     String       @db.ObjectId
   assignedTo     User?        @relation(fields: [assignedToId], references: [id])
   assignedToId   String?      @db.ObjectId
-=======
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  customer       Customer @relation(fields: [customerId], references: [id])
-  customerId     String   @db.ObjectId
-  assignedTo     User?    @relation(fields: [assignedToId], references: [id])
-  conversation   ChatConversation? @relation(fields: [conversationId], references: [id])
-  conversationId String?   @db.ObjectId
-  assignedToId   String?  @db.ObjectId
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
   @@map("chat_messages")
 }
@@ -880,7 +737,6 @@ model ChannelIntegration {
 
 // Advanced Payment Processing
 model PaymentMethod {
-<<<<<<< HEAD
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   type        String // 'card', 'bank_account', 'paypal', 'crypto'
   last4       String?
@@ -891,19 +747,6 @@ model PaymentMethod {
   metadata    Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-=======
-  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
-  type                  String   // 'card', 'bank_account', 'paypal', 'crypto'
-  last4                 String?
-  brand                 String?
-  expiryMonth           Int?
-  expiryYear            Int?
-  isDefault             Boolean  @default(false)
-  stripePaymentMethodId String?  // Stripe payment method ID
-  metadata              Json?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
   // Relations
   customer   Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
@@ -924,28 +767,18 @@ model PaymentIntent {
   updatedAt             DateTime @updatedAt
 
   // Relations
-<<<<<<< HEAD
   customer        Customer       @relation(fields: [customerId], references: [id])
   customerId      String         @db.ObjectId
   paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
   paymentMethodId String?        @db.ObjectId
   order           Order?         @relation(fields: [orderId], references: [id])
   orderId         String?        @db.ObjectId
-=======
-  customer      Customer      @relation(fields: [customerId], references: [id])
-  customerId    String        @db.ObjectId
-  paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
-  paymentMethodId String?     @db.ObjectId
-  order         Order?        @relation(fields: [orderId], references: [id])
-  orderId       String?       @db.ObjectId
-  refunds       Refund[]
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
+  Refund          Refund[]
 
   @@map("payment_intents")
 }
 
 model Subscription {
-<<<<<<< HEAD
   id                   String   @id @default(auto()) @map("_id") @db.ObjectId
   stripeSubscriptionId String?  @unique
   status               String // 'active', 'canceled', 'past_due', 'unpaid'
@@ -955,18 +788,6 @@ model Subscription {
   metadata             Json?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
-=======
-  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
-  stripeSubscriptionId String? @unique
-  planId              String?  // Plan identifier for subscription management
-  status              String   // 'active', 'canceled', 'past_due', 'unpaid'
-  currentPeriodStart  DateTime
-  currentPeriodEnd    DateTime
-  cancelAtPeriodEnd   Boolean  @default(false)
-  metadata            Json?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
   // Relations
   customer   Customer  @relation(fields: [customerId], references: [id])
@@ -977,7 +798,6 @@ model Subscription {
 }
 
 model Invoice {
-<<<<<<< HEAD
   id        String    @id @default(auto()) @map("_id") @db.ObjectId
   amount    Float
   currency  String    @default("USD")
@@ -986,17 +806,6 @@ model Invoice {
   metadata  Json?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-=======
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  amount      Float
-  currency    String   @default("USD")
-  status      String   // 'draft', 'open', 'paid', 'void', 'uncollectible'
-  dueDate     DateTime?
-  stripeInvoiceId String? // Stripe invoice ID
-  metadata    Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
   // Relations
   customer       Customer      @relation(fields: [customerId], references: [id])
@@ -1009,14 +818,14 @@ model Invoice {
 
 // Refund model for payment processing
 model Refund {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  amount      Float
-  currency    String   @default("USD")
-  reason      String   // 'requested_by_customer', 'fraudulent', 'duplicate', 'other'
-  status      String   // 'pending', 'succeeded', 'failed', 'canceled'
-  metadata    Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  amount    Float
+  currency  String   @default("USD")
+  reason    String // 'requested_by_customer', 'fraudulent', 'duplicate', 'other'
+  status    String // 'pending', 'succeeded', 'failed', 'canceled'
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
   paymentIntent   PaymentIntent @relation(fields: [paymentIntentId], references: [id])
@@ -1147,7 +956,6 @@ model WhatsAppIntegration {
 }
 
 model WhatsAppMessage {
-<<<<<<< HEAD
   id         String    @id @default(auto()) @map("_id") @db.ObjectId
   from       String
   to         String
@@ -1158,20 +966,6 @@ model WhatsAppMessage {
   metadata   Json?
   syncedAt   DateTime?
   syncSource String?
-=======
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  from        String
-  to          String
-  type        String
-  content     String
-  timestamp   DateTime
-  status      String   @default("sent")
-  messageId   String?  // WhatsApp message ID
-  statusTimestamp DateTime? // When status was updated
-  metadata    Json?
-  syncedAt    DateTime?
-  syncSource  String?
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
   // Relations
   organization   Organization @relation(fields: [organizationId], references: [id])
@@ -1189,7 +983,7 @@ model WhatsAppCatalog {
   name        String
   description String?
   products    Json
-  catalogId   String?  // WhatsApp catalog ID
+  catalogId   String? // WhatsApp catalog ID
   isActive    Boolean  @default(true)
   lastUpdated DateTime @default(now())
 
@@ -1737,7 +1531,6 @@ enum CampaignStatus {
   SENDING
   SENT
   CANCELLED
-<<<<<<< HEAD
 }
 
 // Reports System
@@ -1804,23 +1597,10 @@ model CampaignMetric {
   opened     Int      @default(0)
   clicked    Int      @default(0)
   bounced    Int      @default(0)
-=======
-} 
-
-// Review System
-model Review {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  rating     Int      // 1-5 stars
-  title      String?
-  content    String
-  isVerified Boolean  @default(false)
-  helpful    Int      @default(0)
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   // Relations
-<<<<<<< HEAD
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@unique([campaignId])
@@ -1996,7 +1776,8 @@ model CustomerSegment {
   updatedAt      DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
+  organization       Organization         @relation(fields: [organizationId], references: [id])
+  SmsCampaignSegment SmsCampaignSegment[]
 
   @@map("customer_segments")
 }
@@ -2021,21 +1802,10 @@ model Review {
   organization Organization @relation(fields: [organizationId], references: [id])
   product      Product      @relation(fields: [productId], references: [id])
   customer     Customer?    @relation(fields: [customerId], references: [id])
-=======
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  product       Product?    @relation(fields: [productId], references: [id])
-  productId     String?     @db.ObjectId
-  customer      Customer?   @relation(fields: [customerId], references: [id])
-  customerId    String?     @db.ObjectId
-  order        Order?       @relation(fields: [orderId], references: [id])
-  orderId      String?      @db.ObjectId
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
   @@map("reviews")
 }
 
-<<<<<<< HEAD
 // Support Tickets
 model SupportTicket {
   id             String    @id @default(auto()) @map("_id") @db.ObjectId
@@ -2060,34 +1830,12 @@ model SupportTicket {
   customer     Customer?    @relation(fields: [customerId], references: [id])
   order        Order?       @relation(fields: [orderId], references: [id])
   assignedTo   User?        @relation(fields: [assignedToId], references: [id])
-=======
-// Support Ticket System
-model SupportTicket {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  description String
-  priority    String   @default("medium") // 'low', 'medium', 'high', 'urgent'
-  status      String   @default("open")   // 'open', 'in_progress', 'resolved', 'closed'
-  category    String?
-  assignedTo  String?  @db.ObjectId
-  phone       String?  // Phone number for support contact
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  resolvedAt  DateTime?
-
-  // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  customer      Customer?   @relation(fields: [customerId], references: [id])
-  customerId    String?     @db.ObjectId
-  order         Order?      @relation(fields: [orderId], references: [id])
-  orderId       String?     @db.ObjectId
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7
 
   @@map("support_tickets")
 }
 
-<<<<<<< HEAD
+// Support Ticket System (duplicate removed - using SupportTicket model defined earlier)
+
 // Notifications
 model Notification {
   id             String    @id @default(auto()) @map("_id") @db.ObjectId
@@ -2159,383 +1907,159 @@ model ScheduledReport {
 
   @@map("scheduled_reports")
 }
-=======
-// Supplier Management
-model Supplier {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  code        String
-  email       String?
-  phone       String?
-  address     String?
-  contactPerson String?
-  rating      Float?   // 1-5 rating
-  isActive    Boolean  @default(true)
-  paymentTerms String?
-  leadTime    Int?     // Days
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
-  // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  purchaseOrders PurchaseOrder[]
-
-  @@unique([organizationId, code])
-  @@map("suppliers")
-}
-
-// Purchase Order System
-model PurchaseOrder {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  poNumber   String   @unique
-  status     String   @default("DRAFT") // 'DRAFT', 'SENT', 'CONFIRMED', 'RECEIVED', 'CANCELLED'
-  totalAmount Float
-  currency   String   @default("USD")
-  expectedDelivery DateTime?
-  notes      String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  supplier      Supplier    @relation(fields: [supplierId], references: [id])
-  supplierId    String      @db.ObjectId
-  createdBy     User        @relation("PurchaseOrderCreatedBy", fields: [createdById], references: [id])
-  createdById   String      @db.ObjectId
-  items         PurchaseOrderItem[]
-
-  @@map("purchase_orders")
-}
-
-model PurchaseOrderItem {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  quantity  Int
-  unitPrice Float
-  total     Float
-  productId String   @db.ObjectId
-  notes     String?
-
-  // Relations
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  purchaseOrderId String      @db.ObjectId
-
-  @@map("purchase_order_items")
-}
-
-// Customer Segmentation
-model CustomerSegment {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  description String?
-  criteria    Json     // Segmentation criteria
-  customerCount Int    @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  customerSegmentCustomers CustomerSegmentCustomer[]
-  customerOfferSegments CustomerOfferSegment[]
-  smsCampaignSegments SmsCampaignSegment[]
-
-  @@unique([organizationId, name])
-  @@map("customer_segments")
-}
-
-// Customer Segment Junction
-model CustomerSegmentCustomer {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  customerSegment CustomerSegment @relation(fields: [customerSegmentId], references: [id], onDelete: Cascade)
-  customerSegmentId String @db.ObjectId
-  customer        Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  customerId      String   @db.ObjectId
-  assignedAt      DateTime @default(now())
-
-  // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-
-  @@unique([customerSegmentId, customerId])
-  @@map("customer_segment_customers")
-}
-
-// Customer Offers
-model CustomerOffer {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  description String?
-  discountType String  // 'percentage', 'fixed', 'free_shipping'
-  discountValue Float
-  minOrderValue Float?
-  maxDiscount  Float?
-  validFrom    DateTime
-  validUntil   DateTime
-  usageLimit   Int?
-  usageCount   Int      @default(0)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  customerOfferSegments CustomerOfferSegment[]
-  customerOfferCustomers CustomerOfferCustomer[]
-
-  @@map("customer_offers")
-}
-
-// Customer Offer Segment Junction
-model CustomerOfferSegment {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  customerOffer CustomerOffer @relation(fields: [customerOfferId], references: [id], onDelete: Cascade)
-  customerOfferId String @db.ObjectId
-  customerSegment CustomerSegment @relation(fields: [customerSegmentId], references: [id], onDelete: Cascade)
-  customerSegmentId String @db.ObjectId
-  assignedAt    DateTime @default(now())
-
-  // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-
-  @@unique([customerOfferId, customerSegmentId])
-  @@map("customer_offer_segments")
-}
-
-// Customer Offer Customer Junction
-model CustomerOfferCustomer {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  customerOffer CustomerOffer @relation(fields: [customerOfferId], references: [id], onDelete: Cascade)
-  customerOfferId String @db.ObjectId
-  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  customerId    String   @db.ObjectId
-  assignedAt    DateTime @default(now())
-
-  // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-
-  @@unique([customerOfferId, customerId])
-  @@map("customer_offer_customers")
-}
-
-// Chat Conversation System
-model ChatConversation {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  title       String?
-  status      String   @default("active") // 'active', 'resolved', 'archived'
-  priority    String   @default("medium") // 'low', 'medium', 'high', 'urgent'
-  assignedTo  String?  @db.ObjectId
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  resolvedAt  DateTime?
-
-  // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  customer      Customer    @relation(fields: [customerId], references: [id])
-  customerId    String      @db.ObjectId
-  messages      ChatMessage[]
-  assignedAgent User?       @relation("ChatConversationAssignedTo", fields: [assignedTo], references: [id])
-
-  @@map("chat_conversations")
-}
-
-// Notification System
-model Notification {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  type        String   // 'email', 'sms', 'push', 'in_app'
-  title       String
-  message     String
-  status      String   @default("pending") // 'pending', 'sent', 'delivered', 'read', 'failed'
-  recipient   String   @db.ObjectId
-  metadata    Json?
-  sentAt      DateTime?
-  readAt      DateTime?
-  createdAt   DateTime @default(now())
-
-  // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-
-  @@map("notifications")
-}
+// Chat Conversation System (duplicate removed - using model defined earlier)
+// Notification System (duplicate removed - using model defined earlier)
 
 // Security Models
 model SecurityAudit {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String   @db.ObjectId
-  action      String   // 'login', 'logout', 'permission_change', etc.
-  ipAddress   String?
-  userAgent   String?
-  metadata    Json?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  action    String // 'login', 'logout', 'permission_change', etc.
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime @default(now())
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
 
   @@map("security_audits")
 }
 
 model SecurityAlert {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  type        String   // 'suspicious_login', 'permission_violation', etc.
-  severity    String   // 'low', 'medium', 'high', 'critical'
-  message     String
-  metadata    Json?
-  isResolved  Boolean  @default(false)
-  resolvedAt  DateTime?
-  resolvedBy  String?  @db.ObjectId
-  createdAt   DateTime @default(now())
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  type       String // 'suspicious_login', 'permission_violation', etc.
+  severity   String // 'low', 'medium', 'high', 'critical'
+  message    String
+  metadata   Json?
+  isResolved Boolean   @default(false)
+  resolvedAt DateTime?
+  resolvedBy String?   @db.ObjectId
+  createdAt  DateTime  @default(now())
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
 
   @@map("security_alerts")
 }
 
 // SMS Models
 model SmsLog {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
   phone       String
   message     String
-  status      String   // 'pending', 'sent', 'delivered', 'failed'
+  status      String // 'pending', 'sent', 'delivered', 'failed'
   provider    String?
   messageId   String?
   metadata    Json?
   sentAt      DateTime?
   deliveredAt DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
 
   @@map("sms_logs")
 }
 
 model SmsTemplate {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  content     String
-  variables   String[] // Template variables like {{name}}, {{order_id}}
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  content   String
+  variables String[] // Template variables like {{name}}, {{order_id}}
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  campaigns SmsCampaign[]
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  organizationId String        @db.ObjectId
+  campaigns      SmsCampaign[]
 
   @@map("sms_templates")
 }
 
 model SmsCampaign {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   description String?
-  templateId  String   @db.ObjectId
-  status      String   // 'draft', 'scheduled', 'active', 'paused', 'completed'
+  templateId  String    @db.ObjectId
+  status      String // 'draft', 'scheduled', 'active', 'paused', 'completed'
   scheduledAt DateTime?
   startedAt   DateTime?
   completedAt DateTime?
   metadata    Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  template      SmsTemplate @relation(fields: [templateId], references: [id])
-  segments      SmsCampaignSegment[]
+  organization   Organization         @relation(fields: [organizationId], references: [id])
+  organizationId String               @db.ObjectId
+  template       SmsTemplate          @relation(fields: [templateId], references: [id])
+  segments       SmsCampaignSegment[]
 
   @@map("sms_campaigns")
 }
 
 model SmsCampaignSegment {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
-  smsCampaign   SmsCampaign @relation(fields: [smsCampaignId], references: [id], onDelete: Cascade)
-  smsCampaignId String      @db.ObjectId
-  customerSegment CustomerSegment @relation(fields: [customerSegmentId], references: [id], onDelete: Cascade)
-  customerSegmentId String  @db.ObjectId
-  assignedAt    DateTime    @default(now())
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  smsCampaign       SmsCampaign     @relation(fields: [smsCampaignId], references: [id], onDelete: Cascade)
+  smsCampaignId     String          @db.ObjectId
+  customerSegment   CustomerSegment @relation(fields: [customerSegmentId], references: [id], onDelete: Cascade)
+  customerSegmentId String          @db.ObjectId
+  assignedAt        DateTime        @default(now())
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
 
   @@unique([smsCampaignId, customerSegmentId])
   @@map("sms_campaign_segments")
 }
 
-// Voice Models
-model VoiceCommand {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  command     String
-  action      String
-  userId      String?  @db.ObjectId // User who issued the command
-  intent      String?  // Intent classification
-  entities    Json?    // Extracted entities
-  confidence  Float?   // Confidence score
-  response    String?  // Response text
-  timestamp   DateTime @default(now()) // When command was processed
-  processed   Boolean  @default(false) // Whether command was processed
-  metadata    Json?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-
-  @@map("voice_commands")
-}
+// Voice Models - using the model defined earlier at line 1200
 
 // AI and ML Models
 model ProductEmbedding {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  productId     String   @db.ObjectId
-  embedding     Json     // Vector embedding data
-  imageUrl      String?  // URL of the image used for embedding
-  modelVersion  String   @default("v1") // AI model version used
-  confidence    Float    @default(0.0) // Confidence score
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId    String   @db.ObjectId
+  embedding    Json // Vector embedding data
+  imageUrl     String? // URL of the image used for embedding
+  modelVersion String   @default("v1") // AI model version used
+  confidence   Float    @default(0.0) // Confidence score
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  product       Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
+  product        Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([productId, modelVersion])
   @@map("product_embeddings")
 }
 
 model UserMFA {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId       String   @db.ObjectId
-  method       String   // 'totp', 'sms', 'email'
-  secret       String?  // For TOTP
-  phone        String?  // For SMS
-  email        String?  // For email
-  isActive     Boolean  @default(true)
-  lastUsed     DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String    @db.ObjectId
+  method    String // 'totp', 'sms', 'email'
+  secret    String? // For TOTP
+  phone     String? // For SMS
+  email     String? // For email
+  isActive  Boolean   @default(true)
+  lastUsed  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, method])
   @@map("user_mfa")
@@ -2543,19 +2067,19 @@ model UserMFA {
 
 // WhatsApp Models
 model WhatsAppTemplate {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  content     String
-  language    String   @default("en")
-  category    String?
-  components  Json?    // Template components
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  content    String
+  language   String   @default("en")
+  category   String?
+  components Json? // Template components
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
 
   @@map("whatsapp_templates")
 }
@@ -2573,9 +2097,9 @@ model EmailTemplate {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
-  campaigns     EmailCampaign[]
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  organizationId String          @db.ObjectId
+  campaigns      EmailCampaign[]
 
   @@map("email_templates")
 }
@@ -2583,38 +2107,37 @@ model EmailTemplate {
 model EmailSubscription {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   email        String
-  listId       String   // Mailing list identifier
+  listId       String // Mailing list identifier
   isActive     Boolean  @default(true)
-  customFields Json?    // Custom fields for personalization
+  customFields Json? // Custom fields for personalization
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
-  organizationId String     @db.ObjectId
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String       @db.ObjectId
 
   @@unique([email, listId])
   @@map("email_subscriptions")
 }
 
 model EmailCampaign {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
   name           String
   subject        String
   htmlContent    String
   textContent    String?
-  status         String   @default("draft") // draft, scheduled, sending, sent, cancelled
-  organizationId String   @db.ObjectId
-  templateId     String   @db.ObjectId
+  status         String    @default("draft") // draft, scheduled, sending, sent, cancelled
+  organizationId String    @db.ObjectId
+  templateId     String    @db.ObjectId
   sentAt         DateTime?
-  recipientCount Int      @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  recipientCount Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id])
+  organization Organization  @relation(fields: [organizationId], references: [id])
   template     EmailTemplate @relation(fields: [templateId], references: [id])
 
   @@map("email_campaigns")
 }
->>>>>>> 08d9e1855dc7fd2c99e5d62def516239ff37a9a7

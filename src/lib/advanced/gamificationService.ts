@@ -498,6 +498,43 @@ export class GamificationService {
   }
 
   /**
+   * Get challenges for an organization
+   */
+  async getChallenges(organizationId: string, status?: Challenge['status']): Promise<Challenge[]> {
+    try {
+      const organization = await prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { settings: true },
+      });
+
+      const settings = (organization?.settings as Record<string, unknown>) || {};
+      const challenges: Challenge[] = (settings.challenges as Challenge[]) || [];
+      
+      if (status) {
+        return challenges.filter((c: Challenge) => c.status === status);
+      }
+      
+      return challenges;
+    } catch (error) {
+      console.error('Error retrieving challenges:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get a specific challenge by ID
+   */
+  async getChallenge(challengeId: string, organizationId: string): Promise<Challenge | null> {
+    try {
+      const challenges = await this.getChallenges(organizationId);
+      return challenges.find((c: Challenge) => c.id === challengeId) || null;
+    } catch (error) {
+      console.error('Error retrieving challenge:', error);
+      return null;
+    }
+  }
+
+  /**
    * Get user statistics
    */
   async getUserStats(userId: string): Promise<UserStats> {

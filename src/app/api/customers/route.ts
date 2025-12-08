@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma, executePrismaQuery, validateOrganizationId } from '@/lib/prisma';
+import { handleApiError, validateSession } from '@/lib/api-error-handler';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+    
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
@@ -19,7 +23,7 @@ export async function GET(request: NextRequest) {
       OR?: Array<{ name?: { contains: string; mode: 'insensitive' }; email?: { contains: string; mode: 'insensitive' }; phone?: { contains: string; mode: 'insensitive' } }>;
       tags?: { has: string };
     } = {
-      organizationId: session.user.organizationId,
+      organizationId,
     };
 
     if (search) {
@@ -34,7 +38,8 @@ export async function GET(request: NextRequest) {
       where.tags = { has: tag };
     }
 
-    const customers = await prisma.customer.findMany({
+    const customers = await executePrismaQuery(() =>
+      prisma.customer.findMany({
       where,
       include: {
         orders: {
@@ -49,7 +54,8 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: { createdAt: 'desc' },
-    });
+      })
+    );
 
     // Calculate derived fields
     const customersWithStats = customers.map((customer) => {
@@ -67,17 +73,20 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ customers: customersWithStats });
   } catch (error) {
-    console.error('Error fetching customers:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+    
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const body = await request.json();
     const {
@@ -93,34 +102,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if customer already exists
-    const existingCustomer = await prisma.customer.findFirst({
+    const existingCustomer = await executePrismaQuery(() =>
+      prisma.customer.findFirst({
       where: {
         OR: [
           { email },
           { phone },
         ],
-        organizationId: session.user.organizationId,
+          organizationId,
       },
-    });
+      })
+    );
 
     if (existingCustomer) {
       return NextResponse.json({ message: 'Customer with this email or phone already exists' }, { status: 400 });
     }
 
     // Create customer
-    const customer = await prisma.customer.create({
+    const customer = await executePrismaQuery(() =>
+      prisma.customer.create({
       data: {
         name,
         email,
         phone,
         tags: tags || [],
-        organizationId: session.user.organizationId,
+          organizationId,
       },
-    });
+      })
+    );
 
     return NextResponse.json({ customer }, { status: 201 });
   } catch (error) {
-    console.error('Error creating customer:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 } 

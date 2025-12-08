@@ -69,11 +69,9 @@ export default function ProductsPage() {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/products');
-      if (response.ok) {
-        const data = await response.json();
+      const { fetchJSON } = await import('@/lib/api-client');
+      const data = await fetchJSON<{ products: Product[] }>('/api/products');
         setProducts(data.products);
-      }
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Failed to load products');

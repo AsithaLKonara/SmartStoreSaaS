@@ -488,8 +488,52 @@ export class EmailService {
             } as Record<string, unknown>,
           },
         });
+      } else {
+        // Store non-user emails in Organization metadata
+        const organization = await prisma.organization.findUnique({
+          where: { id: organizationId },
+          select: { settings: true },
+        });
+
+        const settings = (organization?.settings as Record<string, unknown>) || {};
+        const nonUserEmails = (settings.nonUserEmails as Record<string, unknown>) || {};
+        
+        if (!nonUserEmails[listId]) {
+          nonUserEmails[listId] = [];
+        }
+        
+        const emailList = nonUserEmails[listId] as Array<Record<string, unknown>>;
+        // Check if email already exists in the list
+        const existingIndex = emailList.findIndex((item: Record<string, unknown>) => item.email === email);
+        
+        if (existingIndex === -1) {
+          emailList.push({
+            email,
+            listId,
+            isActive: true,
+            customFields,
+            subscribedAt: new Date(),
+          });
+        } else {
+          // Update existing entry
+          emailList[existingIndex] = {
+            ...emailList[existingIndex],
+            isActive: true,
+            customFields: { ...(emailList[existingIndex].customFields as Record<string, unknown> || {}), ...customFields },
+            updatedAt: new Date(),
+          };
+        }
+
+        await prisma.organization.update({
+          where: { id: organizationId },
+          data: {
+            settings: {
+              ...settings,
+              nonUserEmails,
+            } as Record<string, unknown>,
+          },
+        });
       }
-      // TODO: Also store in a separate list for non-user emails
     } catch (error) {
       console.error('Error adding to mailing list:', error);
       throw new Error('Failed to add to mailing list');

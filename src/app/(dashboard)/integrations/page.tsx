@@ -1,5 +1,5 @@
 import { IntegrationManager } from '@/components/integrations/IntegrationManager';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 

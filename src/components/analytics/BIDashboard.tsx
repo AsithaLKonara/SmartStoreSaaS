@@ -63,14 +63,14 @@ export function BIDashboard() {
 
       setWidgets(defaultWidgets);
 
-      // Fetch data for each widget
+      // Fetch data for each widget with retry logic
+      const { fetchJSON } = await import('@/lib/api-client');
       const dataPromises = defaultWidgets.map(async widget => {
-        const response = await fetch('/api/analytics/bi', {
+        const result = await fetchJSON('/api/analytics/bi', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query: widget.query }),
         });
-        const result = await response.json();
         return { widgetId: widget.id, data: result };
       });
 

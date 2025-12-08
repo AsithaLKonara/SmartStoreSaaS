@@ -1,22 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma, executePrismaQuery, validateOrganizationId } from '@/lib/prisma';
+import { handleApiError, validateSession } from '@/lib/api-error-handler';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+    
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
-    const campaigns = await prisma.campaign.findMany({
-      where: { organizationId: session.user.organizationId },
+    const campaigns = await executePrismaQuery(() =>
+      prisma.campaign.findMany({
+        where: { organizationId },
       orderBy: { createdAt: 'desc' },
       include: {
         metrics: true,
       },
-    });
+      })
+    );
 
     // Get stats from CampaignMetric or use defaults
     const campaignsWithStats = campaigns.map((campaign) => {
@@ -42,17 +48,20 @@ export async function GET() {
 
     return NextResponse.json(campaignsWithStats);
   } catch (error) {
-    console.error('Error fetching campaigns:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+    
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const body = await request.json();
     const { name, type, content, settings } = body;
@@ -61,13 +70,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Name, type, and content are required' }, { status: 400 });
     }
 
-    const campaign = await prisma.campaign.create({
+    const campaign = await executePrismaQuery(() =>
+      prisma.campaign.create({
       data: {
         name,
         type: type as 'EMAIL' | 'SMS' | 'PUSH' | 'IN_APP',
         content,
         settings: settings || {},
-        organizationId: session.user.organizationId,
+          organizationId,
         metrics: {
           create: {
             sent: 0,
@@ -81,7 +91,8 @@ export async function POST(request: NextRequest) {
       include: {
         metrics: true,
       },
-    });
+      })
+    );
 
     return NextResponse.json({
       ...campaign,
@@ -94,7 +105,7 @@ export async function POST(request: NextRequest) {
       },
     }, { status: 201 });
   } catch (error) {
-    console.error('Error creating campaign:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 } 

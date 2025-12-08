@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { BIService } from '@/lib/analytics/biService';
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     const biService = new BIService();
-    const result = await biService.executeQuery(session.user.organizationId, query);
+    const result = await biService.executeQuery(session?.user?.organizationId, query);
 
     return NextResponse.json(result);
   } catch (error) {
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -44,10 +44,10 @@ export async function GET(request: NextRequest) {
 
     if (type === 'forecast') {
       const days = parseInt(searchParams.get('days') || '30');
-      const result = await biService.getSalesForecast(session.user.organizationId, days);
+      const result = await biService.getSalesForecast(session?.user?.organizationId, days);
       return NextResponse.json(result);
     } else if (type === 'segmentation') {
-      const result = await biService.getCustomerSegmentation(session.user.organizationId);
+      const result = await biService.getCustomerSegmentation(session?.user?.organizationId);
       return NextResponse.json(result);
     }
 

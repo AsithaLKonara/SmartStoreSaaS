@@ -75,7 +75,7 @@ export default function WarehousePage() {
 
   useEffect(() => {
     if (!session?.user?.organizationId) {
-      router.push('/signin');
+      router.push('/auth/signin');
       return;
     }
     fetchWarehouseData();

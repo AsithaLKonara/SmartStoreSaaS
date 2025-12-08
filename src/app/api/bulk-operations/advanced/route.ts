@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { Prisma } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { BulkOperationsService } from '@/lib/bulk/bulkOperationsService';
@@ -9,7 +10,7 @@ const bulkOperationsService = new BulkOperationsService();
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
             });
 
             for (let i = 0; i < Math.min(records.length, 10); i++) {
-              const record = records[i] as Record<string, unknown>;
+              const record = records[i] as Prisma.InputJsonValue;
               const validation = { row: i + 1, valid: true, errors: [] as string[] };
 
               if (validateEntity === 'products') {
@@ -198,7 +199,7 @@ export async function POST(request: NextRequest) {
             const records = XLSX.utils.sheet_to_json(worksheet);
 
             for (let i = 0; i < Math.min(records.length, 10); i++) {
-              const record = records[i] as Record<string, unknown>;
+              const record = records[i] as Prisma.InputJsonValue;
               const validation = { row: i + 1, valid: true, errors: [] as string[] };
 
               if (validateEntity === 'products') {

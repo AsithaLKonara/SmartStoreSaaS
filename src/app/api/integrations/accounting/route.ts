@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const integrations = await prisma.accountingIntegration.findMany({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId: session?.user?.organizationId },
     });
 
     return NextResponse.json(integrations);
@@ -24,7 +24,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     const integration = await prisma.accountingIntegration.create({
       data: {
-        organizationId: session.user.organizationId,
+        organizationId: session?.user?.organizationId,
         provider,
         accessToken,
         refreshToken,

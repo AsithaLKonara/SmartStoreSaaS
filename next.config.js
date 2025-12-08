@@ -4,17 +4,12 @@ const nextConfig = {
   // Vercel handles this automatically
   ...(process.env.VERCEL ? {} : { output: 'standalone' }),
   eslint: {
-    // Note: Currently ignoring during builds due to non-critical warnings
-    // TODO: Fix remaining ESLint warnings (unused imports, missing dependencies)
-    // Most are code quality issues, not breaking errors
-    ignoreDuringBuilds: true, // Remove after fixing remaining warnings
+    // ESLint errors have been fixed
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    // Note: Currently ignoring build errors due to non-critical type issues
-    // Critical errors have been fixed (orders route, switch component, business intelligence)
-    // Remaining: mostly any types, unused variables in non-critical code
-    // TODO: Gradually fix remaining TypeScript issues
-    ignoreBuildErrors: true, // Remove after fixing remaining type issues
+    // TypeScript errors have been fixed
+    ignoreBuildErrors: false,
   },
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client'],

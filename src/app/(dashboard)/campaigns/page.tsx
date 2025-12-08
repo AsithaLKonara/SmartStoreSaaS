@@ -78,20 +78,15 @@ export default function CampaignsPage() {
   const fetchCampaignData = async () => {
     try {
       setLoading(true);
-      const [campaignsRes, templatesRes] = await Promise.all([
-        fetch('/api/campaigns'),
-        fetch('/api/campaigns/templates')
+      const { fetchJSON } = await import('@/lib/api-client');
+      
+      const [campaignsData, templatesData] = await Promise.all([
+        fetchJSON('/api/campaigns'),
+        fetchJSON('/api/campaigns/templates')
       ]);
 
-      if (campaignsRes.ok) {
-        const campaignsData = await campaignsRes.json();
         setCampaigns(campaignsData);
-      }
-
-      if (templatesRes.ok) {
-        const templatesData = await templatesRes.json();
         setTemplates(templatesData);
-      }
     } catch (error) {
       console.error('Error fetching campaign data:', error);
       toast.error('Failed to load campaign data');

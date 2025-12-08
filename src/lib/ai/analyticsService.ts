@@ -372,6 +372,12 @@ export class AIAnalyticsService {
         where: { orderId: { in: orderIds } },
         include: {
           order: true,
+          courier: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       });
 
@@ -380,8 +386,8 @@ export class AIAnalyticsService {
         if (!courierId) return acc; // Skip shipments without courier
         
         if (!acc[courierId]) {
-          // Fetch courier name if available
-          const courierName = courierId || 'Unknown'; // TODO: Fetch from CourierDelivery or metadata
+          // Fetch courier name from the courier relation
+          const courierName = shipment.courier?.name || 'Unknown';
           acc[courierId] = {
             courierId,
             courierName,

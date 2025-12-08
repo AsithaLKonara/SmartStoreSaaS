@@ -17,6 +17,9 @@ const customJestConfig = {
     '^@/types/(.*)$': '<rootDir>/src/types/$1',
   },
   testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/'],
+  transformIgnorePatterns: [
+    'node_modules/(?!(jose|@panva/hkdf|oauth4webapi|openid-client)/)',
+  ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',

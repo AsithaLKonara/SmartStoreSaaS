@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma, validateOrganizationId } from '@/lib/prisma';
+import { handleApiError, validateSession } from '@/lib/api-error-handler';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const operations = await prisma.bulkOperation.findMany({
       where: {
-        organizationId: session.user.organizationId,
+        organizationId,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -30,17 +34,20 @@ export async function GET() {
 
     return NextResponse.json(operationsWithProgress);
   } catch (error) {
-    console.error('Error fetching bulk operations:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const body = await request.json();
     const { name, type, entity, templateId, fileUrl } = body;
@@ -62,7 +69,7 @@ export async function POST(request: NextRequest) {
         fileUrl: fileUrl || null,
         errors: [],
         metadata: templateId ? { templateId } : {},
-        organizationId: session.user.organizationId,
+        organizationId,
       },
     });
 
@@ -74,7 +81,7 @@ export async function POST(request: NextRequest) {
       errorLog: operation.errors,
     }, { status: 201 });
   } catch (error) {
-    console.error('Error creating bulk operation:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 } 

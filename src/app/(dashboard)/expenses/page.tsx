@@ -44,7 +44,7 @@ export default function ExpensesPage() {
 
   useEffect(() => {
     if (!session?.user?.organizationId) {
-      router.push('/signin');
+      router.push('/auth/signin');
       return;
     }
     fetchExpenseData();

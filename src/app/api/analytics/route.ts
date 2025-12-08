@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma, executePrismaQuery, validateOrganizationId } from '@/lib/prisma';
+import { handleApiError, validateSession } from '@/lib/api-error-handler';
 import { PaymentStatus } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+    
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const { searchParams } = new URL(request.url);
     const range = parseInt(searchParams.get('range') || '30');
@@ -19,9 +23,10 @@ export async function GET(request: NextRequest) {
     const previousStartDate = new Date(startDate.getTime() - range * 24 * 60 * 60 * 1000);
 
     // Current period data
-    const currentOrders = await prisma.order.findMany({
+    const currentOrders = await executePrismaQuery(() =>
+      prisma.order.findMany({
       where: {
-        organizationId: session.user.organizationId,
+          organizationId,
         createdAt: { gte: startDate },
       },
       include: {
@@ -32,36 +37,45 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-    });
+      })
+    );
 
-    const currentCustomers = await prisma.customer.findMany({
+    const currentCustomers = await executePrismaQuery(() =>
+      prisma.customer.findMany({
       where: {
-        organizationId: session.user.organizationId,
+          organizationId,
         createdAt: { gte: startDate },
       },
-    });
+      })
+    );
 
-    const currentProducts = await prisma.product.findMany({
+    const currentProducts = await executePrismaQuery(() =>
+      prisma.product.findMany({
       where: {
-        organizationId: session.user.organizationId,
+          organizationId,
         isActive: true,
       },
-    });
+      })
+    );
 
     // Previous period data for comparison
-    const previousOrders = await prisma.order.findMany({
+    const previousOrders = await executePrismaQuery(() =>
+      prisma.order.findMany({
       where: {
-        organizationId: session.user.organizationId,
+          organizationId,
         createdAt: { gte: previousStartDate, lt: startDate },
       },
-    });
+      })
+    );
 
-    const previousCustomers = await prisma.customer.findMany({
+    const previousCustomers = await executePrismaQuery(() =>
+      prisma.customer.findMany({
       where: {
-        organizationId: session.user.organizationId,
+          organizationId,
         createdAt: { gte: previousStartDate, lt: startDate },
       },
-    });
+      })
+    );
 
     // Calculate metrics
     const currentRevenue = currentOrders.reduce((sum: number, order) => sum + (order.totalAmount || 0), 0);
@@ -142,13 +156,15 @@ export async function GET(request: NextRequest) {
       .slice(0, 5);
 
     // Payment methods
-    const payments = await prisma.payment.findMany({
+    const payments = await executePrismaQuery(() =>
+      prisma.payment.findMany({
       where: {
-        organizationId: session.user.organizationId,
+          organizationId,
         createdAt: { gte: startDate },
         status: PaymentStatus.COMPLETED,
       },
-    });
+      })
+    );
 
     const paymentMethods = new Map<string, number>();
     payments.forEach((payment) => {
@@ -193,7 +209,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(analytics);
   } catch (error) {
-    console.error('Error fetching analytics:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 } 

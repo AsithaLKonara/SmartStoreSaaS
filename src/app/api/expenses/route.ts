@@ -1,33 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma, validateOrganizationId } from '@/lib/prisma';
+import { handleApiError, validateSession } from '@/lib/api-error-handler';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
 
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
+
     const expenses = await prisma.expense.findMany({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId },
       orderBy: { createdAt: 'desc' },
     });
 
     return NextResponse.json(expenses);
   } catch (error) {
-    console.error('Error fetching expenses:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const body = await request.json();
     const { title, description, amount, category, type, paymentMethod, vendor, tags } = body;
@@ -42,7 +49,7 @@ export async function POST(request: NextRequest) {
         amount: parseFloat(amount),
         category: category || null,
         date: new Date(),
-        organizationId: session.user.organizationId,
+        organizationId,
         metadata: {
           type,
           paymentMethod,
@@ -55,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(expense, { status: 201 });
   } catch (error) {
-    console.error('Error creating expense:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 } 

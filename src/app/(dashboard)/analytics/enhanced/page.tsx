@@ -93,33 +93,19 @@ export default function EnhancedAnalyticsPage() {
   const fetchEnhancedAnalytics = async () => {
     try {
       setLoading(true);
+      const { fetchJSON } = await import('@/lib/api-client');
       
-      const [insightsRes, metricsRes, segmentsRes, insightsRes2] = await Promise.all([
-        fetch(`/api/analytics/ai-insights?timeRange=${timeRange}`),
-        fetch(`/api/analytics/predictive?timeRange=${timeRange}`),
-        fetch(`/api/analytics/customer-segments?timeRange=${timeRange}`),
-        fetch(`/api/analytics/business-insights?timeRange=${timeRange}`),
+      const [insights, metrics, segments, businessInsights] = await Promise.all([
+        fetchJSON(`/api/analytics/ai-insights?timeRange=${timeRange}`),
+        fetchJSON(`/api/analytics/predictive?timeRange=${timeRange}`),
+        fetchJSON(`/api/analytics/customer-segments?timeRange=${timeRange}`),
+        fetchJSON(`/api/analytics/business-insights?timeRange=${timeRange}`),
       ]);
 
-      if (insightsRes.ok) {
-        const insights = await insightsRes.json();
-        setAiInsights(insights.insights);
-      }
-
-      if (metricsRes.ok) {
-        const metrics = await metricsRes.json();
-        setPredictiveMetrics(metrics.metrics);
-      }
-
-      if (segmentsRes.ok) {
-        const segments = await segmentsRes.json();
-        setCustomerSegments(segments.segments);
-      }
-
-      if (insightsRes2.ok) {
-        const insights = await insightsRes2.json();
-        setBusinessInsights(insights);
-      }
+      setAiInsights(insights.insights || []);
+      setPredictiveMetrics(metrics.metrics || []);
+      setCustomerSegments(segments.segments || []);
+      setBusinessInsights(businessInsights || {});
     } catch (error) {
       console.error('Error fetching enhanced analytics:', error);
       toast.error('Failed to load analytics data');

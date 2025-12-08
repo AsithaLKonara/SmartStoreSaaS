@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { RegionService } from '@/lib/region/regionService';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       const config = service.getRegionConfigByRegion(region);
       return NextResponse.json(config);
     } else {
-      const config = await service.getRegionConfig(session.user.organizationId);
+      const config = await service.getRegionConfig(session?.user?.organizationId);
       return NextResponse.json(config);
     }
   } catch (error) {
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     const service = new RegionService();
-    await service.setRegion(session.user.organizationId, region);
+    await service.setRegion(session?.user?.organizationId, region);
 
     return NextResponse.json({ message: 'Region updated successfully' });
   } catch (error) {

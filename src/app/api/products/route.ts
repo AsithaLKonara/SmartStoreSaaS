@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma, executePrismaQuery, validateOrganizationId } from '@/lib/prisma';
+import { handleApiError, validateSession } from '@/lib/api-error-handler';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+    
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get('categoryId');
@@ -34,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     const where: WhereClause = {
-      organizationId: session.user.organizationId,
+      organizationId,
     };
 
     if (categoryId) {
@@ -68,10 +72,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get total count for pagination
-    const total = await prisma.product.count({ where });
+    // Get total count for pagination with error handling
+    const total = await executePrismaQuery(() => 
+      prisma.product.count({ where })
+    );
 
-    const products = await prisma.product.findMany({
+    const products = await executePrismaQuery(() =>
+      prisma.product.findMany({
       where,
       include: {
         category: true,
@@ -80,7 +87,8 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,
-    });
+      })
+    );
 
     return NextResponse.json({ 
       products, 
@@ -94,17 +102,20 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Error fetching products:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+    
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const body = await request.json();
     const {
@@ -127,12 +138,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if SKU already exists
-    const existingProduct = await prisma.product.findFirst({
+    const existingProduct = await executePrismaQuery(() =>
+      prisma.product.findFirst({
       where: {
         sku,
-        organizationId: session.user.organizationId,
+          organizationId,
       },
-    });
+      })
+    );
 
     if (existingProduct) {
       return NextResponse.json({ message: 'SKU already exists' }, { status: 400 });
@@ -140,39 +153,41 @@ export async function POST(request: NextRequest) {
 
     // Create product with variants
     const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    const product = await prisma.product.create({
-      data: {
-        name,
-        slug,
-        description: description || null,
-        price: parseFloat(price),
-        costPrice: costPrice ? parseFloat(costPrice) : null,
-        sku: sku || null,
-        stockQuantity: stockQuantity ? parseInt(stockQuantity) : 0,
-        lowStockThreshold: lowStockThreshold ? parseInt(lowStockThreshold) : 0,
-        isActive: isActive !== false,
-        images: images || [],
-        organizationId: session.user.organizationId,
-        createdById: session.user.id,
-        variants: {
-          create: variants?.map((variant: { name: string; price?: string | number; costPrice?: string | number; stockQuantity?: string | number; sku?: string }) => ({
-            name: variant.name,
-            price: variant.price ? parseFloat(variant.price) : null,
-            costPrice: variant.costPrice ? parseFloat(variant.costPrice) : null,
-            stockQuantity: variant.stockQuantity ? parseInt(variant.stockQuantity) : 0,
-            sku: variant.sku || null,
-          })) || [],
+    const product = await executePrismaQuery(() =>
+      prisma.product.create({
+        data: {
+          name,
+          slug,
+          description: description || null,
+          price: parseFloat(price),
+          costPrice: costPrice ? parseFloat(costPrice) : null,
+          sku: sku || null,
+          stockQuantity: stockQuantity ? parseInt(stockQuantity) : 0,
+          lowStockThreshold: lowStockThreshold ? parseInt(lowStockThreshold) : 0,
+          isActive: isActive !== false,
+          images: images || [],
+          organizationId,
+          createdById: session.user.id,
+          variants: {
+            create: variants?.map((variant: { name: string; price?: string | number; costPrice?: string | number; stockQuantity?: string | number; sku?: string }) => ({
+              name: variant.name,
+              price: variant.price ? parseFloat(String(variant.price)) : null,
+              costPrice: variant.costPrice ? parseFloat(String(variant.costPrice)) : null,
+              stockQuantity: variant.stockQuantity ? parseInt(String(variant.stockQuantity)) : 0,
+              sku: variant.sku || null,
+            })) || [],
+          },
         },
-      },
-      include: {
-        category: true,
-        variants: true,
-      },
-    });
+        include: {
+          category: true,
+          variants: true,
+        },
+      })
+    );
 
     return NextResponse.json({ product }, { status: 201 });
   } catch (error) {
-    console.error('Error creating product:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 } 

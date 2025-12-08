@@ -88,11 +88,9 @@ export default function PaymentsPage() {
 
   const fetchPayments = async () => {
     try {
-      const response = await fetch('/api/payments');
-      if (response.ok) {
-        const data = await response.json();
+      const { fetchJSON } = await import('@/lib/api-client');
+      const data = await fetchJSON<{ payments: Payment[] }>('/api/payments');
         setPayments(data.payments);
-      }
     } catch (error) {
       console.error('Error fetching payments:', error);
       toast.error('Failed to load payments');

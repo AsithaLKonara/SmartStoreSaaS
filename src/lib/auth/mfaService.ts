@@ -559,17 +559,31 @@ export class MFAService {
   }
 
   /**
-   * Get MFA authentication logs (not implemented in current schema)
+   * Get MFA authentication logs from Activity model
    */
   async getMFALogs(userId: string, limit = 50): Promise<Array<Record<string, unknown>>> {
     try {
-      // MFA logs stored in UserPreference metadata or Activity model
-      // TODO: Use Activity model for MFA logs instead of mfaLog
-      const userPref = await prisma.userPreference.findUnique({
-        where: { userId },
+      // Use Activity model for MFA logs
+      const activities = await prisma.activity.findMany({
+        where: {
+          userId,
+          type: 'mfa_log',
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: limit,
       });
-      const logs = (userPref?.notifications as Record<string, unknown> & { mfaLogs?: unknown[] })?.mfaLogs || [];
-      return logs.slice(0, limit);
+
+      return activities.map((activity) => ({
+        id: activity.id,
+        action: (activity.metadata as Record<string, unknown>)?.action,
+        result: (activity.metadata as Record<string, unknown>)?.result,
+        details: (activity.metadata as Record<string, unknown>)?.details,
+        timestamp: activity.createdAt,
+        ipAddress: (activity.metadata as Record<string, unknown>)?.ipAddress,
+        userAgent: (activity.metadata as Record<string, unknown>)?.userAgent,
+      }));
     } catch (error) {
       console.error('Error getting MFA logs:', error);
       return [];

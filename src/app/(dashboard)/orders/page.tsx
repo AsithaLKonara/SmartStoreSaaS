@@ -88,11 +88,9 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch('/api/orders');
-      if (response.ok) {
-        const data = await response.json();
+      const { fetchJSON } = await import('@/lib/api-client');
+      const data = await fetchJSON<{ orders: Order[] }>('/api/orders');
         setOrders(data.orders);
-      }
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Failed to load orders');

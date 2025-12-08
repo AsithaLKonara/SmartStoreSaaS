@@ -142,6 +142,11 @@ ssl/
 coverage/
 .nyc_output/
 
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
 # Build artifacts
 build/
 dist/

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma, executePrismaQuery, validateOrganizationId } from '@/lib/prisma';
+import { handleApiError, validateSession } from '@/lib/api-error-handler';
 
 function getTimeAgo(date: Date): string {
   const now = new Date();
@@ -24,17 +25,21 @@ function getTimeAgo(date: Date): string {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const sessionValidation = validateSession(session);
+    if (!sessionValidation.valid) {
+      return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
     }
+    
+    const organizationId = validateOrganizationId(session?.user?.organizationId);
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '10');
 
     // Get recent conversations
-    const conversations = await prisma.customerConversation.findMany({
+    const conversations = await executePrismaQuery(() =>
+      prisma.customerConversation.findMany({
       where: {
-        organizationId: session.user.organizationId,
+          organizationId,
       },
       include: {
         customer: {
@@ -52,7 +57,8 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { updatedAt: 'desc' },
       take: limit,
-    });
+      })
+    );
 
     // Format conversations for dashboard display
     const formattedChats = conversations.map(conv => {
@@ -71,9 +77,10 @@ export async function GET(request: NextRequest) {
 
     // If no conversations, try to get recent chat messages as fallback
     if (formattedChats.length === 0) {
-      const recentMessages = await prisma.chatMessage.findMany({
+      const recentMessages = await executePrismaQuery(() =>
+        prisma.chatMessage.findMany({
         where: {
-          organizationId: session.user.organizationId,
+            organizationId,
         },
         include: {
           customer: {
@@ -85,7 +92,8 @@ export async function GET(request: NextRequest) {
         },
         orderBy: { createdAt: 'desc' },
         take: limit,
-      });
+        })
+      );
 
       // Group by customer
       const messagesByCustomer = new Map();
@@ -108,8 +116,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formattedChats);
   } catch (error) {
-    console.error('Error fetching recent chats:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    const session = await getServerSession(authOptions).catch(() => null);
+    return handleApiError(error, request, session);
   }
 }
 

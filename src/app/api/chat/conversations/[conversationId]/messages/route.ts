@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
@@ -9,14 +9,14 @@ export async function GET(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const messages = await prisma.chatMessage.findMany({
       where: {
         customerId: params.conversationId,
-        organizationId: session.user.organizationId,
+        organizationId: session?.user?.organizationId,
       },
       include: {
         customer: {
@@ -43,7 +43,7 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -61,7 +61,7 @@ export async function POST(
         type: 'TEXT',
         status: 'SENT',
         customerId: params.conversationId,
-        organizationId: session.user.organizationId,
+        organizationId: session?.user?.organizationId,
         metadata: {
           channel: 'whatsapp',
           sender,

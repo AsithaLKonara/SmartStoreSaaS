@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -24,7 +24,7 @@ export async function DELETE(request: NextRequest) {
         where: {
           productId: { in: productIds },
           product: { 
-            organizationId: session.user.organizationId || '',
+            organizationId: session?.user?.organizationId || '',
           },
         },
       });
@@ -33,7 +33,7 @@ export async function DELETE(request: NextRequest) {
       const deletedProducts = await tx.product.deleteMany({
         where: {
           id: { in: productIds },
-          organizationId: session.user.organizationId || '',
+          organizationId: session?.user?.organizationId || '',
         },
       });
 

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { CurrencyService } from '@/lib/currency/currencyService';
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     const currencyService = new CurrencyService();
     const result = await currencyService.convertCurrency(
-      session.user.organizationId,
+      session?.user?.organizationId,
       from,
       to,
       amount

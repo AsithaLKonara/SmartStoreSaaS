@@ -176,16 +176,13 @@ describe('/api/warehouses/movements', () => {
       };
 
       (prisma.product.findUnique as jest.Mock).mockResolvedValue(mockProduct);
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
-        const tx = {
-          product: {
-            update: jest.fn().mockResolvedValue({ ...mockProduct, stockQuantity: 15 }),
-          },
-          inventoryMovement: {
-            create: jest.fn().mockResolvedValue(mockMovement),
-          },
-        };
-        return await callback(tx);
+      (prisma.$transaction as jest.Mock).mockImplementation(async (queries) => {
+        // The route uses prisma.$transaction([update, create]) which returns an array
+        // Return array with updated product and created movement
+        return [
+          { ...mockProduct, stockQuantity: 15 },
+          mockMovement,
+        ];
       });
 
       const request = new MockNextRequest('http://localhost:3000/api/warehouses/movements', {
@@ -201,6 +198,7 @@ describe('/api/warehouses/movements', () => {
       const data = await response.json();
 
       expect(response.status).toBe(201);
+      expect(data).toHaveProperty('type');
       expect(data.type).toBe('in');
       expect(data.quantity).toBe(5);
     });
@@ -226,16 +224,13 @@ describe('/api/warehouses/movements', () => {
       };
 
       (prisma.product.findUnique as jest.Mock).mockResolvedValue(mockProduct);
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
-        const tx = {
-          product: {
-            update: jest.fn().mockResolvedValue({ ...mockProduct, stockQuantity: 7 }),
-          },
-          inventoryMovement: {
-            create: jest.fn().mockResolvedValue(mockMovement),
-          },
-        };
-        return await callback(tx);
+      (prisma.$transaction as jest.Mock).mockImplementation(async (queries) => {
+        // The route uses prisma.$transaction([update, create]) which returns an array
+        // Return array with updated product and created movement
+        return [
+          { ...mockProduct, stockQuantity: 7 },
+          mockMovement,
+        ];
       });
 
       const request = new MockNextRequest('http://localhost:3000/api/warehouses/movements', {

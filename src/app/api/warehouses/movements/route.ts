@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -14,7 +14,7 @@ export async function GET() {
     const movements = await prisma.inventoryMovement.findMany({
       where: {
         product: {
-          organizationId: session.user.organizationId,
+          organizationId: session?.user?.organizationId,
         },
       },
       include: {
@@ -74,7 +74,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId || !session?.user?.id) {
+    if (!session || !session.user?.organizationId || !session?.user?.id) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       where: { id: productId },
     });
 
-    if (!product || product.organizationId !== session.user.organizationId) {
+    if (!product || product.organizationId !== session?.user?.organizationId) {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 });
     }
 

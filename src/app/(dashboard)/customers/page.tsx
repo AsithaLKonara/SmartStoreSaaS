@@ -67,11 +67,9 @@ export default function CustomersPage() {
 
   const fetchCustomers = async () => {
     try {
-      const response = await fetch('/api/customers');
-      if (response.ok) {
-        const data = await response.json();
+      const { fetchJSON } = await import('@/lib/api-client');
+      const data = await fetchJSON<{ customers: Customer[] }>('/api/customers');
         setCustomers(data.customers);
-      }
     } catch (error) {
       console.error('Error fetching customers:', error);
       toast.error('Failed to load customers');

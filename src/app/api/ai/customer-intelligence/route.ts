@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { customerIntelligenceService } from '@/lib/ai/customerIntelligenceService';
 import { prisma } from '@/lib/prisma';
@@ -7,14 +7,14 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session || !session.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const customerId = searchParams.get('customerId');
-    const organizationId = session.user.organizationId;
+    const organizationId = session?.user?.organizationId;
 
     // Get data for AI analysis
     if (!organizationId) {
@@ -181,13 +181,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    if (!session || !session.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
     const { action, data } = body;
-    const organizationId = session.user.organizationId;
+    const organizationId = session?.user?.organizationId;
 
     switch (action) {
       case 'create-customer-segment':

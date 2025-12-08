@@ -176,7 +176,7 @@
 
   /* Card styles - ERP Design */
   .card {
-    @apply bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700;
+    @apply bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 sm:p-8;
   }
 
   .card-header {
@@ -254,7 +254,7 @@
   }
 
   .form-label {
-    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 whitespace-normal;
   }
 
   .form-error {

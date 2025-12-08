@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { InstagramShoppingService } from '@/lib/integrations/instagram/instagramShoppingService';
@@ -7,12 +7,12 @@ import { InstagramShoppingService } from '@/lib/integrations/instagram/instagram
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const integration = await prisma.instagramIntegration.findFirst({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId: session?.user?.organizationId },
     });
 
     if (!integration) {
@@ -35,7 +35,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -66,9 +66,9 @@ export async function POST(request: NextRequest) {
 
     // Create or update integration
     const integration = await prisma.instagramIntegration.upsert({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId: session?.user?.organizationId },
       create: {
-        organizationId: session.user.organizationId,
+        organizationId: session?.user?.organizationId,
         businessAccountId,
         accessToken,
         isActive: true,
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -121,7 +121,7 @@ export async function PUT(request: NextRequest) {
     const { isActive } = body;
 
     const integration = await prisma.instagramIntegration.findFirst({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId: session?.user?.organizationId },
     });
 
     if (!integration) {
@@ -145,12 +145,12 @@ export async function PUT(request: NextRequest) {
 export async function DELETE() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const integration = await prisma.instagramIntegration.findFirst({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId: session?.user?.organizationId },
     });
 
     if (!integration) {

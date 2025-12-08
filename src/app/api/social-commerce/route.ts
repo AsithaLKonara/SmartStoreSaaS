@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { Prisma } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { SocialCommerceService } from '@/lib/social/socialCommerceService';
@@ -9,7 +10,7 @@ const socialCommerceService = new SocialCommerceService();
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -246,7 +247,7 @@ export async function POST(request: NextRequest) {
         }
 
         const totalEngagement = platformStats.socialPosts.reduce((sum, post) => {
-          const engagement = post.engagement as Record<string, unknown> & { likes?: number; comments?: number; shares?: number };
+          const engagement = post.engagement as Prisma.InputJsonValue & { likes?: number; comments?: number; shares?: number };
           return sum + (engagement?.likes || 0) + (engagement?.comments || 0) + (engagement?.shares || 0);
         }, 0);
 

@@ -77,21 +77,14 @@ export default function DashboardPage() {
       try {
         setIsLoading(true);
         
-        // Fetch all data in parallel
-        const [statsRes, ordersRes, chatsRes] = await Promise.all([
-          fetch('/api/analytics/dashboard-stats'),
-          fetch('/api/orders/recent?limit=4'),
-          fetch('/api/chat/recent?limit=3'),
-        ]);
-
-        if (!statsRes.ok || !ordersRes.ok || !chatsRes.ok) {
-          throw new Error('Failed to fetch dashboard data');
-        }
-
+        // Import API client dynamically to avoid SSR issues
+        const { fetchJSON } = await import('@/lib/api-client');
+        
+        // Fetch all data in parallel with retry logic
         const [statsData, ordersData, chatsData] = await Promise.all([
-          statsRes.json(),
-          ordersRes.json(),
-          chatsRes.json(),
+          fetchJSON('/api/analytics/dashboard-stats'),
+          fetchJSON('/api/orders/recent?limit=4'),
+          fetchJSON('/api/chat/recent?limit=3'),
         ]);
 
         setStats(statsData);

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { FacebookCommerceService } from '@/lib/integrations/facebook/facebookCommerceService';
@@ -7,12 +7,12 @@ import { FacebookCommerceService } from '@/lib/integrations/facebook/facebookCom
 export async function POST() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.organizationId) {
+    if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const integration = await prisma.facebookIntegration.findFirst({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId: session?.user?.organizationId },
     });
 
     if (!integration || !integration.isActive) {

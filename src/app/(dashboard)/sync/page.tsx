@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { useRealTimeSync } from '@/hooks/useRealTimeSync';
 import { SyncEvent, SyncConflict } from '@/lib/sync/realTimeSyncService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,11 +24,13 @@ interface SyncStatus {
 }
 
 export default function SyncPage() {
+  const { data: session } = useSession();
+  const router = useRouter();
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [events] = useState<SyncEvent[]>([]);
   const [conflicts] = useState<SyncConflict[]>([]);
   const [loading, setLoading] = useState(true);
-  const [organizationId, setOrganizationId] = useState<string>('');
+  const organizationId = session?.user?.organizationId || '';
 
   const {
     isConnected,
@@ -34,7 +38,7 @@ export default function SyncPage() {
     disconnect
   } = useRealTimeSync({
     organizationId,
-    autoConnect: true,
+    autoConnect: !!organizationId,
     onEvent: (event: SyncEvent) => {
       console.log('Sync event received:', event);
     },
@@ -44,30 +48,22 @@ export default function SyncPage() {
   });
 
   useEffect(() => {
-    // Get organization ID from session or context
-    const getOrganizationId = async () => {
-      try {
-        const response = await fetch('/api/user/profile');
-        if (response.ok) {
-          const user = await response.json();
-          setOrganizationId(user.organizationId);
-        }
-      } catch (error) {
-        console.error('Error getting organization ID:', error);
-      }
-    };
-
-    getOrganizationId();
-  }, []);
+    if (!session?.user?.organizationId) {
+      router.push('/auth/signin');
+      return;
+    }
+  }, [session, router]);
 
   useEffect(() => {
-    if (organizationId) {
-      loadSyncStatus();
+    if (!session?.user?.organizationId) {
+      return;
     }
+    loadSyncStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId]);
+  }, [organizationId, session]);
 
   const loadSyncStatus = async () => {
+    if (!organizationId) return;
     try {
       setLoading(true);
       const response = await fetch(`/api/sync/status?organizationId=${organizationId}`);
