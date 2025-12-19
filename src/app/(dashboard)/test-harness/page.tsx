@@ -298,14 +298,14 @@ export default function TestHarnessPage() {
                 </div>
               </div>
 
-              {result && result.response && (
+              {result && result.response ? (
                 <details className="mt-2">
                   <summary className="cursor-pointer text-sm text-gray-600">View Response</summary>
                   <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto max-h-40">
-                    {JSON.stringify(result.response, null, 2)}
+                    {JSON.stringify(result.response as unknown as Record<string, unknown> | unknown[], null, 2)}
                   </pre>
                 </details>
-              )}
+              ) : null}
 
               {result && result.error && (
                 <div className="mt-2 text-sm text-red-600">

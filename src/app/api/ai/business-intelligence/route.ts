@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { businessIntelligenceService } from '@/lib/ai/businessIntelligenceService';
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 
 // Removed unused interfaces: OrderWithRelations, CustomerData
 
@@ -29,14 +30,16 @@ type IndustryReport = Record<string, unknown>;
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as {
+      user?: { id?: string | null; organizationId?: string | null } | null;
+    } | null;
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
-    const organizationId = session.user.organizationId;
+    const organizationId = session.user?.organizationId;
 
     // Get data for BI analysis
     if (!organizationId) {
@@ -295,14 +298,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as {
+      user?: { id?: string | null; organizationId?: string | null } | null;
+    } | null;
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
     const { action, data } = body;
-    const organizationId = session.user.organizationId;
+    const organizationId = session.user?.organizationId;
 
     switch (action) {
       case 'create-custom-report':
@@ -313,7 +318,7 @@ export async function POST(request: NextRequest) {
             type: data.type || 'OPERATIONAL',
             status: 'READY',
             format: data.format || 'PDF',
-            parameters: data as Record<string, unknown>,
+            parameters: data as Prisma.InputJsonValue,
             organizationId: organizationId!,
           },
         });
@@ -342,7 +347,7 @@ export async function POST(request: NextRequest) {
             organizationId: organizationId!,
             type: 'business_alert',
             severity: (data?.severity as string) || 'medium',
-            details: data as Record<string, unknown>,
+            details: data as Prisma.InputJsonValue,
             resolved: false,
           },
         });

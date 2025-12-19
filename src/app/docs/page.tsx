@@ -4,7 +4,6 @@ import {
   BookOpen, 
   Code, 
   Zap, 
-  Database,
   Globe,
   Bot,
   FileText,

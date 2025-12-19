@@ -30,7 +30,7 @@ export default function SyncPage() {
   const [events] = useState<SyncEvent[]>([]);
   const [conflicts] = useState<SyncConflict[]>([]);
   const [loading, setLoading] = useState(true);
-  const organizationId = session?.user?.organizationId || '';
+  const organizationId = (session?.user as { organizationId?: string } | null)?.organizationId || '';
 
   const {
     isConnected,
@@ -48,14 +48,15 @@ export default function SyncPage() {
   });
 
   useEffect(() => {
-    if (!session?.user?.organizationId) {
+    const orgId = (session?.user as { organizationId?: string } | null)?.organizationId;
+    if (!orgId) {
       router.push('/auth/signin');
       return;
     }
   }, [session, router]);
 
   useEffect(() => {
-    if (!session?.user?.organizationId) {
+    if (!organizationId) {
       return;
     }
     loadSyncStatus();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { 
@@ -9,12 +9,8 @@ import {
   Users, 
   Shield, 
   Bell, 
-  Key, 
   Mail, 
   Smartphone,
-  Globe,
-  Palette,
-  CreditCard,
   Save,
   Loader2
 } from 'lucide-react';
@@ -66,18 +62,7 @@ export default function SettingsPage() {
     ipRestrictions: false,
   });
 
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.replace('/auth/signin');
-      return;
-    }
-
-    if (status === 'authenticated' && session) {
-      loadSettings();
-    }
-  }, [status, session, router]);
-
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       setIsLoading(true);
       // Load settings from API (placeholder - implement actual API call)
@@ -96,7 +81,18 @@ export default function SettingsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [session]);
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/auth/signin');
+      return;
+    }
+
+    if (status === 'authenticated' && session) {
+      loadSettings();
+    }
+  }, [status, session, router, loadSettings]);
 
   const handleSave = async () => {
     try {

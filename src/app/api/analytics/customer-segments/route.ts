@@ -38,14 +38,14 @@ function parseTimeRange(timeRange: string): { days: number; startDate: Date; end
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as { user?: { organizationId?: string | null } | null; } | null;
     if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const timeRange = searchParams.get('timeRange') || '30d';
-    const { startDate, endDate, days } = parseTimeRange(timeRange);
+    const { startDate, endDate, days: _days } = parseTimeRange(timeRange);
     
     const previousStartDate = new Date(startDate.getTime() - (endDate.getTime() - startDate.getTime()));
     const now = new Date();
@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
         : highValueCustomers.length > 0 ? 100 : 0;
       
       // Calculate churn risk (customers with last order > 60 days ago)
-      const daysSinceLastOrder = highValueCustomers.map(([customerId, metrics]) => {
+      const daysSinceLastOrder = highValueCustomers.map(([_, metrics]) => {
         if (!metrics.lastOrderDate) return Infinity;
         return (now.getTime() - metrics.lastOrderDate.getTime()) / (1000 * 60 * 60 * 24);
       });
@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
         ? ((mediumValueCustomers.length - previousMediumValueCount) / previousMediumValueCount) * 100
         : mediumValueCustomers.length > 0 ? 100 : 0;
       
-      const daysSinceLastOrder = mediumValueCustomers.map(([customerId, metrics]) => {
+      const daysSinceLastOrder = mediumValueCustomers.map(([_, metrics]) => {
         if (!metrics.lastOrderDate) return Infinity;
         return (now.getTime() - metrics.lastOrderDate.getTime()) / (1000 * 60 * 60 * 24);
       });
@@ -222,7 +222,7 @@ export async function GET(request: NextRequest) {
         ? ((lowValueCustomers.length - previousLowValueCount) / previousLowValueCount) * 100
         : lowValueCustomers.length > 0 ? 100 : 0;
       
-      const daysSinceLastOrder = lowValueCustomers.map(([customerId, metrics]) => {
+      const daysSinceLastOrder = lowValueCustomers.map(([_, metrics]) => {
         if (!metrics.lastOrderDate) return Infinity;
         return (now.getTime() - metrics.lastOrderDate.getTime()) / (1000 * 60 * 60 * 24);
       });

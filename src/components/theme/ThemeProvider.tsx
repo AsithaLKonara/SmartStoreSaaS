@@ -37,6 +37,7 @@ export function ThemeProvider({ children, defaultTheme = 'system' }: ThemeProvid
     if (defaultTheme && darkMode.isLoaded && darkMode.theme === 'system') {
       darkMode.setTheme(defaultTheme);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultTheme, darkMode.isLoaded, darkMode.theme, darkMode.setTheme]);
 
   useEffect(() => {

@@ -79,12 +79,12 @@ export default function DashboardPage() {
         
         // Import API client dynamically to avoid SSR issues
         const { fetchJSON } = await import('@/lib/api-client');
-        
+
         // Fetch all data in parallel with retry logic
         const [statsData, ordersData, chatsData] = await Promise.all([
-          fetchJSON('/api/analytics/dashboard-stats'),
-          fetchJSON('/api/orders/recent?limit=4'),
-          fetchJSON('/api/chat/recent?limit=3'),
+          fetchJSON<DashboardStats>('/api/analytics/dashboard-stats'),
+          fetchJSON<RecentOrder[]>('/api/orders/recent?limit=4'),
+          fetchJSON<RecentChat[]>('/api/chat/recent?limit=3'),
         ]);
 
         setStats(statsData);

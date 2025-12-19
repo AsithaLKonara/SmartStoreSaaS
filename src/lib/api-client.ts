@@ -67,28 +67,30 @@ export async function fetchWithRetry(
 
         // Last attempt, return the response even if not OK
         return response;
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
         clearTimeout(timeoutId);
-        
+
         // If it's an abort (timeout), throw immediately
-        if (error.name === 'AbortError') {
+        if (err.name === 'AbortError') {
           throw new Error(`Request timeout after ${timeout}ms`);
         }
-        
-        throw error;
+
+        throw err;
       }
-    } catch (error: any) {
-      lastError = error;
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      lastError = err;
 
       // Don't retry on authentication errors
-      if (error.message?.includes('Authentication failed')) {
-        throw error;
+      if (err.message?.includes('Authentication failed')) {
+        throw err;
       }
 
       // If this is the last attempt, throw the error
       if (attempt === retries - 1) {
         throw new Error(
-          `Failed to fetch ${url} after ${retries} attempts: ${error.message}`
+          `Failed to fetch ${url} after ${retries} attempts: ${err.message}`
         );
       }
 
@@ -109,7 +111,7 @@ export async function fetchWithRetry(
  * @param options - Fetch options
  * @returns Promise<T> - Parsed JSON response
  */
-export async function fetchJSON<T = any>(
+export async function fetchJSON<T = unknown>(
   url: string,
   options: FetchOptions = {}
 ): Promise<T> {
@@ -144,9 +146,10 @@ export async function safeFetch(
 ): Promise<Response> {
   try {
     return await fetchWithRetry(url, options);
-  } catch (error: any) {
-    console.error(`[API Client] Failed to fetch ${url}:`, error.message);
-    throw error;
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error(`[API Client] Failed to fetch ${url}:`, err.message);
+    throw err;
   }
 }
 

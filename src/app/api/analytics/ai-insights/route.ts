@@ -42,14 +42,14 @@ function parseTimeRange(timeRange: string): { days: number; startDate: Date; end
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as { user?: { organizationId?: string | null } | null; } | null;
     if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const timeRange = searchParams.get('timeRange') || '30d';
-    const { startDate, endDate, days } = parseTimeRange(timeRange);
+    const { startDate, endDate, days: _days } = parseTimeRange(timeRange);
     
     const previousStartDate = new Date(startDate.getTime() - (endDate.getTime() - startDate.getTime()));
 
@@ -174,7 +174,7 @@ export async function GET(request: NextRequest) {
 
     // Low inventory risk
     const lowStockProducts = currentProducts.filter(p => {
-      const stock = (p.stock as number) || 0;
+      const stock = p.stockQuantity || 0;
       return stock < 10 && stock > 0;
     });
 

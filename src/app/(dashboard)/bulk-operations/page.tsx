@@ -50,7 +50,8 @@ export default function BulkOperationsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
 
   useEffect(() => {
-    if (!session?.user?.organizationId) {
+    const organizationId = (session?.user as { organizationId?: string } | null)?.organizationId;
+    if (!organizationId) {
       router.push('/auth/signin');
       return;
     }

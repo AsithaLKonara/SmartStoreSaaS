@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
-import { Bot, Shield, Lock, Eye, FileText } from 'lucide-react';
+import { Bot, Shield } from 'lucide-react';
 
 export default function PrivacyPage() {
   return (

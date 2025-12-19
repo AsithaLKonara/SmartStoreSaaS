@@ -4,8 +4,7 @@ import {
   CheckCircle, 
   XCircle, 
   AlertCircle,
-  Bot,
-  RefreshCw
+  Bot
 } from 'lucide-react';
 
 export default function StatusPage() {

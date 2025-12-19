@@ -68,8 +68,9 @@ export default function CampaignsPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
   useEffect(() => {
-    if (!session?.user?.organizationId) {
-      router.push('/signin');
+    const organizationId = (session?.user as { organizationId?: string } | null)?.organizationId;
+    if (!organizationId) {
+      router.push('/auth/signin');
       return;
     }
     fetchCampaignData();
@@ -81,12 +82,12 @@ export default function CampaignsPage() {
       const { fetchJSON } = await import('@/lib/api-client');
       
       const [campaignsData, templatesData] = await Promise.all([
-        fetchJSON('/api/campaigns'),
-        fetchJSON('/api/campaigns/templates')
+        fetchJSON<Campaign[]>('/api/campaigns'),
+        fetchJSON<CampaignTemplate[]>('/api/campaigns/templates')
       ]);
 
-        setCampaigns(campaignsData);
-        setTemplates(templatesData);
+      setCampaigns(campaignsData);
+      setTemplates(templatesData);
     } catch (error) {
       console.error('Error fetching campaign data:', error);
       toast.error('Failed to load campaign data');

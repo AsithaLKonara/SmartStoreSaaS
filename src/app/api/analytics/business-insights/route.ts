@@ -43,7 +43,7 @@ function parseTimeRange(timeRange: string): { days: number; startDate: Date; end
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as { user?: { organizationId?: string | null } | null; } | null;
     if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
 
     // Inventory recommendations
     const lowStockProducts = products.filter(p => {
-      const stock = (p.stock as number) || 0;
+      const stock = p.stockQuantity || 0;
       return stock > 0 && stock < 10;
     });
 

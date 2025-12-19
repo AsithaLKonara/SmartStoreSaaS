@@ -4,10 +4,15 @@ import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 
 export default async function IntegrationsPage() {
-  const session = await getServerSession(authOptions);
-  
+  const session = (await getServerSession(authOptions)) as {
+    user?: {
+      email?: string | null;
+      organizationId?: string | null;
+    } | null;
+  } | null;
+
   if (!session?.user?.email) {
-    redirect('/signin');
+    redirect('/auth/signin');
   }
 
   return (
@@ -19,7 +24,7 @@ export default async function IntegrationsPage() {
         </p>
       </div>
 
-      <IntegrationManager organizationId={session.user.organizationId!} />
+      <IntegrationManager organizationId={session.user?.organizationId ?? ''} />
     </div>
   );
 } 

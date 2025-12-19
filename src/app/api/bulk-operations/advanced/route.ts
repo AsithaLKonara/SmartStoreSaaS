@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -9,7 +8,7 @@ const bulkOperationsService = new BulkOperationsService();
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as { user?: { email?: string | null; organizationId?: string | null } | null; } | null;
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -53,7 +52,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as { user?: { email?: string | null; organizationId?: string | null } | null; } | null;
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -176,12 +175,12 @@ export async function POST(request: NextRequest) {
             });
 
             for (let i = 0; i < Math.min(records.length, 10); i++) {
-              const record = records[i] as Prisma.InputJsonValue;
+              const record = records[i] as Record<string, unknown>;
               const validation = { row: i + 1, valid: true, errors: [] as string[] };
 
               if (validateEntity === 'products') {
                 if (!record.name) validation.errors.push('Name is required');
-                if (!record.price || isNaN(parseFloat(record.price))) validation.errors.push('Valid price is required');
+                if (!record.price || isNaN(parseFloat(String(record.price)))) validation.errors.push('Valid price is required');
                 if (validation.errors.length > 0) validation.valid = false;
               } else if (validateEntity === 'customers') {
                 if (!record.name) validation.errors.push('Name is required');
@@ -199,12 +198,12 @@ export async function POST(request: NextRequest) {
             const records = XLSX.utils.sheet_to_json(worksheet);
 
             for (let i = 0; i < Math.min(records.length, 10); i++) {
-              const record = records[i] as Prisma.InputJsonValue;
+              const record = records[i] as Record<string, unknown>;
               const validation = { row: i + 1, valid: true, errors: [] as string[] };
 
               if (validateEntity === 'products') {
                 if (!record.name) validation.errors.push('Name is required');
-                if (!record.price || isNaN(parseFloat(record.price))) validation.errors.push('Valid price is required');
+                if (!record.price || isNaN(parseFloat(String(record.price)))) validation.errors.push('Valid price is required');
                 if (validation.errors.length > 0) validation.valid = false;
               } else if (validateEntity === 'customers') {
                 if (!record.name) validation.errors.push('Name is required');

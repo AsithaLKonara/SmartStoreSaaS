@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
+import { Session } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma, executePrismaQuery, validateOrganizationId } from '@/lib/prisma';
 import { handleApiError, validateSession } from '@/lib/api-error-handler';
@@ -7,7 +8,7 @@ import { PaymentStatus } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as Session | null;
     const sessionValidation = validateSession(session);
     if (!sessionValidation.valid) {
       return NextResponse.json({ message: sessionValidation.error || 'Unauthorized' }, { status: 401 });
@@ -209,7 +210,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(analytics);
   } catch (error) {
-    const session = await getServerSession(authOptions).catch(() => null);
+    const session = (await getServerSession(authOptions).catch(() => null)) as Session | null;
     return handleApiError(error, request, session);
   }
 } 

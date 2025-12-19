@@ -5,7 +5,9 @@ import { CustomModelService } from '@/lib/ai/ml/customModelService';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as {
+      user?: { organizationId?: string | null } | null;
+    } | null;
     if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }

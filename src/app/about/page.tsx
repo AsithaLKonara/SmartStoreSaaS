@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
-import { Bot, Users, Target, Zap, Globe, Award } from 'lucide-react';
+import { Bot, Users, Target, Zap, Globe } from 'lucide-react';
 
 export default function AboutPage() {
   const values = [

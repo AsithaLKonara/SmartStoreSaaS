@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
@@ -68,11 +68,7 @@ export function IntegrationManager({ organizationId }: IntegrationManagerProps) 
     apiSecret: ''
   });
 
-  useEffect(() => {
-    loadIntegrationStatus();
-  }, [organizationId]);
-
-  const loadIntegrationStatus = async () => {
+  const loadIntegrationStatus = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/integrations/setup?organizationId=${organizationId}`);
@@ -85,7 +81,11 @@ export function IntegrationManager({ organizationId }: IntegrationManagerProps) 
     } finally {
       setLoading(false);
     }
-  };
+  }, [organizationId]);
+
+  useEffect(() => {
+    loadIntegrationStatus();
+  }, [organizationId, loadIntegrationStatus]);
 
   const setupIntegration = async (type: string, config: Record<string, unknown>) => {
     try {

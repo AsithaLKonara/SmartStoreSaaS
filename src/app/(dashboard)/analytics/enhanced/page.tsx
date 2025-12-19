@@ -90,16 +90,26 @@ export default function EnhancedAnalyticsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, status, timeRange, router]);
 
+  type AiInsightsResponse = { insights?: AIInsight[] };
+  type PredictiveMetricsResponse = { metrics?: PredictiveMetric[] };
+  type CustomerSegmentsResponse = { segments?: CustomerSegment[] };
+  type BusinessInsightsResponse = BusinessInsights;
+
   const fetchEnhancedAnalytics = async () => {
     try {
       setLoading(true);
       const { fetchJSON } = await import('@/lib/api-client');
-      
-      const [insights, metrics, segments, businessInsights] = await Promise.all([
-        fetchJSON(`/api/analytics/ai-insights?timeRange=${timeRange}`),
-        fetchJSON(`/api/analytics/predictive?timeRange=${timeRange}`),
-        fetchJSON(`/api/analytics/customer-segments?timeRange=${timeRange}`),
-        fetchJSON(`/api/analytics/business-insights?timeRange=${timeRange}`),
+
+      const [
+        insights,
+        metrics,
+        segments,
+        businessInsights,
+      ] = await Promise.all([
+        fetchJSON<AiInsightsResponse>(`/api/analytics/ai-insights?timeRange=${timeRange}`),
+        fetchJSON<PredictiveMetricsResponse>(`/api/analytics/predictive?timeRange=${timeRange}`),
+        fetchJSON<CustomerSegmentsResponse>(`/api/analytics/customer-segments?timeRange=${timeRange}`),
+        fetchJSON<BusinessInsightsResponse>(`/api/analytics/business-insights?timeRange=${timeRange}`),
       ]);
 
       setAiInsights(insights.insights || []);

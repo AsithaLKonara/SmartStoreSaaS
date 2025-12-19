@@ -13,21 +13,28 @@ interface AuthProviderProps {
 function suppressNonCriticalErrors() {
   if (typeof window === 'undefined') return;
 
-  const originalError = console.error;
-  console.error = (...args: any[]) => {
-    const message = args[0]?.toString() || '';
+  const originalError: (...args: unknown[]) => void = (...args) =>
+    console.error(...args);
+  console.error = (...args: unknown[]) => {
+    const first = args[0];
+    const message =
+      typeof first === 'string'
+        ? first
+        : first != null
+          ? String(first)
+          : '';
     
     // Suppress CLIENT_FETCH_ERROR if it's non-critical
     if (message.includes('[next-auth][error][CLIENT_FETCH_ERROR]')) {
       // Only log in development, suppress in production
       if (process.env.NODE_ENV === 'development') {
-        originalError.apply(console, args);
+        originalError(...args);
       }
       return;
     }
     
     // Log all other errors normally
-    originalError.apply(console, args);
+    originalError(...args);
   };
 
   return () => {

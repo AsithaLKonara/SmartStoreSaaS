@@ -44,8 +44,9 @@ export default function ReportsPage() {
   const [dateRange] = useState<string>('30d');
 
   useEffect(() => {
-    if (!session?.user?.organizationId) {
-      router.push('/signin');
+    const organizationId = (session?.user as { organizationId?: string } | null)?.organizationId;
+    if (!organizationId) {
+      router.push('/auth/signin');
       return;
     }
     fetchReportData();

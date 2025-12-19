@@ -62,8 +62,9 @@ export default function CouriersPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
   useEffect(() => {
-    if (!session?.user?.organizationId) {
-      router.push('/signin');
+    const organizationId = (session?.user as { organizationId?: string } | null)?.organizationId;
+    if (!organizationId) {
+      router.push('/auth/signin');
       return;
     }
     fetchCourierData();

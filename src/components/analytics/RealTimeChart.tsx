@@ -87,6 +87,24 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
     }
   }, []);
 
+  const processEventData = useCallback((event: { type: string; data: Record<string, unknown> }, currentData: ChartData[]): ChartData[] => {
+    // This is a generic processor - you might want to customize this
+    // based on your specific event types and data structure
+    
+    switch (event.type) {
+      case 'order_created':
+        return updateOrderData(event.data, currentData);
+      case 'product_viewed':
+        return updateProductViewData(event.data, currentData);
+      case 'payment_completed':
+        return updatePaymentData(event.data, currentData);
+      case 'inventory_updated':
+        return updateInventoryData(event.data, currentData);
+      default:
+        return currentData;
+    }
+  }, []);
+
   const handleRealTimeUpdate = useCallback((event: { type: string; data: Record<string, unknown> }) => {
     // Process real-time event and update chart data
     setData(prevData => {
@@ -99,7 +117,7 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
       
       return newData;
     });
-  }, [onDataUpdate]);
+  }, [onDataUpdate, processEventData]);
 
   const { isConnected } = useRealTimeSync({
     organizationId,
@@ -145,25 +163,8 @@ export const RealTimeChart: React.FC<RealTimeChartProps> = ({
         clearInterval(intervalRef.current);
       }
     };
-  }, [config.refreshInterval]);
+  }, [config.refreshInterval, refreshData]);
 
-  const processEventData = (event: { type: string; data: Record<string, unknown> }, currentData: ChartData[]): ChartData[] => {
-    // This is a generic processor - you might want to customize this
-    // based on your specific event types and data structure
-    
-    switch (event.type) {
-      case 'order_created':
-        return updateOrderData(event.data, currentData);
-      case 'product_viewed':
-        return updateProductViewData(event.data, currentData);
-      case 'payment_completed':
-        return updatePaymentData(event.data, currentData);
-      case 'inventory_updated':
-        return updateInventoryData(event.data, currentData);
-      default:
-        return currentData;
-    }
-  };
 
   const updateOrderData = (orderData: Record<string, unknown>, currentData: ChartData[]): ChartData[] => {
     const now = new Date();

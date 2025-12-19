@@ -5,7 +5,9 @@ import { AdvancedPredictiveService } from '@/lib/ai/analytics/advancedPredictive
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = (await getServerSession(authOptions)) as {
+      user?: { organizationId?: string | null } | null;
+    } | null;
     if (!session || !session.user?.organizationId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
